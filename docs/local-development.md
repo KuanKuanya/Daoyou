@@ -12,14 +12,36 @@ pnpm run dev                    # 启动 API 与 Vite
 
 环境文件不再由脚本自动生成。启动和迁移命令重复执行不会清空数据；停止容器使用 `pnpm run services down`，数据保留在专用卷中。
 
-| 服务 | 地址 |
-| --- | --- |
-| 页面 | http://127.0.0.1:5174 |
-| API | http://127.0.0.1:3001 |
-| PostgreSQL | `127.0.0.1:15432`，数据库 `daoyou_local` |
-| Redis | `127.0.0.1:16379` |
-| NATS / 监控 | `127.0.0.1:14222` / http://127.0.0.1:18222 |
+| 服务           | 地址                                       |
+| -------------- | ------------------------------------------ |
+| 页面           | http://127.0.0.1:5174                      |
+| API            | http://127.0.0.1:3001                      |
+| PostgreSQL     | `127.0.0.1:15432`，数据库 `daoyou_local`   |
+| Redis          | `127.0.0.1:16379`                          |
+| NATS / 监控    | `127.0.0.1:14222` / http://127.0.0.1:18222 |
 | SMTP / Mailpit | `127.0.0.1:11025` / http://127.0.0.1:18025 |
+
+### 本地 Docker API
+
+需要验证镜像部署时，在现有本地基础服务上叠加 `scripts/docker-compose.local-app.yml`，复用 `docker/Dockerfile.app`。先准备 `env/local.env`，再执行：
+
+```bash
+pnpm run services up -d --wait
+pnpm run db:migrate
+pnpm run services -f scripts/docker-compose.local-app.yml up -d --build --wait
+pnpm run dev:web
+```
+
+API 容器对外仍为 `127.0.0.1:3001`，前端仍为 `http://127.0.0.1:5174`。容器内部通过 Compose 服务名连接 PostgreSQL、Redis、NATS 和 Mailpit；本地认证及 LLM 配置从 `env/local.env` 注入。此模式使用专用本地数据及 `APP_ENV=local`，不用于生产。不要同时启动宿主机 API，以免占用同一端口。API 代码修改后重新执行带 `--build` 的命令。
+
+查看状态和日志：
+
+```bash
+pnpm run services -f scripts/docker-compose.local-app.yml ps
+pnpm run services -f scripts/docker-compose.local-app.yml logs --tail=100 app
+```
+
+停止时运行 `pnpm run services -f scripts/docker-compose.local-app.yml down`，保留现有数据卷。生产仍沿用 [部署文档](development.md#docker) 的独立前端与 API 蓝绿方案。
 
 ## Workspace 与配置边界
 
@@ -64,11 +86,11 @@ Nest收到SIGTERM／SIGINT后拒绝新请求，停止定时发布并排空HTTP�
 
 两套开发命令分别显式加载一个文件：
 
-| 用途 | 本地 `env/local.env` | 预发布 `env/staging.env` |
-| --- | --- | --- |
-| 同时启动 | `pnpm run dev` | `pnpm run prd` |
-| 仅 API | `pnpm run dev:api` | `pnpm run prd:api` |
-| 仅 Web | `pnpm run dev:web` | `pnpm run prd:web` |
+| 用途     | 本地 `env/local.env` | 预发布 `env/staging.env` |
+| -------- | -------------------- | ------------------------ |
+| 同时启动 | `pnpm run dev`       | `pnpm run prd`           |
+| 仅 API   | `pnpm run dev:api`   | `pnpm run prd:api`       |
+| 仅 Web   | `pnpm run dev:web`   | `pnpm run prd:web`       |
 
 `prd` 指预发布调试，两组都使用 `NODE_ENV=development`，API 启用 watch，Web 使用 Node.js 运行 Vite。API 和 Web 分别读取同一份环境文件；Vite 根据 `HOST`、`WEB_PORT` 监听，并把 API／WebSocket 代理到 `PORT`。本地端口为 3001／5174；预发布调试默认 3000／5173。
 

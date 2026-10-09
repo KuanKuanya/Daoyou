@@ -232,6 +232,8 @@ pnpm run dev
 
 ## Docker
 
+本地完整基础服务与 API 镜像启动步骤见 [本地 Docker API](local-development.md#本地-docker-api)。使用 `scripts/docker-compose.local.yml` 与 `scripts/docker-compose.local-app.yml` 叠加，前端仍独立运行。
+
 React SPA继续独立部署到Cloudflare Pages，不进入后端镜像。`app`（`3000`）使用Node 24运行Nest API与原生WebSocket；`combat-v6`保持独立于框架。镜像以非root用户运行，仅包含Node、生产依赖与编译产物。PostgreSQL回放归档继续由应用侧NATS consumer完成。
 
 本地构建镜像：

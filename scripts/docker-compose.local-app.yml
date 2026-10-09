@@ -1,0 +1,42 @@
+services:
+  app:
+    image: daoyou-app:local
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    env_file:
+      - ../env/local.env
+    environment:
+      APP_ENV: local
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgresql://daoyou:daoyou-local-only@postgres:5432/daoyou_local
+      REDIS_URL: redis://redis:6379/0
+      NATS_SERVERS: nats://nats:4222
+      NATS_USER: app
+      NATS_PASSWORD: local-nats-password
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    ports:
+      - '127.0.0.1:3001:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    stop_grace_period: 75s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health-check').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
