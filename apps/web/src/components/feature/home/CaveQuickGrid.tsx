@@ -87,6 +87,7 @@ const CAVE_AREA_GROUPS: CaveQuickGroup[] = [
         icon: 'icon:beast-skill-mountain-breaker',
         href: '/game/auction',
       },
+      { label: '组队讨伐', icon: 'icon:ui-sword', href: '/game/hunt-team' },
     ],
   },
 ];

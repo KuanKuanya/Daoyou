@@ -1,4 +1,5 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { updateGameSettings, useGameSettings } from '@app/lib/game-setting';
 import type { ArenaSessionView } from '@daoyou/contracts/combat/arena';
 import type { CombatV6TrainingCommandV1 } from '@daoyou/game-domain/combat';
 import { AUTO_DELAY_MS } from '@daoyou/game-rules/combat/auto';
@@ -72,8 +73,24 @@ export function CombatV6Battle({
   back,
   backLabel,
 }: Props) {
-  const [autoSession, setAutoSession] = useState<string | null>(null);
-  const autoEnabled = autoSession === session.sessionId && !session.outcome;
+  const { keepCombatAuto, combatAutoHeld } = useGameSettings();
+  const rememberedAuto = keepCombatAuto && combatAutoHeld;
+  const [autoChoice, setAutoChoice] = useState({
+    sessionId: session.sessionId,
+    enabled: rememberedAuto,
+  });
+  if (autoChoice.sessionId !== session.sessionId) {
+    setAutoChoice({ sessionId: session.sessionId, enabled: rememberedAuto });
+  }
+  const autoEnabled =
+    !session.outcome &&
+    (autoChoice.sessionId === session.sessionId
+      ? autoChoice.enabled
+      : rememberedAuto);
+  const chooseAuto = (enabled: boolean) => {
+    setAutoChoice({ sessionId: session.sessionId, enabled });
+    updateGameSettings({ combatAutoHeld: enabled });
+  };
   const roundId = `${session.sessionId}:${session.round}:${autoEnabled}`;
   const [draft, setDraft] = useState<{
     id: string;
@@ -122,13 +139,16 @@ export function CombatV6Battle({
     commandOptions.some((option) => option.canSubmit);
   useEffect(() => {
     if (!autoReady) return;
+    const sessionId = session.sessionId;
     const timer = window.setTimeout(() => {
       if (requestBusy.current) return;
       requestBusy.current = true;
       void onAuto()
         .catch(() => {
-          setAutoSession((current) =>
-            current === session.sessionId ? null : current,
+          setAutoChoice((current) =>
+            current.sessionId === sessionId
+              ? { sessionId, enabled: false }
+              : current,
           );
         })
         .finally(() => {
@@ -325,7 +345,7 @@ export function CombatV6Battle({
           onResolve={onResolve}
           autoEnabled={autoEnabled}
           onAuto={() => {
-            setAutoSession(autoEnabled ? null : session.sessionId);
+            chooseAuto(!autoEnabled);
             setDraft(undefined);
             setEditing(undefined);
             cancel();
