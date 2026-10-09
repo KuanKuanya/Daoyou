@@ -31,7 +31,7 @@ import {
 import { checkAndAcquireCooldown } from '@server/lib/redis/worldChatLimiter.js';
 import { journalOperationKey } from '@server/lib/repositories/playerJournalRepository.js';
 import { createAndPublishWorldChatMessage } from '@server/social/application/chatDelivery.js';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 export type HuntActor = { userId: string; cultivatorId: string };
 const teamKey = (id: string) => `hunt:v1:team:${id}`;
 const memberKey = (id: string) => `hunt:v1:member:${id}`;
@@ -161,8 +161,8 @@ return 1`,
 async function currentTeam(actor: HuntActor, lease: RedisLeaseContext) {
   const id = await redis.get(memberKey(actor.userId));
   if (!id) return null;
-  const team = await readTeam(id);
-  if (!team) {
+  const stored = await readTeam(id);
+  if (!stored) {
     await redis.eval(
       "if redis.call('GET',KEYS[1]) == ARGV[1] then redis.call('DEL',KEYS[1]) end",
       1,
@@ -171,6 +171,7 @@ async function currentTeam(actor: HuntActor, lease: RedisLeaseContext) {
     );
     return null;
   }
+  let team: HuntTeam = stored;
   if (team.status === 'starting' && team.startRequestId) {
     const battleId = await battleStore.source(team.id, team.startRequestId);
     if (battleId) {
@@ -181,10 +182,49 @@ async function currentTeam(actor: HuntActor, lease: RedisLeaseContext) {
         revision: team.revision + 1,
       };
       await saveTeam(next, team, lease);
-      return next;
+      team = next;
     }
     // A crashed starter has no active battle; retry with the same frozen request.
   }
+  // Frozen battles keep their original participants until settlement. Idle
+  // teams must release dead characters, including a previous incarnation.
+  if (team.status !== 'in_battle') {
+    const active = team.members.length
+      ? await db
+          .select({ id: cultivators.id, userId: cultivators.userId })
+          .from(cultivators)
+          .where(
+            and(
+              inArray(
+                cultivators.id,
+                team.members.map((m) => m.cultivatorId),
+              ),
+              eq(cultivators.status, 'active'),
+            ),
+          )
+      : [];
+    const members = team.members.filter((m) =>
+      active.some(
+        (row) => row.id === m.cultivatorId && row.userId === m.userId,
+      ),
+    );
+    if (members.length !== team.members.length) {
+      const next: HuntTeam = {
+        ...team,
+        status: 'assembling',
+        members: members.map((m) => ({ ...m, ready: false })),
+        leaderId: members.some((m) => m.cultivatorId === team.leaderId)
+          ? team.leaderId
+          : (members[0]?.cultivatorId ?? ''),
+        battleId: undefined,
+        startRequestId: undefined,
+        revision: team.revision + 1,
+      };
+      await saveTeam(next, team, lease);
+      team = next;
+    }
+  }
+  if (!team.members.some((m) => m.userId === actor.userId)) return null;
   if (
     team.event &&
     !huntIsOpen(team.event, Date.now()) &&
@@ -232,11 +272,7 @@ export async function huntLobby(
 export async function readMyHuntTeam(
   actor: HuntActor,
 ): Promise<HuntTeam | null> {
-  const id = await redis.get(memberKey(actor.userId));
-  if (!id) return null;
-  const team = await readTeam(id);
-  if (!team?.members.some((m) => m.userId === actor.userId)) return null;
-  return team;
+  return lock((lease) => currentTeam(actor, lease));
 }
 export async function createHuntTeam(
   actor: HuntActor,
