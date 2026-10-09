@@ -206,23 +206,23 @@ export function YieldCard({
           </span>
         </div>
 
-        {yieldResult?.expGain && (
+        {yieldResult?.expGain ? (
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">修为精进：</span>
             <span className="text-teal text-2xl font-bold">
               <GameIcon value={cultivationInfo.icon} /> {yieldResult.expGain}
             </span>
           </div>
-        )}
+        ) : null}
 
-        {yieldResult?.insightGain && (
+        {yieldResult?.insightGain ? (
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">{insightInfo.label}：</span>
             <span className="text-wood text-2xl font-bold">
               <GameIcon value={insightInfo.icon} /> {yieldResult.insightGain}
             </span>
           </div>
-        )}
+        ) : null}
 
         {yieldResult?.materials && yieldResult.materials.length > 0 && (
           <div className="mb-6">
@@ -239,14 +239,13 @@ export function YieldCard({
           </div>
         )}
 
-        {yieldResult?.rewardCount &&
-          yieldResult.rewardCount > 0 &&
-          (!yieldResult.materials || yieldResult.materials.length === 0) && (
+        {(yieldResult?.rewardCount ?? 0) > 0 &&
+          (!yieldResult?.materials || yieldResult.materials.length === 0) && (
             <div className="border-crimson/30 bg-bgpaper mb-6 border border-dashed p-3 text-center">
               <p className="text-ink-secondary text-sm">
                 另有{' '}
                 <span className="text-crimson font-bold">
-                  {yieldResult.rewardCount}
+                  {yieldResult?.rewardCount}
                 </span>{' '}
                 件历练所得正在运送中，稍后将通过传音玉简（邮件）送达。
               </p>
