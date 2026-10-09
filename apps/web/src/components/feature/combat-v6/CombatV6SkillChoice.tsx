@@ -1,10 +1,10 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
-import { findBeastSkillPresentation } from '@daoyou/game-rules/beasts/presentation';
 import type { CombatV6SkillCommandOption } from '@daoyou/combat-core/types';
-import { useState, type ReactNode } from 'react';
+import { findBeastSkillPresentation } from '@daoyou/game-rules/beasts/presentation';
 import { reasonText } from '@daoyou/game-rules/combat/log';
+import { useState, type ReactNode } from 'react';
 import { skillNeedsTarget } from './presentation';
 import type { CombatV6Session } from './session';
 
@@ -75,7 +75,8 @@ export function CombatV6SkillChoice({
             <span className="cv6-choice-actor">
               <GameIcon
                 value={
-                  session.display?.unitAppearances?.[actor.id]?.icon ?? '👤'
+                  session.display?.unitAppearances?.[actor.id]?.icon ??
+                  'icon:cultivator-male-avatar'
                 }
               />
               {actor.name}
@@ -176,7 +177,13 @@ export function CombatV6SkillChoice({
             </dl>
             {selected.reasons.length ? (
               <p className="cv6-choice-warning">
-                {selected.reasons.map(reason => reason === 'cooldown' ? `冷却剩余 ${selected.cooldownRemaining ?? 0} 回合` : reasonText(reason)).join('；')}
+                {selected.reasons
+                  .map((reason) =>
+                    reason === 'cooldown'
+                      ? `冷却剩余 ${selected.cooldownRemaining ?? 0} 回合`
+                      : reasonText(reason),
+                  )
+                  .join('；')}
                 {selected.ready ? '（行动时判定）' : ''}
               </p>
             ) : null}

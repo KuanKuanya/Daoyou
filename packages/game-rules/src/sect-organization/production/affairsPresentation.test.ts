@@ -62,7 +62,7 @@ describe('production sect affairs presentations', () => {
           (actor) => actor.roleKey === 'ring',
         ),
       ).toMatchObject({
-        sigil: '⚔️',
+        sigil: 'icon:ui-sword',
         name: '宗门擂台',
         identity: '宗门设施',
         appearance: 'facility',

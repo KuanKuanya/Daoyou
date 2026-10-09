@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 
@@ -23,7 +22,7 @@ export function InkSection({
     <section className="ink-section mb-6">
       {title && (
         <h2 className="ink-section-title text-ink font-heading mb-3 text-lg font-semibold">
-          <GameIconText>{title}</GameIconText>
+          {title}
         </h2>
       )}
       <div className={cn(subdued && 'opacity-75')}>{children}</div>

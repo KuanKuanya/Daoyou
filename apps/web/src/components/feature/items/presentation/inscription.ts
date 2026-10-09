@@ -1,12 +1,12 @@
 import { tierColorMap } from '@app/components/ui/inkBadgeTiers';
-import { getLevelRealmStage } from '@daoyou/game-domain/progression';
 import { daoFormationInscriptionOf } from '@daoyou/game-content/equipment/base';
-import { daoFormationMaxLevel } from '@daoyou/game-rules/equipment/projection';
 import {
-  OPEN_EQUIPMENT_LEVELS,
   EQUIPMENT_ATTRIBUTE_NAMES,
   EQUIPMENT_SLOT_NAMES,
+  OPEN_EQUIPMENT_LEVELS,
 } from '@daoyou/game-domain/equipment';
+import { getLevelRealmStage } from '@daoyou/game-domain/progression';
+import { daoFormationMaxLevel } from '@daoyou/game-rules/equipment/projection';
 import { field, quantity } from './helpers';
 import type { ItemAdapter } from './types';
 
@@ -18,7 +18,7 @@ export const inscriptionAdapter: ItemAdapter = (item, def) => {
   const realm = getLevelRealmStage(equipmentLevel).realm;
   return {
     summary: {
-      icon: '🔶',
+      icon: 'icon:ui-compass',
       color: tierColorMap[realm],
       tier: `${def.level}级`,
       type: '阵纹',

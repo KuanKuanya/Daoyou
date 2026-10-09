@@ -1,10 +1,11 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { ItemExchangeShelf } from '@app/components/feature/item-shop/ItemExchangeShelf';
 import {
   GameSceneAsideSection,
   GameSceneFrame,
 } from '@app/components/game-shell';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
+import { GameIcon } from '@app/components/ui/GameIcon';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import { useCultivatorCurrency } from '@app/lib/resources/player';
 import type {
@@ -18,7 +19,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const REPUTATION_INFO = getGameConceptInfo('reputation');
 
 async function fetchVaultItems(): Promise<ReputationShopListResponse> {
-  const response = await apiFetch('/api/reputation-shop', { cache: 'no-store' });
+  const response = await apiFetch('/api/reputation-shop', {
+    cache: 'no-store',
+  });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error ?? '万界商行暂不可入');
   return data as ReputationShopListResponse;
@@ -81,7 +84,7 @@ export default function TianjiaoVaultPage() {
       );
       attempts.current.delete(item.id);
       pushToast({
-        message: `已兑换 ${(result.purchasedItem.item?.name ?? '道具')}，已放入${result.destinations.map((location) => (location === 'bag' ? '背包' : '储藏室')).join('、')}`,
+        message: `已兑换 ${result.purchasedItem.item?.name ?? '道具'}，已放入${result.destinations.map((location) => (location === 'bag' ? '背包' : '储藏室')).join('、')}`,
         tone: 'success',
       });
       await refresh();
@@ -105,8 +108,8 @@ export default function TianjiaoVaultPage() {
           <GameSceneAsideSection title="声望余量">
             <div className="space-y-2 text-sm leading-7">
               <p>
-                {REPUTATION_INFO.icon} {REPUTATION_INFO.label}：
-                {reputation ?? '读取中…'}
+                <GameIcon value={REPUTATION_INFO.icon} />{' '}
+                {REPUTATION_INFO.label}：{reputation ?? '读取中…'}
               </p>
               <p>已上架：{items.length} 件</p>
             </div>

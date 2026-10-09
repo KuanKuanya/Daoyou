@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import {
   useCallback,
@@ -113,7 +112,7 @@ export function InkTabs({
                   : 'text-ink-secondary hover:text-ink',
               )}
             >
-              <GameIconText>{item.label}</GameIconText>
+              {item.label}
             </button>
           );
         })}

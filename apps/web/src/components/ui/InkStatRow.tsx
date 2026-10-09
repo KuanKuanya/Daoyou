@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 
@@ -34,9 +33,7 @@ export function InkStatRow({
     >
       {/* 标签行 */}
       <div className="flex items-baseline gap-1">
-        <span>
-          <GameIconText>{label}</GameIconText>
-        </span>
+        <span>{label}</span>
         {code && (
           <span className="text-ink-secondary text-[0.8rem]">（{code}）</span>
         )}

@@ -494,7 +494,7 @@ export default function MarketRecyclePage() {
               aria-hidden="true"
               className="grid size-12 shrink-0 place-items-center text-3xl"
             >
-              <GameIcon value="🧮" />
+              <GameIcon value="icon:ui-divination" />
             </span>
             <div>
               <p className="text-ink-secondary mb-1 text-xs">掌柜</p>

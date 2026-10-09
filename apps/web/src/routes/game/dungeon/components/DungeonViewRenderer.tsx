@@ -1,5 +1,6 @@
 import { GameSceneLoading, GameSceneSection } from '@app/components/game-shell';
 import { InkSection } from '@app/components/layout';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
 import { InkNotice } from '@app/components/ui/InkNotice';
@@ -15,8 +16,8 @@ import type {
 } from '@daoyou/game-domain/dungeon';
 import type { TaskInstance } from '@daoyou/game-domain/tasks';
 import {
-  isConditionStatusActive,
   getConditionStatusTemplate,
+  isConditionStatusActive,
 } from '@daoyou/game-rules/condition';
 import { dungeonReadiness } from '@daoyou/game-rules/dungeon';
 import { canChallengeDungeonRealm } from '@daoyou/game-rules/world/dungeon';
@@ -414,7 +415,9 @@ export function DungeonViewRenderer({
       >
         <InkCard className="mb-6 p-6">
           <div className="space-y-4 text-center">
-            <div className="my-4 text-6xl">🏔️</div>
+            <div className="my-4 text-6xl">
+              <GameIcon value="icon:map-landmark" />
+            </div>
             <p>
               修仙界广袤无垠，机缘与危机并存。
               <br />
@@ -440,7 +443,7 @@ export function DungeonViewRenderer({
         )}
         <div className="mt-4 text-center">
           <InkButton href="/game/dungeon/history" variant="ghost">
-            📖 查看历史记录
+            <GameIcon value="icon:ui-manual" /> 查看历史记录
           </InkButton>
         </div>
       </DungeonSceneScreen>

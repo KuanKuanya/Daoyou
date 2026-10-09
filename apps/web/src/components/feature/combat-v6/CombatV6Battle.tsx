@@ -353,7 +353,9 @@ export function CombatV6Battle({
                       value={
                         session.display?.unitAppearances?.[option.unitId]
                           ?.icon ??
-                        (index ? '🐾' : 'icon:cultivator-male-avatar')
+                        (index
+                          ? 'icon:map-wild'
+                          : 'icon:cultivator-male-avatar')
                       }
                     />
                     <span>

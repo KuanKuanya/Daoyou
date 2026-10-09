@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ChangeEvent, HTMLInputTypeAttribute, KeyboardEvent } from 'react';
 import { inkFieldVariants, type InkFieldVariantProps } from './inkFieldStyles';
@@ -66,7 +65,7 @@ export function InkInput({
             labelClassName,
           )}
         >
-          <GameIconText>{label}</GameIconText>
+          {label}
         </span>
       )}
       {multiline ? (

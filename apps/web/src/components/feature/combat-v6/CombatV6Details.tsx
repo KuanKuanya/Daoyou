@@ -27,7 +27,12 @@ export function CombatV6Details({
         <span className="cv6-portrait">
           <BeastPortrait
             isMutant={appearance?.isMutant}
-            value={appearance?.icon ?? (detailUnit.ownerId ? '🐾' : '👤')}
+            value={
+              appearance?.icon ??
+              (detailUnit.ownerId
+                ? 'icon:map-wild'
+                : 'icon:cultivator-male-avatar')
+            }
           />
         </span>
         {appearance?.speciesName &&
@@ -69,7 +74,8 @@ export function CombatV6Details({
               <div className="cv6-dl-row" key={r.id}>
                 <dt>{r.name}</dt>
                 <dd className="font-mono">
-                  {r.current}{r.max === null ? '' : ` / ${r.max}`}
+                  {r.current}
+                  {r.max === null ? '' : ` / ${r.max}`}
                 </dd>
               </div>
             ))}
@@ -105,7 +111,14 @@ export function CombatV6Details({
                 <span className="font-mono">
                   {detailUnit.publicBars ? `${b.current / 100}%` : b.current}
                 </span>{' '}
-                · {b.untilBattleEnd ? '至战斗结束' : <><span className="font-mono">{b.remainingRounds}</span> 回合</>}
+                ·{' '}
+                {b.untilBattleEnd ? (
+                  '至战斗结束'
+                ) : (
+                  <>
+                    <span className="font-mono">{b.remainingRounds}</span> 回合
+                  </>
+                )}
               </li>
             ))}
           </ul>

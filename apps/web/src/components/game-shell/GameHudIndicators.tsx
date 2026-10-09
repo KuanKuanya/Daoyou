@@ -1,4 +1,4 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 import type { GameHudSnapshot } from './useGameHudModel';
@@ -28,7 +28,7 @@ export function HudMeter({
     <>
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-[0.58rem] leading-3 md:gap-2 md:text-[0.74rem] md:leading-4">
         <span className="text-battle-muted shrink-0 tracking-[0.12em]">
-          <GameIconText>{label}</GameIconText>
+          {label}
         </span>
         <span className="text-ink min-w-0 truncate text-right font-mono text-[0.58rem] md:text-[0.8rem]">
           {display}
@@ -61,12 +61,14 @@ export function HudMeter({
 export function HudTag({
   className: extraClassName,
   label,
+  icon,
   value,
   tone = 'default',
   onClick,
 }: {
   className?: string;
   label?: string;
+  icon?: string;
   value: ReactNode;
   tone?: 'default' | 'qi' | 'wealth';
   onClick?: () => void;
@@ -82,7 +84,7 @@ export function HudTag({
     <>
       {label && (
         <span className="shrink-0 text-stone-500">
-          <GameIconText>{label}</GameIconText>
+          {icon && <GameIcon value={icon} />} {label}
         </span>
       )}
       <span className="text-ink min-w-0 truncate font-mono">{value}</span>

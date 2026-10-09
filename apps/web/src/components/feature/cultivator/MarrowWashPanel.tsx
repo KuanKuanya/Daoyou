@@ -1,4 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import {
   getQiErrorMessage,
   useQiActionConfirm,
@@ -7,6 +6,7 @@ import { GameSceneLoading } from '@app/components/game-shell/GameSceneFrame';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton, InkNotice } from '@app/components/ui';
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import {
   useCultivatorCondition,
@@ -162,7 +162,10 @@ export function MarrowWashPanel() {
         <div className="bg-ink/3 rounded-sm p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <GameIcon value="💧" className="size-9 text-3xl" />
+              <GameIcon
+                value="icon:ui-spirit-water"
+                className="size-9 text-3xl"
+              />
               <div>
                 <p className="text-xl font-semibold">{summary.realmLabel}</p>
                 <p className="text-ink-secondary mt-1 text-xs">

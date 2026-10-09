@@ -1,5 +1,4 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 
 export interface InkStatusDatum {
@@ -39,9 +38,7 @@ export function InkStatusBar({
               <GameIcon value={item.icon} />
             </span>
           )}
-          <span>
-            <GameIconText>{item.label}</GameIconText>
-          </span>
+          <span>{item.label}</span>
           <span>{item.value}</span>
           {item.hint && (
             <span className="text-ink-secondary ml-1 text-[0.8rem]">

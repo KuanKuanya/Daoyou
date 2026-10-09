@@ -24,7 +24,7 @@ export function InventoryHeader({
             aria-atomic="true"
           >
             <span aria-hidden="true">
-              <GameIcon value="💰" />
+              <GameIcon value="icon:ui-spirit-stones" />
             </span>{' '}
             <span className="font-mono">
               {data?.spiritStones === undefined

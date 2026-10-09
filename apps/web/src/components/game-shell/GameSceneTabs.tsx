@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkHorizontalScroll } from '@app/components/ui/InkHorizontalScroll';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
@@ -44,7 +43,7 @@ export function GameSceneTabs({
                 : 'text-ink-secondary hover:text-ink border-transparent',
             )}
           >
-            <GameIconText>{item.label}</GameIconText>
+            {item.label}
           </button>
         );
       })}

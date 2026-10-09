@@ -8,32 +8,35 @@ import {
   useCultivatorProgress,
   useUnreadMailCount,
 } from '@app/lib/resources/player';
-import { type CultivatorDisplayInput, type CultivatorDisplaySnapshot } from '@daoyou/game-domain/character';
-import type { Cultivator } from '@daoyou/game-domain/character';
+import { RealmType } from '@daoyou/constants/realms';
 import {
   BOTTLENECK_THRESHOLD,
   COMPREHENSION_INSIGHT_CAP,
 } from '@daoyou/game-content/cultivation';
 import {
-  getBodyCultivationSummary,
-  type BodyCultivationSummary,
-} from '@daoyou/game-rules/body-cultivation/progress';
-import {
-  getPillToxicityStage,
-  isConditionStatusActive,
-  getConditionStatusTemplate,
-} from '@daoyou/game-rules/condition';
-import {
   getGameConceptLabel,
   getResourceLabel,
   getResourceText,
 } from '@daoyou/game-content/presentation/concepts';
+import type { Cultivator } from '@daoyou/game-domain/character';
+import {
+  type CultivatorDisplayInput,
+  type CultivatorDisplaySnapshot,
+} from '@daoyou/game-domain/character';
+import type { ConditionStatusKey } from '@daoyou/game-domain/condition';
+import {
+  getBodyCultivationSummary,
+  type BodyCultivationSummary,
+} from '@daoyou/game-rules/body-cultivation/progress';
 import {
   getMarrowWashSummary,
   type MarrowWashSummary,
 } from '@daoyou/game-rules/body-cultivation/training';
-import type { ConditionStatusKey } from '@daoyou/game-domain/condition';
-import { RealmType } from '@daoyou/constants/realms';
+import {
+  getConditionStatusTemplate,
+  getPillToxicityStage,
+  isConditionStatusActive,
+} from '@daoyou/game-rules/condition';
 
 export interface GameHudMetric {
   key: 'hp' | 'mp' | 'cultivation' | 'insight';
@@ -204,7 +207,7 @@ export function buildGameHudSnapshot(input: {
       return {
         key: status.key,
         label: template?.name ?? status.key,
-        icon: template?.display.icon ?? '💫',
+        icon: template?.display.icon ?? 'icon:beast-skill-unanticipated',
         category: getStatusCategory(status.key),
         shortDesc:
           template?.display.shortDesc ??

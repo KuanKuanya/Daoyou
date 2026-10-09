@@ -1,12 +1,12 @@
 import type {
+  ResolvedSectPresentation,
   SectAffairsTaskKind,
-  SectScenePresentation,
   SectMapHotspot,
-  SectSceneKey,
   SectRoomActorAppearance,
   SectRoomActorDefinition,
   SectRoomDefinition,
-  ResolvedSectPresentation,
+  SectSceneKey,
+  SectScenePresentation,
 } from '@daoyou/game-domain/sects';
 
 const permissionDeniedDescription =
@@ -408,7 +408,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'ring',
-          '⚔️',
+          'icon:ui-sword',
           '宗门擂台',
           '宗门设施',
           '开启宗门小比战局。',
@@ -515,7 +515,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'facility',
-          '⛏️',
+          'icon:beast-skill-mountain-breaker',
           '宗门灵脉',
           '宗门设施',
           '查看设施等级、灵石收益并进行灵矿采掘。',
@@ -557,7 +557,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'facility',
-          '🌿',
+          'icon:ui-spirit-herb',
           '宗门药田',
           '宗门设施',
           '查看设施等级与药田近况。',
@@ -588,7 +588,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'facility',
-          '⛰️',
+          'icon:map-landmark',
           '宗门山门',
           '宗门设施',
           '进入山门步道完成清扫。',

@@ -23,7 +23,7 @@ export function CultivatorFateSection({
             return (
               <ItemCard
                 key={`${fate.name}-${index}`}
-                icon="🔮"
+                icon="icon:ui-divination"
                 name={fate.name}
                 quality={fate.quality}
                 meta={<FateEffectInlineList lines={display.previewLines} />}

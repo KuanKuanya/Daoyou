@@ -169,7 +169,7 @@ function RetreatBuffTags({
       {emptyHint ? (
         <span className="text-ink-secondary inline-flex items-center gap-1.5 text-xs leading-5">
           <span aria-hidden="true">
-            <GameIcon value="🌿" />
+            <GameIcon value="icon:ui-spirit-herb" />
           </span>
           <span>{emptyHint}</span>
           {showShortcuts ? (

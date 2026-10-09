@@ -1,5 +1,4 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
 import { cn } from '@app/lib/cn';
@@ -56,7 +55,7 @@ export function AlchemyFurnace({
                   : 'text-ink/25 inset-0 text-xl',
               )}
             >
-              <GameIconText>{session.formula ? '📜' : '＋'}</GameIconText>
+              {session.formula ? <GameIcon value="icon:ui-scroll" /> : '＋'}
             </span>
             <span className="absolute inset-x-0.5 bottom-[8%] truncate text-center text-[clamp(0.625rem,17cqw,0.75rem)] leading-tight">
               {session.formula?.name ?? '选择丹方'}

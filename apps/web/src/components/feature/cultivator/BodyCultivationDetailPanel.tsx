@@ -41,7 +41,10 @@ export function BodyCultivationDetailPanel() {
         <div className="bg-ink/3 rounded-sm p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <GameIcon value="💪" className="size-9 text-3xl" />
+              <GameIcon
+                value="icon:beast-skill-strength"
+                className="size-9 text-3xl"
+              />
               <div>
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <p className="text-xl font-semibold">{summary.realm.label}</p>

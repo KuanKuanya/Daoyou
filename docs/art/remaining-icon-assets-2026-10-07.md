@@ -2,7 +2,7 @@
 
 范围：当前前端界面、物品展示适配器与 game-content 的图标；不代表全部背景、人物、地图素材都已逐一美术验收。
 
-本轮完成了 35 张通用／技能生成图片与 6 张空装备位图片，4 张状态图标采用 SVG。主界面旧 emoji 已建立图片别名，但别名覆盖不等于每种道具都有专属图片。最新扫描尚未映射的只有创角性别符号 ♂／♀ 与外链箭头 ↗，属于界面符号，未作为缺失道具图片处理。
+本轮完成了 35 张通用／技能生成图片与 6 张空装备位图片，4 张状态图标采用 SVG。界面和内容配置显式引用注册图片，但类别覆盖不等于每种道具都有专属图片。创角性别符号 ♂／♀ 与外链箭头 ↗ 属于界面符号，未作为缺失道具图片处理。
 
 ## 已发现缺少专属图片的类别
 
@@ -19,7 +19,7 @@
 | 具体装备款式与法兵器形 | 六个部位的通用装备图标 | 根据器形和装备主题补图，不必逐物品盲目生成 |
 | 图纸、草药、丹药的具体品种 | 已有通用图纸／草药／丹药图片 | 后续可按系列扩展；目前基础类型已能辨认 |
 
-依据：`apps/web/src/components/feature/items/presentation/basic.ts`、`consumable.ts`、`equipment.ts` 与 `apps/web/src/components/ui/icons/emojiAliases.ts`。这些是“共用图片／语义不匹配”的缺口，不是加载失败。
+依据：`apps/web/src/components/feature/items/presentation/basic.ts`、`consumable.ts`、`equipment.ts` 与 `apps/web/src/components/ui/icons/registry.ts`。这些是“共用图片／语义不匹配”的缺口，不是加载失败。
 
 ## 本次灵露修订
 
@@ -28,7 +28,6 @@
 内置 image_gen 生成；生产素材 `item-origin-dew-ink-v2.webp`，256×256 透明无损 WebP，安全边距16px，36,846字节。原图与完整提示词见同目录 generation.json。before-after.png 展示两种图片与24／32／40px缩小效果。
 
 建议下一批优先补符箓、灵果、灵种、玉简、灵印与三种基础材料的专属图，先解决“类型看不懂”，再扩展每个品种和装备款式。
-
 
 ## 后续完成情况
 

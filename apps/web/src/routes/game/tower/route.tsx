@@ -6,15 +6,15 @@ import { GameSceneFrame } from '@app/components/game-shell';
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkTooltip } from '@app/components/ui/InkTooltip';
+import type { RealmType } from '@daoyou/constants/realms';
 import type { TowerView } from '@daoyou/contracts/combat/tower';
+import { getTowerBlessingDefinition } from '@daoyou/game-content/tower';
 import type {
   TowerBlessingId,
-  TowerLeaderboardEntry,
   TowerEnemyPreview,
+  TowerLeaderboardEntry,
 } from '@daoyou/game-domain/tower';
-import { getTowerBlessingDefinition } from '@daoyou/game-content/tower';
 import { TOWER_MIN_REALM } from '@daoyou/game-rules/tower';
-import type { RealmType } from '@daoyou/constants/realms';
 import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { TowerLeaderboard } from './components/TowerLeaderboard';
@@ -209,9 +209,9 @@ export default function TowerRoute() {
           >
             {(
               [
-                ['rewards', '🎁', '本周机缘'],
-                ['board', '🏆', '境界榜'],
-                ['week', '⚔️', '本周强敌'],
+                ['rewards', 'icon:ui-treasure-chest', '本周机缘'],
+                ['board', 'icon:ui-merit-medal', '境界榜'],
+                ['week', 'icon:ui-sword', '本周强敌'],
               ] as const
             ).map(([id, icon, label]) => (
               <button
@@ -256,7 +256,11 @@ export default function TowerRoute() {
             {!state || finished ? (
               <>
                 <GameIcon
-                  value={finished && state.reason === 'clear' ? '🌅' : '🌫️'}
+                  value={
+                    finished && state.reason === 'clear'
+                      ? 'icon:beast-skill-auspicious-vitality'
+                      : 'icon:beast-skill-stealth'
+                  }
                   className="my-6 text-6xl"
                 />
                 {finished ? (

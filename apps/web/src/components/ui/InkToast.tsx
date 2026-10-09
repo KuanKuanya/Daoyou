@@ -24,10 +24,10 @@ const toastToneMeta: Record<
   InkToastTone,
   { borderClass: string; icon: string }
 > = {
-  default: { borderClass: 'border-ink/20', icon: '🕯️' },
-  success: { borderClass: 'border-teal/40', icon: '✅' },
-  warning: { borderClass: 'border-wood/45', icon: '⚠️' },
-  danger: { borderClass: 'border-crimson/45', icon: '❗' },
+  default: { borderClass: 'border-ink/20', icon: 'icon:ui-candle' },
+  success: { borderClass: 'border-teal/40', icon: 'icon:ui-success' },
+  warning: { borderClass: 'border-wood/45', icon: 'icon:ui-warning' },
+  danger: { borderClass: 'border-crimson/45', icon: 'icon:ui-danger' },
 };
 
 export function InkToast({

@@ -1,10 +1,10 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import {
   NpcConversation,
   RoomView,
   type RoomActorView,
 } from '@app/components/feature/room';
 import { GameSceneFrame } from '@app/components/game-shell';
+import { apiFetch } from '@app/lib/api/fetch';
 import { realtimeClient } from '@app/lib/realtime/realtimeClient';
 import { usePlayerSession } from '@app/lib/resources/player';
 import type {
@@ -36,7 +36,7 @@ const ACTORS: readonly RoomActorView[] = [
   },
   {
     id: 'ring',
-    sigil: '🥁',
+    sigil: 'icon:ui-bell',
     name: '擂台',
     identity: '切磋设施',
     responsibility: '创建房间，或凭六位数字邀请码加入切磋。',
@@ -654,6 +654,7 @@ async function requestArena<T>(url: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   const body = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(body.error ?? '擂台暂时无法使用，请稍后重试。');
+  if (!response.ok)
+    throw new Error(body.error ?? '擂台暂时无法使用，请稍后重试。');
   return body;
 }

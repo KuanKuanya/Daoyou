@@ -25,9 +25,7 @@ const presentations = new Map<string, BeastSkillPresentation>([
         {
           name: s.name,
           icon: s.icon,
-          style: BEAST_ADVANCED_SKILL_IDS.has(s.id)
-            ? 'advanced'
-            : 'normal',
+          style: BEAST_ADVANCED_SKILL_IDS.has(s.id) ? 'advanced' : 'normal',
           summary: s.flavorText,
           details:
             effectDescriptions[s.id]?.description === s.flavorText
@@ -46,7 +44,7 @@ export function beastSkillPresentation(id: string): BeastSkillPresentation {
   return (
     findBeastSkillPresentation(id) ?? {
       name: '未知技能',
-      icon: '❔',
+      icon: 'icon:ui-question',
       style: 'unavailable',
       summary: '技能信息暂不可用。',
       details: '',

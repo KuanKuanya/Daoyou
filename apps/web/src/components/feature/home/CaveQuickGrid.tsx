@@ -1,5 +1,4 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkButton } from '@app/components/ui/InkButton';
 
 type CaveQuickArea = {
@@ -17,37 +16,77 @@ const CAVE_AREA_GROUPS: CaveQuickGroup[] = [
   {
     title: '洞府内',
     areas: [
-      { label: '🧘 修炼室', href: '/game/retreat' },
-      { label: '🌕 炼丹房', href: '/game/craft/alchemy' },
-      { label: '🔥 炼器室', href: '/game/craft/refine' },
-      { label: '悟道室', icon: '📜', href: '/game/enlightenment' },
-      { label: '阵纹室', icon: '🔶', href: '/game/inscriptions' },
-      { label: '👊 练功房', href: '/game/training-room' },
-      { label: '💧 灵眼之泉', href: '/game/inn' },
+      {
+        label: '修炼室',
+        icon: 'icon:beast-skill-meditation',
+        href: '/game/retreat',
+      },
+      { label: '炼丹房', icon: 'icon:ui-elixir', href: '/game/craft/alchemy' },
+      {
+        label: '炼器室',
+        icon: 'icon:earthfire-furnace',
+        href: '/game/craft/refine',
+      },
+      { label: '悟道室', icon: 'icon:ui-scroll', href: '/game/enlightenment' },
+      { label: '阵纹室', icon: 'icon:ui-compass', href: '/game/inscriptions' },
+      {
+        label: '练功房',
+        icon: 'icon:beast-skill-strength',
+        href: '/game/training-room',
+      },
+      { label: '灵眼之泉', icon: 'icon:ui-spirit-water', href: '/game/inn' },
       {
         label: '储藏室',
-        icon: '📦',
+        icon: 'icon:ui-treasure-chest',
         href: '/game/cave/storage/new?location=storage',
       },
-      { label: '灵田', icon: '🌱', href: '/game/spirit-field' },
-      { label: '育兽室', icon: '🐯', href: '/game/beast-room' },
+      {
+        label: '灵田',
+        icon: 'icon:ui-spirit-herb',
+        href: '/game/spirit-field',
+      },
+      {
+        label: '育兽室',
+        icon: 'icon:beast-nether-tiger',
+        href: '/game/beast-room',
+      },
     ],
   },
   {
     title: '旧入口',
     areas: [
-      { label: '旧藏宝库', icon: '📦', href: '/game/cave/storage' },
-      { label: '旧功法传承', icon: '📜', href: '/game/manual-migration' },
-      { label: '旧法宝焕新', icon: '⚒️', href: '/game/artifact-migration' },
+      {
+        label: '旧藏宝库',
+        icon: 'icon:ui-treasure-chest',
+        href: '/game/cave/storage',
+      },
+      {
+        label: '旧功法传承',
+        icon: 'icon:ui-scroll',
+        href: '/game/manual-migration',
+      },
+      {
+        label: '旧法宝焕新',
+        icon: 'icon:beast-skill-mountain-breaker',
+        href: '/game/artifact-migration',
+      },
     ],
   },
   {
     title: '出洞府',
     areas: [
-      { label: '⛰️ 外出云游', href: '/game/dungeon' },
-      { label: '🛖 坊市', href: '/game/map-v2?intent=market' },
-      { label: '🪞 蜃楼幻境', href: '/game/tower' },
-      { label: '🔨 拍卖行', href: '/game/auction' },
+      { label: '外出云游', icon: 'icon:map-landmark', href: '/game/dungeon' },
+      {
+        label: '坊市',
+        icon: 'icon:map-market',
+        href: '/game/map-v2?intent=market',
+      },
+      { label: '蜃楼幻境', icon: 'icon:ui-mirror', href: '/game/tower' },
+      {
+        label: '拍卖行',
+        icon: 'icon:beast-skill-mountain-breaker',
+        href: '/game/auction',
+      },
     ],
   },
 ];
@@ -81,7 +120,7 @@ export function CaveQuickGrid() {
               >
                 <InkButton href={area.href}>
                   {area.icon && <GameIcon value={area.icon} className="mr-1" />}
-                  <GameIconText>{area.label}</GameIconText>
+                  {area.label}
                 </InkButton>
               </span>
             ))}

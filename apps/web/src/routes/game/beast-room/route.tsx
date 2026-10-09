@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 const facilities = [
   {
     id: '/game/beasts',
-    sigil: '🐯',
+    sigil: 'icon:beast-nether-tiger',
     name: '灵兽袋',
     identity: '灵兽照料',
     responsibility: '查看、培养灵兽并安排出战',
@@ -13,7 +13,7 @@ const facilities = [
   },
   {
     id: '/game/beasts/codex',
-    sigil: '📖',
+    sigil: 'icon:ui-manual',
     name: '灵兽图鉴',
     identity: '物种图录',
     responsibility: '查阅资质、技能与出没之地',
@@ -21,7 +21,7 @@ const facilities = [
   },
   {
     id: '/game/beasts/fusion',
-    sigil: '🧬',
+    sigil: 'icon:beast-fusion-cauldron',
     name: '灵兽融合',
     identity: '两灵相合',
     responsibility: '选择两只灵兽，预览融合造化',

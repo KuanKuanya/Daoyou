@@ -1,4 +1,4 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { cn } from '@app/lib/cn';
 
 export interface InkDividerProps {
@@ -14,7 +14,7 @@ export interface InkDividerProps {
  */
 export function InkDivider({
   variant = 'line',
-  symbol = '☯',
+  symbol = 'icon:ui-taiji',
   className = '',
 }: InkDividerProps) {
   if (variant === 'symbol') {
@@ -25,7 +25,9 @@ export function InkDivider({
           className,
         )}
       >
-        <GameIconText>{symbol.repeat(10)}</GameIconText>
+        {Array.from({ length: 10 }, (_, index) => (
+          <GameIcon key={index} value={symbol} />
+        ))}
       </div>
     );
   }

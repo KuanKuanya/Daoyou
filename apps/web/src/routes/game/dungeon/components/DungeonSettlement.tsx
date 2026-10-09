@@ -1,11 +1,12 @@
 import { ItemSlot } from '@app/components/feature/items/ItemSlot';
 import type { DisplayItem } from '@app/components/feature/items/itemPresentation';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
 import { InkTag } from '@app/components/ui/InkTag';
-import type { ResourceOperation } from '@daoyou/game-domain/resources';
-import type { DungeonSettlement as DungeonSettlementType } from '@daoyou/game-domain/dungeon';
 import { getResourceTypeInfo } from '@daoyou/game-content/presentation/concepts';
+import type { DungeonSettlement as DungeonSettlementType } from '@daoyou/game-domain/dungeon';
+import type { ResourceOperation } from '@daoyou/game-domain/resources';
 import { dungeonRewardItemName } from '@daoyou/game-rules/rewards/dungeon';
 
 interface DungeonSettlementProps {
@@ -109,7 +110,8 @@ export function DungeonSettlement({
                 {gain.info.label}
               </div>
               <div className="mt-1 text-lg font-semibold">
-                {gain.info.icon} +{gain.value.toLocaleString()}
+                <GameIcon value={gain.info.icon} /> +
+                {gain.value.toLocaleString()}
               </div>
             </div>
           ))

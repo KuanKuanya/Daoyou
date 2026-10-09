@@ -1,6 +1,7 @@
 import { BodyCultivationInspectionSection } from '@app/components/feature/cultivator/BodyCultivationPanels';
 import { LingGenMini } from '@app/components/func/LingGen';
 import { InkBadge } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
 import type { CultivatorInspectionData } from '@daoyou/contracts/player';
 import type { ReactNode } from 'react';
@@ -39,7 +40,9 @@ export function CultivatorInspectionModal({
     >
       <div className="space-y-5">
         <section className="space-y-3 text-center">
-          <div className="text-4xl">👁️</div>
+          <div className="text-4xl">
+            <GameIcon value="icon:beast-skill-perception" />
+          </div>
           <div className="space-y-2">
             <h4 className="text-ink text-xl font-semibold">
               {cultivator.name}
@@ -75,7 +78,11 @@ export function CultivatorInspectionModal({
         ) : null}
 
         <BodyCultivationInspectionSection cultivator={cultivator} />
-        {cultivator.combatPanel ? <CultivatorAttributeTable cultivator={{ ...cultivator, combatPanel: cultivator.combatPanel }} /> : null}
+        {cultivator.combatPanel ? (
+          <CultivatorAttributeTable
+            cultivator={{ ...cultivator, combatPanel: cultivator.combatPanel }}
+          />
+        ) : null}
         <CultivatorLoadoutSections build={cultivator.build} />
         {mode === 'cultivator' ? (
           <CultivatorFateSection cultivator={cultivator} />

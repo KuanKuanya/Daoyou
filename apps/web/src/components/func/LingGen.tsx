@@ -1,11 +1,12 @@
 import { GameSceneSection } from '@app/components/game-shell/GameSceneSection';
 import { InkSection } from '@app/components/layout';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkBadge } from '@app/components/ui/InkBadge';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkList, InkListItem } from '@app/components/ui/InkList';
 import { ELEMENT_VALUES } from '@daoyou/constants/elements';
-import type { SpiritualRoot } from '@daoyou/game-domain/character';
 import { getElementInfo } from '@daoyou/game-content/presentation/concepts';
+import type { SpiritualRoot } from '@daoyou/game-domain/character';
 import { ReactNode } from 'react';
 import { useInkUI } from '../providers/useInkUI.js';
 
@@ -56,9 +57,7 @@ export function LingGen({
         灵根越纯净（强度越高），修炼速度越快，感应灵气越容易。
       </p>
       <p>单一属性的天灵根修炼速度最快，多属性杂灵根则较慢。</p>
-      <p>
-        灵根有共有 {ELEMENT_VALUES.join('、')}, 其中 风、雷、冰为变异灵根
-      </p>
+      <p>灵根有共有 {ELEMENT_VALUES.join('、')}, 其中 风、雷、冰为变异灵根</p>
     </div>
   );
 
@@ -89,7 +88,8 @@ export function LingGen({
           title={
             <div className="flex items-center">
               <span>
-                {getElementInfo(root.element).icon} {root.element}
+                <GameIcon value={getElementInfo(root.element).icon} />{' '}
+                {root.element}
               </span>
               <InkBadge tier={root.grade} />
             </div>
@@ -121,7 +121,9 @@ export function LingGen({
       <InkSection title={title}>
         <>
           {content}
-          <InkButton onClick={showRootHelp}>💡 灵根说明</InkButton>
+          <InkButton onClick={showRootHelp}>
+            <GameIcon value="icon:ui-lantern" /> 灵根说明
+          </InkButton>
         </>
       </InkSection>
     );

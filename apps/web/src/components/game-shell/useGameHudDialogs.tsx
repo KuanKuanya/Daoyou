@@ -12,6 +12,7 @@ import {
   NORMAL_BREAKTHROUGH_THRESHOLD,
   PERFECT_BREAKTHROUGH_INSIGHT,
 } from '@daoyou/game-content/cultivation';
+import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
 import {
   QI_ACTION_COSTS,
   QI_DAILY_RESTORE_ITEM_LIMIT,
@@ -20,7 +21,6 @@ import {
   QI_NATURAL_RESTORE_PER_INTERVAL,
   QI_OVERFLOW_MAX,
 } from '@daoyou/game-content/qi/config';
-import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
 import { useNavigate } from 'react-router';
 import { InfoTable, StatusDetailBlock } from './GameHudDialogContent';
 import type { GameHudSnapshot } from './useGameHudModel';
@@ -282,7 +282,7 @@ export function useGameHudDialogs(
 
   const openInsightInfo = () => {
     openDialog({
-      title: `${insightInfo.icon} ${insightInfo.label}`,
+      title: insightInfo.label,
       content: (
         <div className="space-y-3 text-sm leading-7">
           <p>
@@ -318,7 +318,7 @@ export function useGameHudDialogs(
 
   const openQiInfo = () => {
     openDialog({
-      title: `${qiInfo.icon} ${qiInfo.label}`,
+      title: qiInfo.label,
       content: (
         <div className="space-y-3 text-sm leading-7">
           <p>进入秘境、闭关修行、突破与造物时需要消耗的一定的天地灵气。</p>

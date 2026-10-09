@@ -1,7 +1,7 @@
 import { useQiState } from '@app/components/feature/cultivator/useQiState';
 import { MeritStamp } from '@app/components/feature/merit/MeritStamp';
-import { getSectIdentityLabels } from '@app/components/feature/sect/sectIdentityDisplay';
 import { useActiveSectContextQuery } from '@app/components/feature/sect/sectContext';
+import { getSectIdentityLabels } from '@app/components/feature/sect/sectIdentityDisplay';
 import { useSectIdentityDialog } from '@app/components/feature/sect/useSectIdentityDialog';
 import Link from '@app/components/router/AppLink';
 import { InkHorizontalScroll } from '@app/components/ui';
@@ -25,6 +25,7 @@ function formatSpiritStones(value: number): string {
 type HudStatusItem = {
   key: string;
   label?: string;
+  icon?: string;
   value: ReactNode;
   tone?: 'default' | 'qi' | 'wealth';
   onClick?: () => void;
@@ -77,20 +78,23 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
     },
     {
       key: 'qi',
-      label: `${qiInfo.icon} ${qiInfo.label}`,
+      label: qiInfo.label,
+      icon: qiInfo.icon,
       value: qiDisplay,
       tone: 'qi',
       onClick: openQiInfo,
     },
     {
       key: 'spirit-stones',
-      label: `${spiritStonesInfo.icon} ${spiritStonesInfo.label}`,
+      label: spiritStonesInfo.label,
+      icon: spiritStonesInfo.icon,
       value: formatSpiritStones(snapshot.spiritStones),
       tone: 'wealth',
     },
     {
       key: 'reputation',
-      label: `${reputationInfo.icon} ${reputationInfo.label}`,
+      label: reputationInfo.label,
+      icon: reputationInfo.icon,
       value: formatSpiritStones(snapshot.reputation),
       tone: 'wealth',
       onClick: () => {
@@ -187,6 +191,7 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
             <HudTag
               key={item.key}
               label={item.label}
+              icon={item.icon}
               value={item.value}
               tone={item.tone}
               onClick={item.onClick}
@@ -206,6 +211,7 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
                 key={item.key}
                 className="max-w-[13rem] shrink-0 whitespace-nowrap"
                 label={item.label}
+                icon={item.icon}
                 value={item.value}
                 tone={item.tone}
                 onClick={item.onClick}

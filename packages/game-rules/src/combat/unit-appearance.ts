@@ -1,10 +1,9 @@
 import type {
-  CombatV6UnitAppearance,
   CombatV6TrainingPlayerInput,
+  CombatV6UnitAppearance,
 } from '@daoyou/game-domain/combat';
 
 import { BEAST_SPECIES } from '@daoyou/game-content/beasts';
-
 
 export function beastAppearance(
   speciesId: string,
@@ -12,7 +11,7 @@ export function beastAppearance(
 ): CombatV6UnitAppearance {
   const species = BEAST_SPECIES.find((entry) => entry.id === speciesId);
   return {
-    icon: species?.icon ?? '🐾',
+    icon: species?.icon ?? 'icon:map-wild',
     speciesName: species?.name,
     ...(isMutant ? { isMutant: true } : {}),
   };

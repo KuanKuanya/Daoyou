@@ -1,16 +1,16 @@
-import { getRetreatQiCost } from '@daoyou/game-rules/qi';
 import { BOTTLENECK_THRESHOLD } from '@daoyou/game-content/cultivation';
-import {
-  getActiveCultivationBoostStatus,
-  getCultivationBoostPercent,
-} from '@daoyou/game-rules/consumables/cultivation';
-import { evaluateFateContext } from '@daoyou/game-rules/character/fates';
+import type { Cultivator } from '@daoyou/game-domain/character';
 import {
   getBreakthroughFocusBonus,
   getProtectMeridiansReductionPercent,
 } from '@daoyou/game-rules/alchemy';
+import { evaluateFateContext } from '@daoyou/game-rules/character/fates';
 import { isConditionStatusActive } from '@daoyou/game-rules/condition';
-import type { Cultivator } from '@daoyou/game-domain/character';
+import {
+  getActiveCultivationBoostStatus,
+  getCultivationBoostPercent,
+} from '@daoyou/game-rules/consumables/cultivation';
+import { getRetreatQiCost } from '@daoyou/game-rules/qi';
 
 type RetreatEfficiencyCultivator = Pick<
   Cultivator,
@@ -43,7 +43,9 @@ function normalizeYears(value: string | number): number {
 
 function formatSignedPercent(value: number): string {
   const percent = Number((value * 100).toFixed(1));
-  const normalized = Number.isInteger(percent) ? percent.toFixed(0) : `${percent}`;
+  const normalized = Number.isInteger(percent)
+    ? percent.toFixed(0)
+    : `${percent}`;
   return `${percent > 0 ? '+' : ''}${normalized}%`;
 }
 
@@ -77,7 +79,7 @@ export function buildRetreatEfficiencyModel(input: {
   if (boostStatus) {
     retreatTags.push({
       key: 'cultivation_boost',
-      icon: '🌿',
+      icon: 'icon:ui-spirit-herb',
       label: '养元',
       value: formatSignedPercent(getCultivationBoostPercent(boostStatus)),
       tone: 'positive',
@@ -87,7 +89,7 @@ export function buildRetreatEfficiencyModel(input: {
   if (fateContext.retreatExpMultiplier > 1.02) {
     retreatTags.push({
       key: 'fate_retreat_exp',
-      icon: '🌕',
+      icon: 'icon:ui-elixir',
       label: '静修命格',
       value: formatSignedPercent(fateContext.retreatExpMultiplier - 1),
       tone: 'positive',
@@ -97,7 +99,7 @@ export function buildRetreatEfficiencyModel(input: {
   if (breakthroughFocus) {
     breakthroughTags.push({
       key: 'breakthrough_focus',
-      icon: '🕯️',
+      icon: 'icon:ui-candle',
       label: '破境凝神',
       value: formatSignedPercent(getBreakthroughFocusBonus(breakthroughFocus)),
       tone: 'positive',
@@ -107,7 +109,7 @@ export function buildRetreatEfficiencyModel(input: {
   if (protectMeridians) {
     breakthroughTags.push({
       key: 'protect_meridians',
-      icon: '🪢',
+      icon: 'icon:beast-skill-sluggish',
       label: '护脉',
       value: `-${formatSignedPercent(
         getProtectMeridiansReductionPercent(protectMeridians),
@@ -119,7 +121,7 @@ export function buildRetreatEfficiencyModel(input: {
   if (clearMind) {
     breakthroughTags.push({
       key: 'clear_mind',
-      icon: '🪷',
+      icon: 'icon:ui-lotus',
       label: '清心',
       value:
         typeof clearMind.usesRemaining === 'number'
@@ -137,7 +139,7 @@ export function buildRetreatEfficiencyModel(input: {
   if (bottleneckActive) {
     retreatTags.push({
       key: 'bottleneck',
-      icon: '⛰️',
+      icon: 'icon:map-landmark',
       label: '瓶颈',
       value: '闭关放缓',
       tone: 'warning',

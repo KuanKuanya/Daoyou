@@ -141,7 +141,7 @@ export function YieldCard({
           title={
             <>
               <span>
-                <GameIcon value="🗺️" /> 外出历练
+                <GameIcon value="icon:ui-compass" /> 外出历练
               </span>
               {timeSinceYield >= 24 ? (
                 <InkBadge tone="danger" compact>
@@ -159,7 +159,7 @@ export function YieldCard({
             <div>
               <div className="text-ink-primary flex items-center gap-1 text-lg font-bold">
                 <span>
-                  <GameIcon value="🗺️" /> 历练收益
+                  <GameIcon value="icon:ui-compass" /> 历练收益
                 </span>
                 {timeSinceYield >= 24 && (
                   <InkBadge tone="danger">已满</InkBadge>

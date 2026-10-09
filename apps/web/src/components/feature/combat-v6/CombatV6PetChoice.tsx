@@ -27,7 +27,7 @@ export function CombatV6PetChoice({
   const appearance = (id: string) => session.display?.unitAppearances?.[id];
   const portrait = (id: string) => (
     <BeastPortrait
-      value={appearance(id)?.icon ?? '🐾'}
+      value={appearance(id)?.icon ?? 'icon:map-wild'}
       isMutant={appearance(id)?.isMutant}
     />
   );

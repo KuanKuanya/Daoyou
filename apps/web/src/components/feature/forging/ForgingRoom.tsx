@@ -10,16 +10,16 @@ import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
 import { InkInput } from '@app/components/ui/InkInput';
 import { InkTooltip } from '@app/components/ui/InkTooltip';
-import { getLevelRealmStage } from '@daoyou/game-domain/progression';
-import { daoEquipmentBaseRange } from '@daoyou/game-rules/equipment/forging';
 import { daoEquipmentTemplateOf } from '@daoyou/game-content/equipment/base';
 import { DAO_EQUIPMENT_FORGING } from '@daoyou/game-content/equipment/forging';
 import { DAO_WEAPONS } from '@daoyou/game-content/equipment/weapons';
 import {
   DAO_WEAPON_TYPES,
-  FORGE_INTENT_MAX_LENGTH,
   EQUIPMENT_ATTRIBUTE_NAMES,
+  FORGE_INTENT_MAX_LENGTH,
 } from '@daoyou/game-domain/equipment';
+import { getLevelRealmStage } from '@daoyou/game-domain/progression';
+import { daoEquipmentBaseRange } from '@daoyou/game-rules/equipment/forging';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useBeforeUnload, useBlocker } from 'react-router';
 import { ForgingFurnace } from './ForgingFurnace';
@@ -36,7 +36,7 @@ const maxBoostPercent = Number(
 const facilities: RoomActorView[] = [
   {
     id: 'furnace',
-    sigil: '🔥',
+    sigil: 'icon:earthfire-furnace',
     name: '地火器炉',
     guideAnchor: 'forge.furnace',
     identity: '铸造设施',
@@ -45,7 +45,7 @@ const facilities: RoomActorView[] = [
   },
   {
     id: 'archive',
-    sigil: '📜',
+    sigil: 'icon:ui-scroll',
     name: '道装图录',
     guideAnchor: 'forge.archive',
     identity: '图纸设施',
@@ -54,7 +54,7 @@ const facilities: RoomActorView[] = [
   },
   {
     id: 'guide',
-    sigil: '🪨',
+    sigil: 'icon:beast-skill-falling-rock',
     name: '铸器碑',
     identity: '指引设施',
     responsibility: '辨灵材之性，知铸器之理',

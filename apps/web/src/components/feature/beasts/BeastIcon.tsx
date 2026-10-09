@@ -11,6 +11,9 @@ export function BeastIcon({
   ...props
 }: Omit<GameIconProps, 'value'> & { speciesId: string; isMutant?: boolean }) {
   return (
-    <BeastPortrait value={speciesIcons.get(speciesId) ?? '🐾'} {...props} />
+    <BeastPortrait
+      value={speciesIcons.get(speciesId) ?? 'icon:map-wild'}
+      {...props}
+    />
   );
 }

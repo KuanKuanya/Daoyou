@@ -34,7 +34,7 @@ export function MailAttachmentSlot({
         item={{
           name: attachment.name,
           quantity: attachment.quantity,
-          icon: species?.icon ?? '🐾',
+          icon: species?.icon ?? 'icon:map-wild',
           color: 'text-ink',
         }}
         badge={beast.isMutant ? '变异' : undefined}
@@ -48,7 +48,7 @@ export function MailAttachmentSlot({
   );
   const facts = isVault ? attachment.data : undefined;
   const tier = facts && ('rank' in facts ? facts.rank : facts.quality);
-  const icon = getGameConceptIcon(attachment.type) || '🎁';
+  const icon = getGameConceptIcon(attachment.type) || 'icon:ui-treasure-chest';
   const color = tier ? tierColorMap[tier] : 'text-ink';
   const model: ItemPreviewModel = {
     title: attachment.name,

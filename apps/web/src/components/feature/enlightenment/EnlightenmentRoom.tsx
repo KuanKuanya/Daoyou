@@ -8,13 +8,13 @@ import { GameIcon } from '@app/components/ui/GameIcon';
 import { GameImage } from '@app/components/ui/GameImage';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
+import { cn } from '@app/lib/cn';
+import { REALM_VALUES } from '@daoyou/constants/realms';
 import {
   CHARACTER_MANUALS_V1,
   ENLIGHTENMENT_REALMS,
 } from '@daoyou/game-content/manuals';
-import { cn } from '@app/lib/cn';
 import { enlightenmentQualityCap } from '@daoyou/game-rules/manuals';
-import { REALM_VALUES } from '@daoyou/constants/realms';
 import { useState } from 'react';
 import { CraftInventoryPanel } from '../items/CraftInventoryPanel';
 import { InventoryItems } from '../items/InventoryItems';
@@ -257,7 +257,10 @@ export function EnlightenmentRoom({ ownerId }: { ownerId: string }) {
                       />
                     ) : (
                       <>
-                        <GameIcon value="📜" className="mx-auto text-3xl" />
+                        <GameIcon
+                          value="icon:ui-scroll"
+                          className="mx-auto text-3xl"
+                        />
                         <p className="mt-2 text-xs">义理未通</p>
                       </>
                     )}

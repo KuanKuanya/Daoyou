@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 
@@ -72,9 +71,7 @@ export function InkListItem({
         )}
       >
         {/* 标题行 */}
-        <div className="font-semibold">
-          <GameIconText>{title}</GameIconText>
-        </div>
+        <div className="font-semibold">{title}</div>
         {/* 元信息 */}
         {meta && (
           <div className="text-ink-secondary mt-1 text-[0.85rem] whitespace-pre-line">

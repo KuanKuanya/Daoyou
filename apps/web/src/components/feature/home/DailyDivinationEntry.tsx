@@ -63,7 +63,7 @@ export function DailyDivinationEntry() {
   return (
     <div className="space-y-3">
       <h2 className="text-ink flex items-center gap-2 text-sm">
-        <GameIcon value="🎲" />
+        <GameIcon value="icon:ui-divination" />
         每日占卜
       </h2>
       {record ? (

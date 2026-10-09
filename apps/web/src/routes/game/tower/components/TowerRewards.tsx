@@ -194,13 +194,13 @@ export function TowerRewards({ view }: { view: TowerView }) {
           <div className="space-y-3 text-sm leading-6">
             {preview.spiritStones > 0 ? (
               <p>
-                <GameIcon value="💰" />{' '}
+                <GameIcon value="icon:ui-spirit-stones" />{' '}
                 <span className="font-mono">{preview.spiritStones}</span> 灵石
               </p>
             ) : null}
             {preview.reputation > 0 ? (
               <p>
-                <GameIcon value="🏵️" />{' '}
+                <GameIcon value="icon:ui-merit-medal" />{' '}
                 <span className="font-mono">{preview.reputation}</span> 声望
               </p>
             ) : null}

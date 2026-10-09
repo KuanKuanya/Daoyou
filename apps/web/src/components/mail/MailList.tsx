@@ -42,7 +42,7 @@ export function MailList({ mails, onSelect }: MailListProps) {
               <div className="flex items-center gap-2">
                 {mail.type === 'reward' && !mail.isClaimed && (
                   <span className="text-lg">
-                    <GameIcon value="🎁" />
+                    <GameIcon value="icon:ui-treasure-chest" />
                   </span>
                 )}
                 {mail.type === 'reward' && mail.isClaimed && (
@@ -50,7 +50,7 @@ export function MailList({ mails, onSelect }: MailListProps) {
                 )}
                 {mail.type === 'system' && (
                   <span className="text-lg">
-                    <GameIcon value="📢" />
+                    <GameIcon value="icon:ui-bell" />
                   </span>
                 )}
                 {!mail.isRead && (

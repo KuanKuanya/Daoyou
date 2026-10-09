@@ -2,8 +2,8 @@ import { FateDetailModal } from '@app/components/feature/fates/FateDetailModal';
 import { InkBadge, InkNotice } from '@app/components/ui';
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { tierColorMap } from '@app/components/ui/inkBadgeTiers';
-import { useCultivatorIdentity } from '@app/lib/resources/player';
 import { cn } from '@app/lib/cn';
+import { useCultivatorIdentity } from '@app/lib/resources/player';
 import { getElementInfo } from '@daoyou/game-content/presentation/concepts';
 import type { Cultivator } from '@daoyou/game-domain/character';
 import { useState } from 'react';
@@ -72,7 +72,10 @@ export function CultivatorBiography() {
                   className="bg-ink/3 flex min-w-0 flex-col rounded-sm p-4"
                 >
                   <div className="flex items-center gap-2">
-                    <GameIcon value="🔮" className="size-6 text-2xl" />
+                    <GameIcon
+                      value="icon:ui-divination"
+                      className="size-6 text-2xl"
+                    />
                     <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
                       <h4
                         className={cn(
@@ -111,7 +114,7 @@ export function CultivatorBiography() {
           id="innate-biography-heading"
           className="mb-4 flex items-center gap-2 text-base font-semibold"
         >
-          <GameIcon value="📜" />
+          <GameIcon value="icon:ui-scroll" />
           人物志
         </h3>
         <dl className="bg-ink/3 grid grid-cols-2 gap-x-6 gap-y-4 rounded-sm p-4">

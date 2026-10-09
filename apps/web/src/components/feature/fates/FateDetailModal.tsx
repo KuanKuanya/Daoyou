@@ -1,6 +1,4 @@
-import {
-  toFateDisplayModel,
-} from '@app/components/feature/fates/FateDisplayAdapter';
+import { toFateDisplayModel } from '@app/components/feature/fates/FateDisplayAdapter';
 import { FateEffectList } from '@app/components/feature/fates/FateEffectList';
 import { InkBadge, ItemShowcaseModal } from '@app/components/ui';
 import type { PreHeavenFate } from '@daoyou/game-domain/character';
@@ -24,7 +22,7 @@ export function FateDetailModal({
     <ItemShowcaseModal
       isOpen={isOpen}
       onClose={onClose}
-      icon="🔮"
+      icon="icon:ui-divination"
       name={model.name}
       badges={
         model.quality

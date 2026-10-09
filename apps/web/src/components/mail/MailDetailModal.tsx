@@ -1,7 +1,6 @@
 import { InkModal } from '@app/components/layout';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { GameIcon } from '@app/components/ui/GameIcon';
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkNotice } from '@app/components/ui/InkNotice';
 import { apiFetch } from '@app/lib/api/fetch';
@@ -78,7 +77,7 @@ export function MailDetailModal({
         {hasAttachments && (
           <div className="space-y-2 pt-2">
             <h4 className="text-ink-secondary text-sm font-bold">
-              <GameIcon value="🎁" /> 附赠物品
+              <GameIcon value="icon:ui-treasure-chest" /> 附赠物品
             </h4>
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {mail.attachments?.map((item, idx) => (
@@ -101,9 +100,13 @@ export function MailDetailModal({
               onClick={handleClaim}
               disabled={isClaiming}
             >
-              <GameIconText>
-                {isClaiming ? '收取中...' : '🎁 收下心意'}
-              </GameIconText>
+              {isClaiming ? (
+                '收取中...'
+              ) : (
+                <>
+                  <GameIcon value="icon:ui-treasure-chest" /> 收下心意
+                </>
+              )}
             </InkButton>
           ) : (
             <InkButton onClick={onClose}>阅毕</InkButton>

@@ -1,14 +1,12 @@
 import { tierColorMap } from '@app/components/ui/inkBadgeTiers';
-import { beastSkillPresentation } from '@daoyou/game-rules/beasts/presentation';
-import { getLevelRealmStage } from '@daoyou/game-domain/progression';
+import { REALM_VALUES } from '@daoyou/constants/realms';
 import {
+  BEAST_REFINEMENT,
   BEAST_SKILL_CONTENT,
   BEAST_SUPERIOR_BOOK_SKILL_IDS,
-  BEAST_REFINEMENT,
 } from '@daoyou/game-content/beasts';
 import { BEAST_REJUVENATION } from '@daoyou/game-content/items/beasts';
 import { CHARACTER_MANUALS_V1 } from '@daoyou/game-content/manuals';
-import { manualEffectLines } from '@daoyou/game-rules/manuals/presentation';
 import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
 import {
   MATERIAL_TYPE_NAMES,
@@ -16,7 +14,9 @@ import {
   SeedPreviewFactsSchema,
   materialFactsOf,
 } from '@daoyou/game-domain/inventory';
-import { REALM_VALUES } from '@daoyou/constants/realms';
+import { getLevelRealmStage } from '@daoyou/game-domain/progression';
+import { beastSkillPresentation } from '@daoyou/game-rules/beasts/presentation';
+import { manualEffectLines } from '@daoyou/game-rules/manuals/presentation';
 import { field, lines, quantity } from './helpers';
 import type { ItemAdapter } from './types';
 
@@ -24,16 +24,13 @@ export const blueprintAdapter: ItemAdapter = (item, def) => {
   const realm = getLevelRealmStage(def.level!).realm;
   return {
     summary: {
-      icon: '📜',
+      icon: 'icon:ui-scroll',
       color: tierColorMap[realm],
       tier: realm,
       type: '道装图纸',
     },
     preview: (options) => ({
-      header: [
-        field('类型', '道装图纸'),
-        quantity(item, options),
-      ],
+      header: [field('类型', '道装图纸'), quantity(item, options)],
       sections: [],
       description: `记载${EQUIPMENT_SLOT_NAMES[def.slot!]}铸造之法的图纸，铸造时消耗1张。`,
     }),
@@ -45,13 +42,13 @@ export const materialAdapter: ItemAdapter = (item) => {
   return {
     summary: {
       icon: {
-        herb: '🌿',
+        herb: 'icon:ui-spirit-herb',
         ore: 'icon:item-spirit-ore',
         tcdb: 'icon:item-heavenly-treasure',
         aux: 'icon:item-crafting-aux',
         monster: 'icon:item-beast-material',
-        gongfa_manual: '📚',
-        skill_manual: '📖',
+        gongfa_manual: 'icon:ui-manual',
+        skill_manual: 'icon:ui-manual',
       }[facts.type],
       color: tierColorMap[facts.rank],
       tier: facts.rank,
@@ -125,10 +122,7 @@ export const manualAdapter: ItemAdapter = (item, def) => {
         {
           title: '所载功法',
           entries: lines(
-            [
-              ...manualEffectLines(manual, 1),
-              manual.description,
-            ].join('\n'),
+            [...manualEffectLines(manual, 1), manual.description].join('\n'),
           ),
         },
       ],
@@ -156,14 +150,19 @@ export const beastBookAdapter: ItemAdapter = (item, def) => {
         {
           title: '所载传承',
           entries: [
-            ...lines(skill.summary).map((line) => ({ ...line, tone: 'muted' as const })),
+            ...lines(skill.summary).map((line) => ({
+              ...line,
+              tone: 'muted' as const,
+            })),
             ...(skill.details
-              ? [{
-                  kind: 'disclosure' as const,
-                  title: '具体效果',
-                  tone: 'positive' as const,
-                  rows: lines(skill.details),
-                }]
+              ? [
+                  {
+                    kind: 'disclosure' as const,
+                    title: '具体效果',
+                    tone: 'positive' as const,
+                    rows: lines(skill.details),
+                  },
+                ]
               : []),
           ],
         },
@@ -226,9 +225,7 @@ export const rejuvenationAdapter: ItemAdapter = (item) => ({
     sections: [
       {
         title: '洗点效果',
-        entries: lines(
-          '修为归零，野生灵兽原有的点数亏损保留。',
-        ),
+        entries: lines('修为归零，野生灵兽原有的点数亏损保留。'),
       },
     ],
     description: BEAST_REJUVENATION.description,

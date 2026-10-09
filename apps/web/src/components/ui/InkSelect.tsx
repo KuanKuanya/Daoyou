@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ChangeEvent, ReactNode } from 'react';
 
@@ -44,7 +43,7 @@ export function InkSelect({
             labelClassName,
           )}
         >
-          <GameIconText>{label}</GameIconText>
+          {label}
         </span>
       )}
       <select

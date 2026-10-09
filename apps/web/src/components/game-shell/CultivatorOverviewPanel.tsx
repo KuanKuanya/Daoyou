@@ -1,5 +1,4 @@
 import { CharacterAttributesPanel } from '@app/components/feature/cultivator/CharacterAttributesPanel';
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { lazy, Suspense, useRef, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router';
 import { GameSceneLoading } from './GameSceneFrame';
@@ -87,7 +86,7 @@ export function CultivatorOverviewPanel() {
             }}
             className={`min-h-11 rounded-sm px-1 py-2 text-sm whitespace-nowrap md:min-h-12 md:px-2 ${index === activeIndex ? 'bg-ink/5 text-crimson font-semibold' : 'text-ink-secondary hover:bg-ink/5 hover:text-ink'}`}
           >
-            <GameIconText>{tab.label}</GameIconText>
+            {tab.label}
           </button>
         ))}
       </div>

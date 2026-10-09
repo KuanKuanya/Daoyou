@@ -1,6 +1,6 @@
+import type { SectPresentationTheme } from '@daoyou/game-domain/sects';
 import { describe, expect, it } from 'vitest';
 import { resolveSectPresentation } from './sectPresentation.js';
-import type { SectPresentationTheme } from '@daoyou/game-domain/sects';
 
 describe('sect presentation affairs room', () => {
   it('provides one default NPC for every task kind', () => {
@@ -75,7 +75,7 @@ describe('sect presentation affairs room', () => {
       id: 'sample-spirit-vein',
       name: '坤元地脉',
       greeting: '地脉沉静。',
-      sigil: '⛏️',
+      sigil: 'icon:beast-skill-mountain-breaker',
       appearance: 'facility',
       identity: '宗门设施',
       responsibility: '查看设施等级、灵石收益并进行灵矿采掘。',
@@ -121,7 +121,7 @@ describe('sect presentation affairs room', () => {
       ),
     ).toMatchObject({
       name: '坤元地脉',
-      sigil: '⛏️',
+      sigil: 'icon:beast-skill-mountain-breaker',
       appearance: 'facility',
       conversation: { renderer: 'sect.spirit-vein.mining' },
     });
@@ -131,7 +131,7 @@ describe('sect presentation affairs room', () => {
       ),
     ).toMatchObject({
       name: '长生圃',
-      sigil: '🌿',
+      sigil: 'icon:ui-spirit-herb',
       appearance: 'facility',
       conversation: { renderer: 'sect.herb-garden.status' },
     });

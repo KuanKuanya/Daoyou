@@ -1,12 +1,12 @@
 import { itemPresentation } from '@app/components/feature/items/itemPresentation';
 import { ItemSlot } from '@app/components/feature/items/ItemSlot';
 import { GameIcon } from '@app/components/ui/GameIcon';
+import type { RealmType } from '@daoyou/constants/realms';
 import { BEAST_SUPERIOR_BOOK_SKILL_IDS } from '@daoyou/game-content/beasts';
-import { itemDefinition } from '@daoyou/game-rules/inventory';
 import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
+import { itemDefinition } from '@daoyou/game-rules/inventory';
 import { HUNT_DROP_POOL } from '@daoyou/game-rules/rewards/hunt';
 import { HUNT_MATERIAL_QUALITY_CHANCE_BY_REALM } from '@daoyou/game-rules/rewards/materials';
-import type { RealmType } from '@daoyou/constants/realms';
 import { useState } from 'react';
 
 const bookEntries = HUNT_DROP_POOL.groups.find((g) => g.id === 'book')!.entries;
@@ -65,7 +65,7 @@ export function HuntRewardPreview({ realm }: { realm: RealmType }) {
           <ItemSlot
             className="w-full"
             emptyLabel="灵材"
-            emptyIcon="💎"
+            emptyIcon="icon:ui-spirit-stones"
             badge={`×${materialCount}`}
             selected={showMaterials}
             onQuickAction={() => setShowMaterials((shown) => !shown)}

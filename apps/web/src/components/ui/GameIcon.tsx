@@ -1,6 +1,5 @@
 import { cn } from '@app/lib/cn';
 import { GameArtwork, GameImage, type GameImagePurpose } from './GameImage';
-import { emojiIconAliases } from './icons/emojiAliases';
 import { iconRegistry } from './icons/registry';
 
 export interface GameIconProps {
@@ -11,7 +10,7 @@ export interface GameIconProps {
   purpose?: GameImagePurpose;
 }
 
-/** Registered images and legacy emoji aliases; size follows the font. */
+/** Registered images or literal symbols; size follows the font. */
 export function GameIcon({
   value,
   className,
@@ -57,8 +56,4 @@ export function GameIcon({
 
 /** Canvas renderers share the same registered assets without parsing icon values. */
 GameIcon.resolveSource = (value: string): string | undefined =>
-  iconRegistry.get(
-    value.startsWith('icon:')
-      ? value.slice(5)
-      : (emojiIconAliases.get(value.replace(/\uFE0F/g, '')) ?? ''),
-  );
+  value.startsWith('icon:') ? iconRegistry.get(value.slice(5)) : undefined;

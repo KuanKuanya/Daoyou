@@ -6,7 +6,7 @@
     {
       "id": "physical_power",
       "name": "强攻",
-      "icon": "💪",
+      "icon": "icon:beast-skill-strength",
       "label": "人物物理攻击",
       "maxStacks": 3,
       "effect": {
@@ -18,7 +18,7 @@
     {
       "id": "spell_power",
       "name": "灵威",
-      "icon": "🔮",
+      "icon": "icon:ui-divination",
       "label": "人物法术攻击",
       "maxStacks": 3,
       "effect": {
@@ -30,7 +30,7 @@
     {
       "id": "guard",
       "name": "坚守",
-      "icon": "🛡️",
+      "icon": "icon:beast-skill-defense",
       "label": "人物双防",
       "maxStacks": 3,
       "effect": {
@@ -42,7 +42,7 @@
     {
       "id": "swiftness",
       "name": "疾行",
-      "icon": "👣",
+      "icon": "icon:beast-skill-agility",
       "label": "人物速度",
       "maxStacks": 3,
       "effect": {
@@ -54,7 +54,7 @@
     {
       "id": "beast_power",
       "name": "兽威",
-      "icon": "🐾",
+      "icon": "icon:map-wild",
       "label": "灵兽双攻",
       "maxStacks": 3,
       "effect": {

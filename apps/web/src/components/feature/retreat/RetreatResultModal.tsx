@@ -1,7 +1,6 @@
 import { InkModal } from '@app/components/layout';
 import { InkButton, InkIdentifyCelebration } from '@app/components/ui';
 import { GameIcon } from '@app/components/ui/GameIcon';
-import { GameIconText } from '@app/components/ui/GameIconText';
 import type { RetreatResultData } from '@daoyou/contracts/retreat';
 import {
   getAttributeInfo,
@@ -126,7 +125,7 @@ function CultivationResultContent({
   return (
     <div className="border-ink/10 space-y-3 border border-dashed bg-[rgba(255,252,245,0.78)] p-4 text-sm leading-7">
       <p className="text-ink text-base font-medium">
-        <GameIcon value="🌱" /> 修炼有成
+        <GameIcon value="icon:ui-spirit-herb" /> 修炼有成
       </p>
       <p>修为增长：+{Number(summary.exp_gained)}</p>
       <p>当前进度：{format('.2f')(summary.progress)}%</p>
@@ -142,13 +141,14 @@ function CultivationResultContent({
 
       {summary.epiphany_triggered ? (
         <p className="text-gold">
-          <GameIcon value="✨" /> 触发顿悟！修为翻倍，感悟大增！
+          <GameIcon value="icon:beast-skill-auspicious-vitality" />{' '}
+          触发顿悟！修为翻倍，感悟大增！
         </p>
       ) : null}
 
       {summary.bottleneck_entered ? (
         <p className="text-wood">
-          <GameIcon value="⚠️" />{' '}
+          <GameIcon value="icon:ui-warning" />{' '}
           已入瓶颈期，闭关效率降低。建议通过副本、战斗等方式寻求突破。
         </p>
       ) : null}
@@ -193,9 +193,14 @@ function BreakthroughResultContent({
   return (
     <div className="border-ink/10 space-y-3 border border-dashed bg-[rgba(255,252,245,0.78)] p-4 text-sm leading-7">
       <p className="text-ink text-base font-medium">
-        <GameIconText>
-          {summary.success ? '🌅 突破成功！' : '☁️ 冲关失败'}
-        </GameIconText>
+        <GameIcon
+          value={
+            summary.success
+              ? 'icon:beast-skill-auspicious-vitality'
+              : 'icon:beast-skill-spell-fluctuation'
+          }
+        />{' '}
+        {summary.success ? '突破成功！' : '冲关失败'}
       </p>
 
       <div className="border-teal/25 bg-bgpaper/60 space-y-3 border border-dashed p-3">
@@ -244,7 +249,8 @@ function BreakthroughResultContent({
 
           {summary.inner_demon_triggered ? (
             <p className="text-crimson font-medium">
-              <GameIcon value="⚠️" /> 屡战屡败，已生心魔！下次突破成功率将降低
+              <GameIcon value="icon:ui-warning" />{' '}
+              屡战屡败，已生心魔！下次突破成功率将降低
               <span className="ml-1 text-xs opacity-80">
                 （可通过副本、战斗等历练消除）
               </span>

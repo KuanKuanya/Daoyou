@@ -53,7 +53,7 @@ type LoadingState = 'idle' | 'loading' | 'loaded';
 
 type RankingTab = 'battle' | 'elixir' | 'wealth';
 const REPUTATION_INFO = getGameConceptInfo('reputation');
-const REPUTATION_LABEL = `${REPUTATION_INFO.icon} ${REPUTATION_INFO.label}`;
+const REPUTATION_LABEL = REPUTATION_INFO.label;
 
 function resolveRealm(value?: string | null): RealmType {
   return REALM_VALUES.includes(value as RealmType)

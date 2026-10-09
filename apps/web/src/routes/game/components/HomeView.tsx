@@ -9,17 +9,18 @@ import {
 } from '@app/components/game-shell/GameSceneFrame';
 import { GameSceneSection } from '@app/components/game-shell/GameSceneSection';
 import { InkButton, InkNotice } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { useTaskList } from '@app/lib/hooks/useTaskList';
 import { useCultivatorProgress } from '@app/lib/resources/player';
 import { useStory } from '@app/lib/story/useStory';
 import { findCurrentMajorBreakthroughTask } from '@app/lib/tasks/taskClient';
 import { getBodyCultivationSummary } from '@daoyou/game-rules/body-cultivation/progress';
-import { getNextMajorRealm } from '@daoyou/game-rules/consumables/breakthrough';
 import {
+  getConditionStatusTemplate,
   getPillToxicityStage,
   isConditionStatusActive,
-  getConditionStatusTemplate,
 } from '@daoyou/game-rules/condition';
+import { getNextMajorRealm } from '@daoyou/game-rules/consumables/breakthrough';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 function calculateYieldHours(lastYieldAt: Date | string | undefined) {
@@ -200,7 +201,11 @@ export function HomeView() {
     urgentItems.push(
       <HomeUrgentRow
         key="major-breakthrough-task"
-        title={<span className="text-crimson">⚡ 突破境界</span>}
+        title={
+          <span className="text-crimson">
+            <GameIcon value="icon:beast-skill-thunder" /> 突破境界
+          </span>
+        }
         summary={summary}
         action={
           <InkButton
@@ -226,7 +231,11 @@ export function HomeView() {
     urgentItems.push(
       <HomeUrgentRow
         key="breakthrough"
-        title={<span className="text-crimson">⚡ 突破瓶颈</span>}
+        title={
+          <span className="text-crimson">
+            <GameIcon value="icon:beast-skill-thunder" /> 突破瓶颈
+          </span>
+        }
         summary={`修为进度已达 ${Math.min(100, caveStatus?.cultivationPercent ?? 0)}%`}
         action={
           <InkButton href="/game/retreat" variant="primary">
@@ -257,7 +266,11 @@ export function HomeView() {
     urgentItems.push(
       <HomeUrgentRow
         key="resource"
-        title={<span className="text-crimson">☯ 道体状态</span>}
+        title={
+          <span className="text-crimson">
+            <GameIcon value="icon:ui-taiji" /> 道体状态
+          </span>
+        }
         summary={parts.join(' · ')}
         action={
           <InkButton href="/game/cultivator" variant="primary">

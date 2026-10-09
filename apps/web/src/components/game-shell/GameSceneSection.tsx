@@ -1,4 +1,3 @@
-import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 import { useInkUI } from '../providers/useInkUI.js';
@@ -38,7 +37,7 @@ export function GameSceneHelpButton({ help }: { help: GameSceneHelp }) {
       }
       className="border-ink/30 text-battle-muted hover:border-crimson/50 hover:text-crimson inline-flex shrink-0 items-center border-b border-dashed px-0.5 py-0 font-sans text-[0.78rem] leading-6 tracking-[0.08em] transition-colors"
     >
-      <GameIconText>{label}</GameIconText>
+      {label}
     </button>
   );
 }
@@ -66,7 +65,7 @@ export function GameSceneSection({
               aria-level={2}
               className="text-ink min-w-0 font-sans text-[clamp(1rem,0.95rem+0.35vw,1.125rem)] leading-7 font-semibold tracking-[0.04em]"
             >
-              「<GameIconText>{title}</GameIconText>」
+              「{title}」
             </span>
           ) : (
             <span />

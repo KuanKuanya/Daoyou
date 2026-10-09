@@ -1,3 +1,5 @@
+import type { ElementType } from '@daoyou/constants/elements';
+import type { Attributes } from '@daoyou/game-domain/character';
 import { CHARACTER_ATTRIBUTE_LABELS } from '@daoyou/game-domain/character';
 import type { ConditionResourceKey } from '@daoyou/game-domain/condition';
 import type {
@@ -5,9 +7,7 @@ import type {
   EquipmentSlot,
   MaterialType,
 } from '@daoyou/game-domain/inventory';
-import type { ElementType } from '@daoyou/constants/elements';
 import type { SkillType, StatusEffect } from '@daoyou/game-domain/skills';
-import type { Attributes } from '@daoyou/game-domain/character';
 
 export interface GameConceptDisplayInfo {
   label: string;
@@ -20,79 +20,79 @@ export interface GameConceptDisplayInfo {
 export const GAME_CONCEPT_DISPLAY_MAP = {
   hp: {
     label: '气血',
-    icon: '❤️',
+    icon: 'icon:beast-skill-auspicious-vitality',
     description: '当前气血、气血条、恢复气血',
   },
   mp: {
     label: '法力',
-    icon: '💧',
+    icon: 'icon:ui-spirit-water',
     description: '当前法力、法力条、法力消耗',
   },
   maxHp: {
     label: '气血上限',
-    icon: '❤️',
+    icon: 'icon:beast-skill-auspicious-vitality',
     description: '最大气血',
   },
   maxMp: {
     label: '法力上限',
-    icon: '💧',
+    icon: 'icon:ui-spirit-water',
     description: '最大法力',
   },
   hp_loss: {
     label: '气血损失',
-    icon: '🩸',
+    icon: 'icon:beast-skill-lifesteal',
     description: '气血百分比损失',
   },
   mp_loss: {
     label: '法力损失',
-    icon: '💧',
+    icon: 'icon:ui-spirit-water',
     description: '法力百分比损失',
   },
   spirit_stones: {
     label: '灵石',
-    icon: '💰',
+    icon: 'icon:ui-spirit-stones',
     description: '通用货币',
   },
   reputation: {
     label: '声望',
-    icon: '🏵️',
+    icon: 'icon:ui-merit-medal',
     description: '万界商行兑换所需的声望',
   },
   contribution: {
     label: '宗门贡献',
-    icon: '📜',
+    icon: 'icon:ui-scroll',
     description: '宗门任务与建设所得的宗门内部凭证',
   },
   cultivation_exp: {
     label: '修为',
-    icon: '🧘',
+    icon: 'icon:beast-skill-meditation',
     description: '修为进度',
   },
   comprehension_insight: {
     label: '感悟',
     shortLabel: '感悟',
-    icon: '💡',
+    icon: 'icon:ui-lantern',
     description: '突破、推演功法与神通所需的感悟',
   },
   world_qi: {
     label: '天地灵气',
     shortLabel: '灵气',
-    icon: '🍃',
+    icon: 'icon:ui-spirit-herb',
     description: '玩法行动所消耗的天地灵气',
   },
   lifespan: {
     label: '寿元',
-    icon: '🕯️',
+    icon: 'icon:ui-candle',
     description: '角色寿元',
   },
   material: {
     label: '材料',
-    icon: '📦',
+    icon: 'icon:ui-treasure-chest',
     description: '通用材料',
   },
   artifact: {
     label: '法宝',
-    icon: '🗡️',
+    icon: 'icon:ui-sword',
     description: '法宝物品',
     aliases: {
       naming: '法宝灵器',
@@ -100,55 +100,55 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   consumable: {
     label: '消耗品',
-    icon: '🌕',
+    icon: 'icon:ui-elixir',
     description: '丹药、符箓等消耗品',
   },
   battle: {
     label: '战斗',
-    icon: '⚔️',
+    icon: 'icon:ui-sword',
     description: '战斗事件或代价',
   },
   vitality: {
     label: CHARACTER_ATTRIBUTE_LABELS.vitality,
-    icon: '💪',
+    icon: 'icon:beast-skill-strength',
     shortLabel: '体',
     description:
       '气血与生命根基，提升最大气血、治疗强度，并提供少量法术防御与行动速度',
   },
   strength: {
     label: CHARACTER_ATTRIBUTE_LABELS.strength,
-    icon: '⚔️',
+    icon: 'icon:ui-sword',
     shortLabel: '力',
     description: '筋力与兵刃威势，提升物理攻击，并提供少量法术防御与行动速度',
   },
   spirit: {
     label: CHARACTER_ATTRIBUTE_LABELS.spirit,
-    icon: '⚡',
+    icon: 'icon:beast-skill-thunder',
     shortLabel: '灵',
     description:
       '灵力浑厚程度，提升法术攻击、法力和封印命中，并提供少量法术防御',
   },
   endurance: {
     label: CHARACTER_ATTRIBUTE_LABELS.endurance,
-    icon: '🦴',
+    icon: 'icon:beast-rock-boar',
     shortLabel: '骨',
     description: '筋骨坚韧程度，提升物理防御，并提供少量法术防御与行动速度',
   },
   speed: {
     label: CHARACTER_ATTRIBUTE_LABELS.speed,
-    icon: '🦶',
+    icon: 'icon:beast-skill-agility',
     shortLabel: '身',
     description: '身形腾挪与步法根基，影响闪避、命中与行动速度',
   },
   willpower: {
     label: CHARACTER_ATTRIBUTE_LABELS.willpower,
-    icon: '👁️',
+    icon: 'icon:beast-skill-perception',
     shortLabel: '识',
     description: '神魂与意志强度，提升法术防御、法力、治疗强度和封印抵抗',
   },
   gongfa: {
     label: '功法',
-    icon: '📖',
+    icon: 'icon:ui-manual',
     description: '功法产品',
     aliases: {
       naming: '功法典籍',
@@ -156,7 +156,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   skill: {
     label: '神通',
-    icon: '📜',
+    icon: 'icon:ui-scroll',
     description: '神通产品',
     aliases: {
       naming: '神通招式',
@@ -164,77 +164,77 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   consumable_pill: {
     label: '丹药',
-    icon: '🌕',
+    icon: 'icon:ui-elixir',
     description: '丹药消耗品',
   },
   consumable_talisman: {
     label: '符箓',
-    icon: '📜',
+    icon: 'icon:ui-scroll',
     description: '符箓消耗品',
   },
   material_herb: {
     label: '灵药',
-    icon: '🌿',
+    icon: 'icon:ui-spirit-herb',
   },
   material_ore: {
     label: '矿石',
-    icon: '🪨',
+    icon: 'icon:beast-skill-falling-rock',
   },
   material_monster: {
     label: '妖兽材料',
-    icon: '🐉',
+    icon: 'icon:beast-yinglong',
   },
   material_tcdb: {
     label: '天材地宝',
-    icon: '💎',
+    icon: 'icon:ui-spirit-stones',
   },
   material_aux: {
     label: '特殊辅料',
-    icon: '💧',
+    icon: 'icon:ui-spirit-water',
   },
   material_gongfa_manual: {
     label: '功法典籍',
-    icon: '📖',
+    icon: 'icon:ui-manual',
   },
   material_skill_manual: {
     label: '神通秘术',
-    icon: '📜',
+    icon: 'icon:ui-scroll',
   },
   element_metal: {
     label: '金',
-    icon: '⚔️',
+    icon: 'icon:ui-sword',
   },
   element_wood: {
     label: '木',
-    icon: '🌿',
+    icon: 'icon:ui-spirit-herb',
   },
   element_water: {
     label: '水',
-    icon: '💧',
+    icon: 'icon:ui-spirit-water',
   },
   element_fire: {
     label: '火',
-    icon: '🔥',
+    icon: 'icon:earthfire-furnace',
   },
   element_earth: {
     label: '土',
-    icon: '⛰️',
+    icon: 'icon:map-landmark',
   },
   element_wind: {
     label: '风',
-    icon: '🌪️',
+    icon: 'icon:beast-skill-wind-strike',
   },
   element_thunder: {
     label: '雷',
-    icon: '⚡',
+    icon: 'icon:beast-skill-thunder',
   },
   element_ice: {
     label: '冰',
-    icon: '❄️',
+    icon: 'icon:beast-skill-water-attack',
   },
   equipment_weapon: {
     label: '攻击法宝',
-    icon: '🗡️',
+    icon: 'icon:ui-sword',
     aliases: {
       intent: '武器',
       naming: '战器',
@@ -243,7 +243,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   equipment_armor: {
     label: '护身法宝',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     aliases: {
       intent: '护甲',
       naming: '护甲',
@@ -252,7 +252,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   equipment_accessory: {
     label: '辅助法宝',
-    icon: '💍',
+    icon: 'icon:ui-merit-medal',
     aliases: {
       intent: '配饰',
       naming: '玉佩',
@@ -261,73 +261,73 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   attribute_atk: {
     label: '物理攻击',
-    icon: '⚔️',
+    icon: 'icon:ui-sword',
     shortLabel: '物攻',
   },
   attribute_def: {
     label: '物理防御',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     shortLabel: '物防',
   },
   attribute_magic_atk: {
     label: '法术攻击',
-    icon: '⚡',
+    icon: 'icon:beast-skill-thunder',
     shortLabel: '法攻',
   },
   attribute_magic_def: {
     label: '法术防御',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     shortLabel: '法防',
   },
   attribute_action_speed: {
     label: '速度',
-    icon: '💨',
+    icon: 'icon:beast-skill-wind-strike',
     shortLabel: '速度',
     description: '决定战斗中的出手顺序',
   },
   attribute_crit_rate: {
     label: '暴击率',
-    icon: '🎯',
+    icon: 'icon:beast-skill-spell-critical',
     shortLabel: '暴',
   },
   attribute_crit_damage: {
     label: '暴击伤害',
-    icon: '💥',
+    icon: 'icon:beast-skill-critical',
     shortLabel: '暴伤',
   },
   attribute_damage_reduction: {
     label: '伤害减免',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     shortLabel: '减伤',
   },
   attribute_hit_rate: {
     label: '命中率',
-    icon: '🎯',
+    icon: 'icon:beast-skill-spell-critical',
     shortLabel: '命',
   },
   attribute_dodge_rate: {
     label: '闪避率',
-    icon: '🏃‍♂️',
+    icon: 'icon:beast-skill-agility',
     shortLabel: '闪避',
   },
   attribute_evasion_rate: {
     label: '闪避率',
-    icon: '🏃‍♂️',
+    icon: 'icon:beast-skill-agility',
     shortLabel: '闪避',
   },
   attribute_control_hit: {
     label: '控制命中',
-    icon: '🎯',
+    icon: 'icon:beast-skill-spell-critical',
     shortLabel: '控命',
   },
   attribute_control_resistance: {
     label: '控制抗性',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     shortLabel: '控抗',
   },
   attribute_armor_penetration: {
     label: '破防',
-    icon: '🗡️',
+    icon: 'icon:ui-sword',
     shortLabel: '破防',
     aliases: {
       detailed: '破甲',
@@ -335,7 +335,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   attribute_magic_penetration: {
     label: '法术穿透',
-    icon: '⚡',
+    icon: 'icon:beast-skill-thunder',
     shortLabel: '法穿',
     aliases: {
       compact: '法穿',
@@ -343,7 +343,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   attribute_crit_resist: {
     label: '暴击抗性',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     shortLabel: '暴抗',
     aliases: {
       detailed: '暴击韧性',
@@ -351,7 +351,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   attribute_crit_damage_reduction: {
     label: '暴伤减免',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     shortLabel: '暴减',
     aliases: {
       detailed: '暴击减伤',
@@ -359,7 +359,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   attribute_accuracy: {
     label: '命中',
-    icon: '🎯',
+    icon: 'icon:beast-skill-spell-critical',
     shortLabel: '命中',
     aliases: {
       detailed: '精准',
@@ -367,7 +367,7 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   attribute_heal_amplify: {
     label: '治疗加成',
-    icon: '💚',
+    icon: 'icon:beast-skill-auspicious-vitality',
     shortLabel: '治疗',
     aliases: {
       detailed: '治疗增强',
@@ -375,162 +375,162 @@ export const GAME_CONCEPT_DISPLAY_MAP = {
   },
   skill_type_attack: {
     label: '攻击',
-    icon: '⚔️',
+    icon: 'icon:ui-sword',
     description: '以伤害为主的直接输出神通',
   },
   skill_type_heal: {
     label: '治疗',
-    icon: '💚',
+    icon: 'icon:beast-skill-auspicious-vitality',
     description: '恢复气血或护持自身的术法',
   },
   skill_type_control: {
     label: '控制',
-    icon: '🌀',
+    icon: 'icon:beast-skill-unanticipated',
     description: '封禁、禁锢、限制对手行动的术法',
   },
   skill_type_debuff: {
     label: '削弱',
-    icon: '😈',
+    icon: 'icon:beast-skill-ghost',
     description: '削减对手战力或叠加负面状态的术法',
   },
   skill_type_buff: {
     label: '增益',
-    icon: '🌟',
+    icon: 'icon:beast-skill-auspicious-vitality',
     description: '临时强化自身或友方能力的神通',
   },
   status_burn: {
     label: '灼烧',
-    icon: '🔥',
+    icon: 'icon:earthfire-furnace',
     description: '业火缠身，每回合损失气血',
   },
   status_bleed: {
     label: '流血',
-    icon: '🩸',
+    icon: 'icon:beast-skill-lifesteal',
     description: '伤口难愈，随时间流失气血',
   },
   status_poison: {
     label: '中毒',
-    icon: '☠️',
+    icon: 'icon:beast-skill-poison',
     description: '剧毒入骨，气血与法力缓慢流逝',
   },
   status_stun: {
     label: '眩晕',
-    icon: '🌀',
+    icon: 'icon:beast-skill-unanticipated',
     description: '元神震荡，暂时无法行动',
   },
   status_silence: {
     label: '沉默',
-    icon: '🤐',
+    icon: 'icon:beast-skill-denial',
     description: '法咒受限，无法施展部分神通',
   },
   status_root: {
     label: '定身',
-    icon: '🔒',
+    icon: 'icon:beast-skill-defense',
     description: '身形被禁锢，难以移动与闪避',
   },
   status_armor_up: {
     label: '护体',
-    icon: '🛡️',
+    icon: 'icon:beast-skill-defense',
     description: '护体罡气环绕，大幅减免伤害',
   },
   status_speed_up: {
     label: '疾速',
-    icon: '🏃‍♂️',
+    icon: 'icon:beast-skill-agility',
     description: '身形如电，出手与闪避皆获加成',
   },
   status_crit_rate_up: {
     label: '会心',
-    icon: '🎯',
+    icon: 'icon:beast-skill-spell-critical',
     description: '战意如虹，暴击几率大幅提升',
   },
   status_armor_down: {
     label: '破防',
-    icon: '💔',
+    icon: 'icon:beast-skill-bloodthirsty-pursuit',
     description: '护体被破，所受伤害显著增加',
   },
   status_crit_rate_down: {
     label: '暴击降低',
-    icon: '💔',
+    icon: 'icon:beast-skill-bloodthirsty-pursuit',
     description: '暴击几率大幅降低',
   },
   status_weakness: {
     label: '虚弱',
-    icon: '😰',
+    icon: 'icon:beast-skill-mind-shatter',
     description: '元气大伤，尚待恢复',
   },
   status_minor_wound: {
     label: '轻伤',
-    icon: '🩹',
+    icon: 'icon:beast-skill-regeneration',
     description: '身负轻伤，稍有影响',
   },
   status_major_wound: {
     label: '重伤',
-    icon: '💥',
+    icon: 'icon:beast-skill-critical',
     description: '身负重伤，自然恢复减慢',
   },
   status_near_death: {
     label: '濒死',
-    icon: '☠️',
+    icon: 'icon:beast-skill-poison',
     description: '命悬一线，随时可能陨落',
   },
   status_breakthrough_focus: {
     label: '破境凝神',
-    icon: '🕯️',
+    icon: 'icon:ui-candle',
     description: '心神收束，下一次破境成功率提升',
   },
   status_protect_meridians: {
     label: '护脉',
-    icon: '🪢',
+    icon: 'icon:beast-skill-sluggish',
     description: '药力护住经脉，突破失败时降低修为损失',
   },
   status_clear_mind: {
     label: '清心',
-    icon: '🪷',
+    icon: 'icon:ui-lotus',
     description: '心境澄明，突破失败不会滋生心魔',
   },
   status_cultivation_boost: {
     label: '养元',
-    icon: '🌿',
+    icon: 'icon:ui-spirit-herb',
     description: '药力温养丹田，下一次闭关修为提升',
   },
   status_artifact_damaged: {
     label: '法宝受损',
-    icon: '💔',
+    icon: 'icon:beast-skill-bloodthirsty-pursuit',
     description: '法宝损坏，威力大减',
   },
   status_mana_depleted: {
     label: '法力枯竭',
-    icon: '💧',
+    icon: 'icon:ui-spirit-water',
     description: '法力耗尽，难以施展术法',
   },
   status_hp_deficit: {
     label: '气血不足',
-    icon: '❤️',
+    icon: 'icon:beast-skill-auspicious-vitality',
     description: '气血亏虚，行动受限',
   },
   status_scorching: {
     label: '酷热',
-    icon: '🌡️',
+    icon: 'icon:beast-skill-wildfire',
     description: '烈日当空，持续受到灼烧',
   },
   status_freezing: {
     label: '严寒',
-    icon: '❄️',
+    icon: 'icon:beast-skill-water-attack',
     description: '天寒地冻，行动迟缓',
   },
   status_toxic_air: {
     label: '瘴气',
-    icon: '☁️',
+    icon: 'icon:beast-skill-spell-fluctuation',
     description: '毒气弥漫，持续中毒',
   },
   status_formation_suppressed: {
     label: '阵法压制',
-    icon: '⛓️',
+    icon: 'icon:beast-skill-sluggish',
     description: '被阵法压制，实力受限',
   },
   status_abundant_qi: {
     label: '灵气充沛',
-    icon: '🍃',
+    icon: 'icon:ui-spirit-herb',
     description: '灵气浓郁，修炼速度提升',
   },
 } as const satisfies Record<string, GameConceptDisplayInfo>;
@@ -590,7 +590,7 @@ export function getResourceRestoreText(resource: ConditionResourceKey): string {
 }
 
 export function getResourceIcon(type: string): string {
-  return getGameConceptIcon(type) || '❔';
+  return getGameConceptIcon(type) || 'icon:ui-question';
 }
 
 export function getResourceDisplayName(type: string): string {
@@ -834,7 +834,7 @@ export const CONSUMABLE_TYPE_DISPLAY_MAP: Record<
 > = {
   丹药: getConceptInfo('consumable_pill'),
   符箓: getConceptInfo('consumable_talisman'),
-  灵果: { label: '灵果', icon: '🍑' },
+  灵果: { label: '灵果', icon: 'icon:item-spirit-fruit' },
 };
 
 export function getConsumableTypeLabel(type: ConsumableType): string {
@@ -850,7 +850,7 @@ export const MATERIAL_TYPE_DISPLAY_MAP: Record<
   MaterialType,
   MaterialTypeDisplayInfo
 > = {
-  seed: { label: '灵植种子', icon: '🌱' },
+  seed: { label: '灵植种子', icon: 'icon:ui-spirit-herb' },
   herb: getConceptInfo('material_herb'),
   ore: getConceptInfo('material_ore'),
   monster: getConceptInfo('material_monster'),

@@ -1,31 +1,31 @@
 import { tierColorMap } from '@app/components/ui/inkBadgeTiers';
-import { getLevelRealmStage } from '@daoyou/game-domain/progression';
-import {
-  daoEquipmentRequiredLevel,
-  daoFormationMaxLevel,
-} from '@daoyou/game-rules/equipment/projection';
 import { daoFormationInscriptionOf } from '@daoyou/game-content/equipment/base';
 import {
   DAO_EQUIPMENT_ARTS_V1,
   DAO_EQUIPMENT_ESSENCES_V1,
 } from '@daoyou/game-content/equipment/special';
+import { DAO_WEAPONS } from '@daoyou/game-content/equipment/weapons';
+import { CHARACTER_ATTRIBUTE_LABELS } from '@daoyou/game-domain/character';
 import {
   EQUIPMENT_ATTRIBUTE_NAMES,
   EQUIPMENT_SLOT_NAMES,
   daoWeaponTypeOf,
 } from '@daoyou/game-domain/equipment';
+import { getLevelRealmStage } from '@daoyou/game-domain/progression';
+import {
+  daoEquipmentRequiredLevel,
+  daoFormationMaxLevel,
+} from '@daoyou/game-rules/equipment/projection';
 import { InventoryEquipmentSchema } from '@daoyou/game-rules/inventory/equipment';
-import { DAO_WEAPONS } from '@daoyou/game-content/equipment/weapons';
-import { CHARACTER_ATTRIBUTE_LABELS } from '@daoyou/game-domain/character';
 import { field, lines } from './helpers';
 import type { ItemAdapter, PreviewLine, PreviewSection } from './types';
 const icons = {
-  weapon: '⚔️',
-  head: '👑',
-  armor: '🥋',
-  necklace: '📿',
-  belt: '🎗️',
-  footwear: '👢',
+  weapon: 'icon:ui-sword',
+  head: 'icon:ui-crown',
+  armor: 'icon:ui-armor',
+  necklace: 'icon:ui-necklace',
+  belt: 'icon:ui-belt',
+  footwear: 'icon:ui-boots',
 };
 const signed = (value: number) => `${value >= 0 ? '+' : ''}${value}`;
 function equipmentSections(
@@ -50,25 +50,35 @@ function equipmentSections(
         entries: rows.map((row) => ({ kind: 'line', ...row })),
       });
   }
-  const formationRows: PreviewLine[] = equipment.formationInscriptions.flatMap((formation, index) => {
-    if (!formation) return [];
-    const definition = daoFormationInscriptionOf(formation.patternId)!;
-    return [{
-      label: `第${index + 1}孔`,
-      value: `${definition.name} · ${formation.level}级`,
-    }, {
-      label: EQUIPMENT_ATTRIBUTE_NAMES[definition.attr],
-      value: signed(definition.valuePerLevel * formation.level),
-      numeric: true,
-      tone: 'positive' as const,
-    }];
-  });
+  const formationRows: PreviewLine[] = equipment.formationInscriptions.flatMap(
+    (formation, index) => {
+      if (!formation) return [];
+      const definition = daoFormationInscriptionOf(formation.patternId)!;
+      return [
+        {
+          label: `第${index + 1}孔`,
+          value: `${definition.name} · ${formation.level}级`,
+        },
+        {
+          label: EQUIPMENT_ATTRIBUTE_NAMES[definition.attr],
+          value: signed(definition.valuePerLevel * formation.level),
+          numeric: true,
+          tone: 'positive' as const,
+        },
+      ];
+    },
+  );
   if (formationRows.length)
     sections.push({
       title: '阵纹',
       entries: [
-        { kind: 'line', label: '每孔上限', value: `${daoFormationMaxLevel(equipment.equipmentLevel)}级`, numeric: true },
-        ...formationRows.map(row => ({ kind: 'line' as const, ...row })),
+        {
+          kind: 'line',
+          label: '每孔上限',
+          value: `${daoFormationMaxLevel(equipment.equipmentLevel)}级`,
+          numeric: true,
+        },
+        ...formationRows.map((row) => ({ kind: 'line' as const, ...row })),
       ],
     });
   const essences = equipment.essenceIds

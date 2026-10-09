@@ -7,7 +7,7 @@ import type { AlchemyFacilityId } from './alchemyTypes';
 export const ALCHEMY_FACILITIES = {
   furnace: {
     id: 'furnace',
-    sigil: '🔥',
+    sigil: 'icon:earthfire-furnace',
     name: '玄火丹炉',
     identity: '炼丹设施',
     responsibility: '准备材料并完成炼制',
@@ -15,7 +15,7 @@ export const ALCHEMY_FACILITIES = {
   },
   cabinet: {
     id: 'cabinet',
-    sigil: '🌿',
+    sigil: 'icon:ui-spirit-herb',
     name: '百草药柜',
     identity: '材料设施',
     responsibility: '查看和辨认炼丹材料',
@@ -23,7 +23,7 @@ export const ALCHEMY_FACILITIES = {
   },
   formulas: {
     id: 'formulas',
-    sigil: '📜',
+    sigil: 'icon:ui-scroll',
     name: '丹方玉简',
     identity: '丹方设施',
     responsibility: '查阅和管理已有丹方',
@@ -31,7 +31,7 @@ export const ALCHEMY_FACILITIES = {
   },
   guide: {
     id: 'guide',
-    sigil: '🪨',
+    sigil: 'icon:beast-skill-falling-rock',
     name: '炉理碑',
     identity: '指引设施',
     responsibility: '阅读炼丹方法与常见问题',
