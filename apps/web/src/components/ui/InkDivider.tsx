@@ -1,3 +1,4 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 
 export interface InkDividerProps {
@@ -24,7 +25,7 @@ export function InkDivider({
           className,
         )}
       >
-        {symbol.repeat(10)}
+        <GameIconText>{symbol.repeat(10)}</GameIconText>
       </div>
     );
   }

@@ -8,8 +8,8 @@ import {
   type ReactNode,
 } from 'react';
 import { itemPresentation } from './itemPresentation';
-import { type DisplayItem } from './presentation/types.js';
 import { ItemPreview } from './ItemPreview';
+import { type DisplayItem } from './presentation/types.js';
 
 export function InventoryGrid({
   children,
@@ -274,7 +274,13 @@ export function PreviewSlot({
               (onQuickAction ? 'text-ink-secondary' : 'text-ink/25'),
           )}
         >
-          {item ? <GameIcon value={item.icon} purpose="artwork" /> : emptyIcon}
+          {item ? (
+            <GameIcon value={item.icon} purpose="artwork" />
+          ) : typeof emptyIcon === 'string' && emptyIcon !== '·' ? (
+            <GameIcon value={emptyIcon} purpose="artwork" />
+          ) : (
+            emptyIcon
+          )}
         </span>
         {slotName ? (
           <span

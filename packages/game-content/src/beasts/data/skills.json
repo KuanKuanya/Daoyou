@@ -15,7 +15,7 @@
         "powerBase": 10,
         "powerPerLevel": 1
       },
-      "icon": "🔥",
+      "icon": "icon:beast-skill-spirit-flame",
       "flavorText": "以灵火攻击一个目标，造成法术伤害。"
     },
     {
@@ -248,7 +248,7 @@
         "powerBase": 10,
         "powerPerLevel": 1
       },
-      "icon": "⚡",
+      "icon": "icon:beast-skill-thunder",
       "flavorText": "以雷光攻击一个目标，造成法术伤害。"
     },
     {
@@ -263,7 +263,7 @@
         "powerBase": 10,
         "powerPerLevel": 1
       },
-      "icon": "🪨",
+      "icon": "icon:beast-skill-falling-rock",
       "flavorText": "以落岩攻击一个目标，造成法术伤害。"
     },
     {
@@ -343,7 +343,7 @@
         "chance": 0.2,
         "hpRatio": 0.6
       },
-      "icon": "🪷",
+      "icon": "icon:ui-lotus",
       "flavorText": "受到致命伤害时，有机会复生并恢复气血。"
     },
     {
@@ -356,7 +356,7 @@
         "chance": 0.3,
         "hpRatio": 1
       },
-      "icon": "🪷",
+      "icon": "icon:ui-lotus",
       "flavorText": "受到致命伤害时，有机会复生并恢复气血。"
     },
     {
@@ -521,7 +521,7 @@
         "perLevel": 0.4,
         "versusDefenseFactor": 0.8
       },
-      "icon": "💪",
+      "icon": "icon:beast-skill-strength",
       "flavorText": "物理攻击随等级提高，能够破开招架。"
     },
     {
@@ -534,7 +534,7 @@
         "perLevel": 0.55,
         "versusDefenseFactor": 0.8
       },
-      "icon": "💪",
+      "icon": "icon:beast-skill-strength",
       "flavorText": "物理攻击随等级提高，能够破开招架。"
     },
     {
@@ -551,7 +551,7 @@
         "levelsPerTarget": 30,
         "maxTargets": 3
       },
-      "icon": "🌩️",
+      "icon": "icon:beast-skill-thunderstorm",
       "flavorText": "雷光扫过敌方，造成法术伤害；等级越高，可攻击的目标越多。"
     },
     {
@@ -568,7 +568,7 @@
         "levelsPerTarget": 30,
         "maxTargets": 3
       },
-      "icon": "⛰️",
+      "icon": "icon:beast-skill-mountain-crush",
       "flavorText": "山石砸向敌方，造成法术伤害；等级越高，可攻击的目标越多。"
     },
     {
@@ -585,7 +585,7 @@
         "levelsPerTarget": 30,
         "maxTargets": 3
       },
-      "icon": "🌊",
+      "icon": "icon:beast-skill-flood",
       "flavorText": "巨浪冲向敌方，造成法术伤害；等级越高，可攻击的目标越多。"
     },
     {
@@ -670,7 +670,7 @@
         "maxDuration": 3,
         "physicalFactor": 0.8
       },
-      "icon": "🌫️",
+      "icon": "icon:beast-skill-stealth",
       "flavorText": "首次出战时隐身数回合，期间不能施法，造成的物理伤害降低。"
     },
     {
@@ -684,7 +684,7 @@
         "maxDuration": 5,
         "physicalFactor": 0.85
       },
-      "icon": "🌫️",
+      "icon": "icon:beast-skill-stealth",
       "flavorText": "首次出战时隐身数回合，期间不能施法，造成的物理伤害降低。"
     },
     {
@@ -696,7 +696,7 @@
         "type": "perception",
         "dodgeBonus": 0
       },
-      "icon": "👁️",
+      "icon": "icon:beast-skill-perception",
       "flavorText": "能看破隐身，攻击隐身目标。"
     },
     {
@@ -708,7 +708,7 @@
         "type": "perception",
         "dodgeBonus": 10
       },
-      "icon": "👁️",
+      "icon": "icon:beast-skill-perception",
       "flavorText": "能看破隐身并攻击隐身目标，自身躲避也会提高。"
     },
     {
@@ -724,7 +724,7 @@
         "mpRatio": 0.01,
         "immune": false
       },
-      "icon": "☠️",
+      "icon": "icon:beast-skill-poison",
       "flavorText": "普攻伤到目标后，有机会使其中毒，持续损失气血和法力。"
     },
     {
@@ -740,7 +740,7 @@
         "mpRatio": 0.01,
         "immune": true
       },
-      "icon": "☠️",
+      "icon": "icon:beast-skill-poison",
       "flavorText": "普攻伤到目标后，有机会使其中毒，持续损失气血和法力；自身免疫此毒。"
     },
     {

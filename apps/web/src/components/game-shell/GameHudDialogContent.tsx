@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 import type { ReactNode } from 'react';
 import type { GameHudSnapshot } from './useGameHudModel';
 
@@ -34,7 +35,10 @@ export function StatusDetailBlock({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-ink text-sm font-medium">
-            <span aria-hidden="true">{status.icon}</span> {status.label}
+            <span aria-hidden="true">
+              <GameIcon value={status.icon} />
+            </span>{' '}
+            {status.label}
           </p>
           <p className="text-ink-secondary text-xs leading-5">
             {status.shortDesc}

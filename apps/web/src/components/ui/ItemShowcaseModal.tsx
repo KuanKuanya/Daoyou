@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 /**
  * 通用物品展示弹窗
  *
@@ -47,7 +48,9 @@ export function ItemShowcaseModal({
           <div className="absolute top-0 right-0 z-10">{cornerMeta}</div>
         )}
         <div className="flex flex-col items-center gap-2 p-4 text-center">
-          <div className="mb-2 text-4xl">{icon}</div>
+          <div className="mb-2 text-4xl">
+            <GameIcon value={icon} purpose="artwork" />
+          </div>
           <h4
             className={`relative inline-flex max-w-full items-baseline text-lg font-semibold ${
               nameMark ? 'pr-7' : ''

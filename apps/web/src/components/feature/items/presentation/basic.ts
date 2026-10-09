@@ -46,10 +46,10 @@ export const materialAdapter: ItemAdapter = (item) => {
     summary: {
       icon: {
         herb: '🌿',
-        ore: '🪨',
-        tcdb: '💎',
-        aux: '🧵',
-        monster: '🦴',
+        ore: 'icon:item-spirit-ore',
+        tcdb: 'icon:item-heavenly-treasure',
+        aux: 'icon:item-crafting-aux',
+        monster: 'icon:item-beast-material',
         gongfa_manual: '📚',
         skill_manual: '📖',
       }[facts.type],
@@ -81,7 +81,7 @@ export const seedAdapter: ItemAdapter = (item) => {
     : SeedPreviewFactsSchema.parse(item.instanceData).seedPreview;
   return {
     summary: {
-      icon: '🌱',
+      icon: 'icon:item-spirit-seed',
       color: tierColorMap[plant.quality],
       tier: plant.quality,
       type: '灵种',
@@ -110,7 +110,7 @@ export const manualAdapter: ItemAdapter = (item, def) => {
   const manual = CHARACTER_MANUALS_V1.find((m) => m.id === def.manualId)!;
   return {
     summary: {
-      icon: '📗',
+      icon: 'icon:item-manual-jade',
       color: tierColorMap[manual.realm],
       tier: '',
       type: '功法玉简',
@@ -145,7 +145,7 @@ export const beastBookAdapter: ItemAdapter = (item, def) => {
   const skill = beastSkillPresentation(def.skillId!);
   return {
     summary: {
-      icon: superior ? '📕' : '📘',
+      icon: 'icon:item-beast-seal',
       color: tierColorMap[superior ? '神品' : '地品'],
       tier,
       type: '传承灵印',
@@ -179,7 +179,7 @@ export const refinementAdapter: ItemAdapter = (item, def) => {
   const color = dew.color === 'jade' ? 'text-teal' : 'text-tier-tian';
   return {
     summary: {
-      icon: '💧',
+      icon: 'icon:item-origin-dew',
       color,
       tier: '',
       type: '归元灵露',
@@ -212,7 +212,7 @@ export const refinementAdapter: ItemAdapter = (item, def) => {
 };
 export const rejuvenationAdapter: ItemAdapter = (item) => ({
   summary: {
-    icon: '🍑',
+    icon: 'icon:item-spirit-fruit',
     color: tierColorMap['天品'],
     tier: '',
     type: '灵果',

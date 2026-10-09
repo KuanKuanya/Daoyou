@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkListItem } from '@app/components/ui/InkList';
 import { InkNotice } from '@app/components/ui/InkNotice';
 import type { MailAttachment } from '@daoyou/game-domain/mail';
@@ -40,12 +41,18 @@ export function MailList({ mails, onSelect }: MailListProps) {
             title={
               <div className="flex items-center gap-2">
                 {mail.type === 'reward' && !mail.isClaimed && (
-                  <span className="text-lg">🎁</span>
+                  <span className="text-lg">
+                    <GameIcon value="🎁" />
+                  </span>
                 )}
                 {mail.type === 'reward' && mail.isClaimed && (
                   <span className="opacity-50">[已领取]</span>
                 )}
-                {mail.type === 'system' && <span className="text-lg">📢</span>}
+                {mail.type === 'system' && (
+                  <span className="text-lg">
+                    <GameIcon value="📢" />
+                  </span>
+                )}
                 {!mail.isRead && (
                   <span className="bg-crimson inline-block h-2 w-2 rounded-full" />
                 )}

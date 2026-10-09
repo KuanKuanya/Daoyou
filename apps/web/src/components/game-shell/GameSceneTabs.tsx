@@ -1,5 +1,6 @@
-import { cn } from '@app/lib/cn';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkHorizontalScroll } from '@app/components/ui/InkHorizontalScroll';
+import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 
 export interface GameSceneTabItem {
@@ -40,10 +41,10 @@ export function GameSceneTabs({
               'shrink-0 border-b-2 px-1 pb-2 text-base transition-colors',
               isActive
                 ? 'border-crimson text-crimson font-semibold'
-                : 'border-transparent text-ink-secondary hover:text-ink',
+                : 'text-ink-secondary hover:text-ink border-transparent',
             )}
           >
-            {item.label}
+            <GameIconText>{item.label}</GameIconText>
           </button>
         );
       })}

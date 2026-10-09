@@ -25,7 +25,12 @@ export const consumableAdapter: ItemAdapter = (item) => {
   };
   return {
     summary: {
-      icon: facts.type === '丹药' ? '🌕' : facts.type === '灵果' ? '🍑' : '🧧',
+      icon:
+        facts.type === '丹药'
+          ? '🌕'
+          : facts.type === '灵果'
+            ? 'icon:item-spirit-fruit'
+            : 'icon:item-talisman',
       color:
         tierColorMap[facts.spec.kind === 'talisman' ? '仙品' : facts.quality],
       tier: facts.quality,

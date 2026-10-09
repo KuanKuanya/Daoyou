@@ -1,0 +1,88 @@
+{
+  "mode": "built-in image_gen",
+  "safeMargin": 16,
+  "displaySizes": {
+    "mobile": 27.27,
+    "desktop": 31.68
+  },
+  "assets": [
+    {
+      "slot": "head",
+      "prompt": "Use case: stylized-concept. Asset: ONE default EMPTY equipment-slot placeholder icon for a traditional Chinese xianxia ink-wash browser game, shown at 27–32px. Create a simple broad readable silhouette, intentionally plain and unadorned, distinguishable from a fully colored equipped item. Hand-painted warm gray ink (#82796b) with slightly darker warm gray structural edges, large clear shapes and open spaces, restrained dry-brush texture. Monochrome gray, no saturated color, no dark black masses, no glowing or ghost effects. Center square with generous clean safe margins, complete object fills roughly 80 percent of canvas. TRUE transparent background and negative spaces, no paper or baked background. No text, lettering, frames, seals, badges, numbers, highlights, tiny ornaments, 3D, photorealism, emoji style. Subject: a plain ancient Chinese ritual head crown: one compact folded cloth cap with a thick broad arched brow band and a short raised center, clearly identifiable as headgear. No hanging pendants, jewels, horns or filigree.",
+      "output_hint": "Generated images are saved to /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623 as /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-d93ff386-120b-4c5b-9355-c7102c67525d.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source": "/Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-d93ff386-120b-4c5b-9355-c7102c67525d.png",
+      "filename": "equipment-empty-head-ink-v1.webp",
+      "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/equipment-empty-head-ink-v1.webp",
+      "width": 256,
+      "height": 256,
+      "hasAlpha": true,
+      "corners": [0, 0, 0, 0],
+      "bytes": 34574
+    },
+    {
+      "slot": "weapon",
+      "prompt": "Use case: stylized-concept. Asset: ONE default EMPTY equipment-slot placeholder icon for a traditional Chinese xianxia ink-wash browser game, shown at 27–32px. Create a simple broad readable silhouette, intentionally plain and unadorned, distinguishable from a fully colored equipped item. Hand-painted warm gray ink (#82796b) with slightly darker warm gray structural edges, large clear shapes and open spaces, restrained dry-brush texture. Monochrome gray, no saturated color, no dark black masses, no glowing or ghost effects. Center square with generous clean safe margins, complete object fills roughly 80 percent of canvas. TRUE transparent background and negative spaces, no paper or baked background. No text, lettering, frames, seals, badges, numbers, highlights, tiny ornaments, 3D, photorealism, emoji style. Subject: one simple ancient Chinese straight jian sword pointing diagonally up, broad short gray blade, unmistakable crossguard and plain handle, no tassel.",
+      "output_hint": "Generated images are saved to /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623 as /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-0189e9eb-6e68-4efb-bb72-a0fa57ea0c87.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source": "/Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-0189e9eb-6e68-4efb-bb72-a0fa57ea0c87.png",
+      "filename": "equipment-empty-weapon-ink-v1.webp",
+      "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/equipment-empty-weapon-ink-v1.webp",
+      "width": 256,
+      "height": 256,
+      "hasAlpha": true,
+      "corners": [0, 0, 0, 0],
+      "bytes": 18038
+    },
+    {
+      "slot": "belt",
+      "prompt": "Use case: stylized-concept. Asset: ONE default EMPTY equipment-slot placeholder icon for a traditional Chinese xianxia ink-wash browser game, shown at 27–32px. Create a simple broad readable silhouette, intentionally plain and unadorned, distinguishable from a fully colored equipped item. Hand-painted warm gray ink (#82796b) with slightly darker warm gray structural edges, large clear shapes and open spaces, restrained dry-brush texture. Monochrome gray, no saturated color, no dark black masses, no glowing or ghost effects. Center square with generous clean safe margins, complete object fills roughly 80 percent of canvas. TRUE transparent background and negative spaces, no paper or baked background. No text, lettering, frames, seals, badges, numbers, highlights, tiny ornaments, 3D, photorealism, emoji style. Subject: one plain Chinese waist sash folded into a broad oval belt loop, thick front band and a clearly visible simple rectangular central knot, two short cloth ends, no dangling ornaments.",
+      "output_hint": "Generated images are saved to /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623 as /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-0ecbb0d8-8d2a-4896-91b5-c8d1aaf3fe5c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source": "/Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-0ecbb0d8-8d2a-4896-91b5-c8d1aaf3fe5c.png",
+      "filename": "equipment-empty-belt-ink-v1.webp",
+      "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/equipment-empty-belt-ink-v1.webp",
+      "width": 256,
+      "height": 256,
+      "hasAlpha": true,
+      "corners": [0, 0, 0, 0],
+      "bytes": 37536
+    },
+    {
+      "slot": "necklace",
+      "prompt": "Use case: stylized-concept. Asset: ONE default EMPTY equipment-slot placeholder icon for a traditional Chinese xianxia ink-wash browser game, shown at 27–32px. Create a simple broad readable silhouette, intentionally plain and unadorned, distinguishable from a fully colored equipped item. Hand-painted warm gray ink (#82796b) with slightly darker warm gray structural edges, large clear shapes and open spaces, restrained dry-brush texture. Monochrome gray, no saturated color, no dark black masses, no glowing or ghost effects. Center square with generous clean safe margins, complete object fills roughly 80 percent of canvas. TRUE transparent background and negative spaces, no paper or baked background. No text, lettering, frames, seals, badges, numbers, highlights, tiny ornaments, 3D, photorealism, emoji style. Subject: one plain U-shaped necklace of eight large wooden prayer beads with one broad simple pendant at bottom, wide transparent central opening. No fine chain or tassel.",
+      "output_hint": "Generated images are saved to /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623 as /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-0c4e0f1a-fce4-4f60-9af6-91f8d491fe8b.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source": "/Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-0c4e0f1a-fce4-4f60-9af6-91f8d491fe8b.png",
+      "filename": "equipment-empty-necklace-ink-v1.webp",
+      "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/equipment-empty-necklace-ink-v1.webp",
+      "width": 256,
+      "height": 256,
+      "hasAlpha": true,
+      "corners": [0, 0, 0, 0],
+      "bytes": 32280
+    },
+    {
+      "slot": "armor",
+      "prompt": "Use case: stylized-concept. Asset: ONE default EMPTY equipment-slot placeholder icon for a traditional Chinese xianxia ink-wash browser game, shown at 27–32px. Create a simple broad readable silhouette, intentionally plain and unadorned, distinguishable from a fully colored equipped item. Hand-painted warm gray ink (#82796b) with slightly darker warm gray structural edges, large clear shapes and open spaces, restrained dry-brush texture. Monochrome gray, no saturated color, no dark black masses, no glowing or ghost effects. Center square with generous clean safe margins, complete object fills roughly 80 percent of canvas. TRUE transparent background and negative spaces, no paper or baked background. No text, lettering, frames, seals, badges, numbers, highlights, tiny ornaments, 3D, photorealism, emoji style. Subject: one simple traditional Chinese cultivator robe silhouette with broad short sleeves and a clearly visible crossed collar, compact complete torso, no armor plates, no decoration, no wearer.",
+      "output_hint": "Generated images are saved to /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623 as /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-2d81430c-3394-4e67-9843-182cf4fa11c9.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source": "/Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-2d81430c-3394-4e67-9843-182cf4fa11c9.png",
+      "filename": "equipment-empty-armor-ink-v1.webp",
+      "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/equipment-empty-armor-ink-v1.webp",
+      "width": 256,
+      "height": 256,
+      "hasAlpha": true,
+      "corners": [0, 0, 0, 0],
+      "bytes": 43928
+    },
+    {
+      "slot": "footwear",
+      "prompt": "Use case: stylized-concept. Asset: ONE default EMPTY equipment-slot placeholder icon for a traditional Chinese xianxia ink-wash browser game, shown at 27–32px. Create a simple broad readable silhouette, intentionally plain and unadorned, distinguishable from a fully colored equipped item. Hand-painted warm gray ink (#82796b) with slightly darker warm gray structural edges, large clear shapes and open spaces, restrained dry-brush texture. Monochrome gray, no saturated color, no dark black masses, no glowing or ghost effects. Center square with generous clean safe margins, complete object fills roughly 80 percent of canvas. TRUE transparent background and negative spaces, no paper or baked background. No text, lettering, frames, seals, badges, numbers, highlights, tiny ornaments, 3D, photorealism, emoji style. Subject: a pair of simple ancient Chinese cloth boots, broad upright cuffs and clearly curved toes, one slightly in front, no patterned embroidery or dangling ribbons.",
+      "output_hint": "Generated images are saved to /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623 as /Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-8ab04157-f1df-4ed6-aa6b-06160dfbaa01.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "source": "/Users/kuankuan/.codex/generated_images/01a115a5-3d3d-7792-9a3d-289455798623/exec-8ab04157-f1df-4ed6-aa6b-06160dfbaa01.png",
+      "filename": "equipment-empty-footwear-ink-v1.webp",
+      "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/equipment-empty-footwear-ink-v1.webp",
+      "width": 256,
+      "height": 256,
+      "hasAlpha": true,
+      "corners": [0, 0, 0, 0],
+      "bytes": 42122
+    }
+  ]
+}

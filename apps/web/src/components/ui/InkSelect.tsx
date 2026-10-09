@@ -1,10 +1,8 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ChangeEvent, ReactNode } from 'react';
 
-import {
-  inkFieldVariants,
-  type InkFieldVariantProps,
-} from './inkFieldStyles';
+import { inkFieldVariants, type InkFieldVariantProps } from './inkFieldStyles';
 
 export interface InkSelectProps extends InkFieldVariantProps {
   label?: string;
@@ -40,8 +38,13 @@ export function InkSelect({
   return (
     <label className="flex flex-col gap-1">
       {label && (
-        <span className={cn('text-ink font-semibold tracking-[0.08em]', labelClassName)}>
-          {label}
+        <span
+          className={cn(
+            'text-ink font-semibold tracking-[0.08em]',
+            labelClassName,
+          )}
+        >
+          <GameIconText>{label}</GameIconText>
         </span>
       )}
       <select

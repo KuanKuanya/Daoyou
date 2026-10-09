@@ -1,5 +1,6 @@
-import { cn } from '@app/lib/cn';
 import Link from '@app/components/router/AppLink';
+import { GameIconText } from '@app/components/ui/GameIconText';
+import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 
 export interface InkLinkProps {
@@ -26,7 +27,7 @@ export function InkLink({
         className,
       )}
     >
-      [{children}]
+      [<GameIconText>{children}</GameIconText>]
     </Link>
   );
 }

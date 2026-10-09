@@ -1,3 +1,4 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { ReactNode } from 'react';
@@ -42,7 +43,9 @@ export function InkTag({
   return (
     <span className={cn(inkTagVariants({ variant, tone }), className)}>
       <span aria-hidden="true">「</span>
-      <span>{children}</span>
+      <span>
+        <GameIconText>{children}</GameIconText>
+      </span>
       <span aria-hidden="true">」</span>
     </span>
   );

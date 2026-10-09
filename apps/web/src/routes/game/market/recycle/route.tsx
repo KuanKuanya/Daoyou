@@ -1,22 +1,28 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { InventoryItems } from '@app/components/feature/items/InventoryItems';
 import type { MaterialType } from '@app/components/feature/items/inventoryFilterModel';
 import { GameSceneFrame } from '@app/components/game-shell/GameSceneFrame';
 import { InkModal } from '@app/components/layout';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDiscreteRange } from '@app/components/ui/InkDiscreteRange';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
+import { apiFetch } from '@app/lib/api/fetch';
 import { inventoryBagResource, useInventoryBag } from '@app/lib/resources/bag';
 import { consumeResourceMutation } from '@app/lib/resources/mutations';
 import { usePlayerSession } from '@app/lib/resources/player';
 import { resourceStore } from '@app/lib/resources/store';
+import {
+  QUALITY_ORDER,
+  QUALITY_VALUES,
+  type Quality,
+} from '@daoyou/constants/qualities';
 import type { InventoryView } from '@daoyou/contracts/inventory';
 import type {
   RecycleQuote,
   RecycleResult,
   RecycleSelection,
 } from '@daoyou/contracts/recycle';
-import { recycleBlockingReason } from '@daoyou/game-rules/inventory/recycle';
+import { findItemDefinition } from '@daoyou/game-content/items';
 import {
   ConsumableFactsSchema,
   INVENTORY_MATERIAL_TYPES,
@@ -24,8 +30,7 @@ import {
   SeedFactsSchema,
   materialFactsOf,
 } from '@daoyou/game-domain/inventory';
-import { findItemDefinition } from '@daoyou/game-content/items';
-import { QUALITY_ORDER, QUALITY_VALUES, type Quality } from '@daoyou/constants/qualities';
+import { recycleBlockingReason } from '@daoyou/game-rules/inventory/recycle';
 import { useEffect, useRef, useState } from 'react';
 
 type Item = InventoryView['items'][number];
@@ -489,7 +494,7 @@ export default function MarketRecyclePage() {
               aria-hidden="true"
               className="grid size-12 shrink-0 place-items-center text-3xl"
             >
-              🧮
+              <GameIcon value="🧮" />
             </span>
             <div>
               <p className="text-ink-secondary mb-1 text-xs">掌柜</p>

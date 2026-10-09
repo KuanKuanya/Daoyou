@@ -1,4 +1,5 @@
 import Link from '@app/components/router/AppLink';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { useWorldChatFeedModel } from './useWorldChatFeedModel';
 import { getWorldChatMessageBody } from './worldChatSummary';
 
@@ -24,7 +25,7 @@ export function WorldChatPreviewBar() {
           className="hover:text-crimson flex w-full items-center gap-2 px-0 py-1.5 text-left transition"
         >
           <span aria-hidden="true" className="shrink-0 text-sm leading-none">
-            🔔
+            <GameIcon value="🔔" />
           </span>
           <div className="min-w-0 flex-1 truncate text-sm leading-6">
             {latestMessage ? (

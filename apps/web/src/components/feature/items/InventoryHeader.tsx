@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { useCultivatorCurrency } from '@app/lib/resources/player';
 import type { ReactNode } from 'react';
 
@@ -22,7 +23,9 @@ export function InventoryHeader({
             aria-live="polite"
             aria-atomic="true"
           >
-            <span aria-hidden="true">💰</span>{' '}
+            <span aria-hidden="true">
+              <GameIcon value="💰" />
+            </span>{' '}
             <span className="font-mono">
               {data?.spiritStones === undefined
                 ? '—'

@@ -1,4 +1,5 @@
 import Link from '@app/components/router/AppLink';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
 import { cn } from '@app/lib/cn';
 import {
@@ -28,7 +29,7 @@ function DockLink({
       )}
     >
       <span className="relative inline-flex items-center">
-        [{label}]
+        [<GameIconText>{label}</GameIconText>]
         {shouldShowGameDockBadge(badge) ? (
           <span className="absolute -top-0.5 -right-2 flex h-3 w-3">
             <span className="bg-crimson absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" />
@@ -123,7 +124,7 @@ export function GameBottomDock({
                       sceneId === action.id ? 'text-crimson' : '',
                     )}
                   >
-                    [{action.label}]
+                    [<GameIconText>{action.label}</GameIconText>]
                   </Link>
                 ))}
               </div>

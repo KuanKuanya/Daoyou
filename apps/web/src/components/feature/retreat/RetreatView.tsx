@@ -6,9 +6,10 @@ import {
   GameSceneTabs,
 } from '@app/components/game-shell';
 import { InkButton, InkInput, InkNotice } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { COMPREHENSION_INSIGHT_CAP } from '@daoyou/game-content/cultivation';
-import { QI_ACTION_COSTS } from '@daoyou/game-content/qi/config';
 import { getGameConceptLabel } from '@daoyou/game-content/presentation/concepts';
+import { QI_ACTION_COSTS } from '@daoyou/game-content/qi/config';
 import type { TaskInstance } from '@daoyou/game-domain/tasks';
 
 import { cn } from '@app/lib/cn';
@@ -158,14 +159,18 @@ function RetreatBuffTags({
             tag.tone === 'warning' && 'border-wood/35 text-wood',
           )}
         >
-          <span aria-hidden="true">{tag.icon}</span>
+          <span aria-hidden="true">
+            <GameIcon value={tag.icon} />
+          </span>
           <span className="truncate">{tag.label}</span>
           {tag.value ? <span className="font-mono">{tag.value}</span> : null}
         </span>
       ))}
       {emptyHint ? (
         <span className="text-ink-secondary inline-flex items-center gap-1.5 text-xs leading-5">
-          <span aria-hidden="true">🌿</span>
+          <span aria-hidden="true">
+            <GameIcon value="🌿" />
+          </span>
           <span>{emptyHint}</span>
           {showShortcuts ? (
             <>

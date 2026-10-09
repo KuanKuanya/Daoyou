@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { cn } from '@app/lib/cn';
 import { useEffect, useRef, type ReactNode } from 'react';
 
@@ -115,9 +116,9 @@ export function RoomView({
                         : 'font-heading text-[3.25rem] md:text-[3.75rem]',
                     )}
                   >
-                    {actor.sigil}
+                    <GameIcon value={actor.sigil} />
                   </span>
-                  <strong className="text-ink mt-3 min-w-0 max-w-full text-base font-normal break-words md:text-lg">
+                  <strong className="text-ink mt-3 max-w-full min-w-0 text-base font-normal break-words md:text-lg">
                     {actor.name}
                   </strong>
                   <span className="text-ink-secondary mt-1 text-xs md:text-sm">

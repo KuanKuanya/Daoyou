@@ -1,0 +1,317 @@
+[
+  {
+    "name": "ui-spirit-stones",
+    "prompt": "Use case: stylized-concept. Asset: one transparent inventory and HUD icon for a Chinese xianxia ink-wash browser game, centered standalone spirit stones currency. Subject: a tight cluster of three irregular jade spirit crystals, one dominant upright jade shard and two smaller supporting shards. Style: traditional Chinese brush ink and mineral watercolor, warm charcoal bold silhouette, muted celadon and teal washed mineral pigment, intentional dry-brush edges and a few broad interior negative spaces, restrained ancient ink-painting aesthetic. Composition: square, whole compact object occupies about 80% of canvas with even clear margin; instantly recognizable at 24 and 32 px. True transparent background including gaps. No text, no numbers, no seal, no lettering, no frame, no decorative round badge, no paper texture backdrop, no emoji look, no vector outline, no 3D lighting, no floating particles. Render only one complete icon.",
+    "originalFilename": "exec-c1859d43-ddc4-438b-9623-ee404ebbe897.png",
+    "path": "/assets/icons/ui-spirit-stones-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 52446
+  },
+  {
+    "name": "ui-scroll",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: a single ancient rolled parchment scroll unfurled diagonally, thick charcoal ink edges, aged warm ivory paper and two dark wooden rollers, no writing; compact silhouette",
+    "originalFilename": "exec-41aa6c6f-9891-4e1b-9b18-e5a1a2c3539b.png",
+    "path": "/assets/icons/ui-scroll-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 40984
+  },
+  {
+    "name": "ui-manual",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: a single closed ancient Chinese thread-bound manual with a muted indigo cloth cover and visible ivory page block, one subtle plain title slip WITHOUT ANY TEXT, bold brush silhouette",
+    "originalFilename": "exec-ca7e4816-50a6-45bd-818a-6bc04bd116d9.png",
+    "path": "/assets/icons/ui-manual-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 57882
+  },
+  {
+    "name": "ui-elixir",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: a small ancient celadon ceramic alchemy bowl containing three round ochre-gold elixir pills, one dominant pill at the front, dark charcoal rim, no writing",
+    "originalFilename": "exec-b79979eb-d463-4da4-a5fa-85a4d2a15cd1.png",
+    "path": "/assets/icons/ui-elixir-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 53254
+  },
+  {
+    "name": "ui-spirit-water",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one teardrop-shaped swirling spirit-water droplet, dark charcoal ink outer curl and muted mineral azurite blue interior, large negative space, water shape unmistakable",
+    "originalFilename": "exec-18d68c66-ec8f-4d3e-a01a-0c14b4228d13.png",
+    "path": "/assets/icons/ui-spirit-water-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 38890
+  },
+  {
+    "name": "ui-sword",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: a single ancient Chinese straight jian sword, charcoal steel blade angled from lower left to upper right, plain short crossguard, muted cinnabar-red tassel tied to the hilt; complete blade, strong clear silhouette",
+    "originalFilename": "exec-a08980d5-5c56-46db-af75-92cb55acd4c9.png",
+    "path": "/assets/icons/ui-sword-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 27456
+  },
+  {
+    "name": "ui-treasure-chest",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: a small closed ancient wooden treasure chest with dark iron fittings and one muted ochre-brass latch, three-quarter view, compact wide shape, no coins spilling",
+    "originalFilename": "exec-2406cecc-71db-4ed3-9a38-cbe176cbca6d.png",
+    "path": "/assets/icons/ui-treasure-chest-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 57244
+  },
+  {
+    "name": "ui-spirit-herb",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one living medicinal sprig with three broad jade-green leaves and a short dark stem, subtly curved lively brushwork, elegant compact silhouette",
+    "originalFilename": "exec-66c181de-bdef-4f82-a2e0-eebbff34ba1a.png",
+    "path": "/assets/icons/ui-spirit-herb-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 33728
+  },
+  {
+    "name": "ui-merit-medal",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one antique jade-and-bronze merit medallion suspended by a short red cord, broad circular jade disc with a large truly transparent center hole, charcoal ink edges and restrained ochre and celadon pigment, no inscriptions",
+    "originalFilename": "exec-c8500f87-d788-4295-9b51-259f63f35709.png",
+    "path": "/assets/icons/ui-merit-medal-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 48128
+  },
+  {
+    "name": "ui-lotus",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one fully open lotus flower viewed slightly from above, broad warm charcoal petal outlines and muted cinnabar-pink wash with an ochre seed center, compact balanced radial silhouette, only a few large petals",
+    "originalFilename": "exec-3c247d94-6a41-4590-94dd-d3ae2ff2b9b6.png",
+    "path": "/assets/icons/ui-lotus-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 51360
+  },
+  {
+    "name": "ui-bell",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one ancient bronze hanging temple bell, broad dark charcoal arching body, warm ochre mineral wash, small clapper visible below, a simple short hanger above, no writing",
+    "originalFilename": "exec-af1a558a-6da4-463c-ad3f-41b86caf1d26.png",
+    "path": "/assets/icons/ui-bell-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 45714
+  },
+  {
+    "name": "ui-letter",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one folded ivory Chinese letter sealed with a small plain cinnabar-red seal with NO markings, diagonal folded paper edges outlined in warm charcoal ink, compact flat shape",
+    "originalFilename": "exec-c0452494-10f8-419e-a8c2-236cf3a7fae9.png",
+    "path": "/assets/icons/ui-letter-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 33420
+  },
+  {
+    "name": "ui-compass",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one old Chinese geomantic compass, broad octagonal ochre-brown plate with a single cinnabar directional needle and four bold charcoal cardinal tick marks, no letters or numbers, large clear structures",
+    "originalFilename": "exec-380cba21-084e-4f1c-9050-1920ff23b0e8.png",
+    "path": "/assets/icons/ui-compass-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 72916
+  },
+  {
+    "name": "ui-brush",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one thick ancient Chinese calligraphy brush angled diagonally, dark pointed ink bristles, warm brown bamboo handle, small muted red cord, complete brush",
+    "originalFilename": "exec-75af5410-7184-4a66-b7db-148404d202ce.png",
+    "path": "/assets/icons/ui-brush-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 25842
+  },
+  {
+    "name": "ui-mirror",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one ancient round bronze mirror standing at a slight angle, charcoal ink rim with muted smoky violet wash on mirror surface and a short ochre handle, no face or scenery reflection",
+    "originalFilename": "exec-3ddd820c-82b5-418a-a83c-60f3a5bce04c.png",
+    "path": "/assets/icons/ui-mirror-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 44744
+  },
+  {
+    "name": "ui-divination",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: two ancient curved wooden divination moon blocks facing one another, warm ochre pigment and bold charcoal crescent outlines, a few thick strokes indicating their separate shapes, no dice or modern crystal ball",
+    "originalFilename": "exec-652d02d5-cb74-43f6-aeb0-dd1607953136.png",
+    "path": "/assets/icons/ui-divination-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 53274
+  },
+  {
+    "name": "ui-mechanism",
+    "prompt": "Use case: stylized-concept. Generate ONE standalone transparent small UI item icon for a traditional Chinese xianxia browser game. Style: hand-painted Chinese ink wash with warm charcoal broad brush structure and restrained mineral watercolor pigments, readable bold shape and intentional dry-brush edges, closely matching an ancient ink-and-jade game aesthetic. Centered square composition, complete object occupying 75-85 percent, clean generous clear margins. True transparent background AND negative spaces. Recognizable at 24 and 32 pixels. No text, lettering, numbers, seals, frames, paper backdrop, emoji style, neon effects, photorealism, 3D render or excessive fine detail. Subject: one ancient wooden and bronze mechanism wheel with six broad dark ink teeth and a clearly open center hole, ochre wood pigment and a tiny cinnabar pin, no ornament or fine linework",
+    "originalFilename": "exec-99a51755-cfb4-47d8-9a45-d3173a5f9403.png",
+    "path": "/assets/icons/ui-mechanism-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 57414
+  },
+  {
+    "name": "beast-skill-falling-rock",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: one large angular falling boulder with two short connected downward force strokes and open gaps, broad ink facets and warm ochre accent. Single falling rock, no mountain scenery. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-6b61eebc-95b9-45fb-ad4e-d6cc0f564050.png",
+    "path": "/assets/icons/beast-skill-falling-rock-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 44542
+  },
+  {
+    "name": "beast-skill-flood",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: three large connected advancing wave crests with big open curls, sweeping horizontal ink rhythm, restrained blue green mineral pigment. Broad group flood distinct from a single water droplet or wave strike. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-65d02a84-8505-4855-823e-20704ab81d34.png",
+    "path": "/assets/icons/beast-skill-flood-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 35130
+  },
+  {
+    "name": "beast-skill-mountain-crush",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: three connected angular mountain crags split and collapsing outward from a broad central cleft, warm ink and ochre. Multiple-rock avalanche distinct from one falling boulder. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-7ffda5cf-4456-4e19-96c3-11945bea5d72.png",
+    "path": "/assets/icons/beast-skill-mountain-crush-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 63470
+  },
+  {
+    "name": "beast-skill-perception",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: a single alert upright almond eye piercing an open parted veil with two broad outward curls, restrained celadon iris. Detects hidden targets. Not a many-eyed crown and no triangle surround. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-76288f60-5603-4f4d-9bbb-39b0f08940b4.png",
+    "path": "/assets/icons/beast-skill-perception-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 38108
+  },
+  {
+    "name": "beast-skill-poison",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: a compact serpent fang mouth holding a single prominent falling green venom droplet between two curved fangs, joined broad ink structure and malachite green. Venom damage, not skull, instant death or healing. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-a744d01d-778c-42f5-82d9-987e08b4d3b2.png",
+    "path": "/assets/icons/beast-skill-poison-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 47476
+  },
+  {
+    "name": "beast-skill-spirit-flame",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: one compressed upright spear-shaped flame with charcoal broad enclosing tongues and cinnabar inner lobe. Single-target spiritual flame, not a furnace or lotus. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-05371e4f-2e3a-4a4d-87ab-d9017df8c7a4.png",
+    "path": "/assets/icons/beast-skill-spirit-flame-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 26432
+  },
+  {
+    "name": "beast-skill-stealth",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: a recognizable beast face half concealed behind two broad connected smoky ink veils, one large open negative space, muted gray violet. Concealment not attack and not a ghost skull. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-cf0198ba-2b1b-495a-90de-1af88a2bba69.png",
+    "path": "/assets/icons/beast-skill-stealth-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 51818
+  },
+  {
+    "name": "beast-skill-strength",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: one massive compact clenched beast fist with a clearly rounded knuckle silhouette and short planted wrist, cinnabar accents. Physical might, not a weapon or broken shield. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-c760749e-d2a2-47ff-b07a-080327e6bf8a.png",
+    "path": "/assets/icons/beast-skill-strength-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 62842
+  },
+  {
+    "name": "beast-skill-thunder",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: one broad short crooked thunderbolt descending into a small impact notch, charcoal and restrained ochre-blue. Single-target lightning, not several branching bolts. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-e3120390-aea8-44d1-845c-64e53225e5c4.png",
+    "path": "/assets/icons/beast-skill-thunder-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 51208
+  },
+  {
+    "name": "beast-skill-thunderstorm",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: FLAT SYMBOLIC SKILL TOTEM: a compact broad storm cloud joined to three widely separated short descending lightning prongs, charcoal and restrained indigo accents. Multiple target thunder distinct from single bolt. Match the provided approved style references only for thick ink rhythm, flat symbolic structure and sparse pigment; do not copy their eye/claw/cloud motifs.",
+    "originalFilename": "exec-f651501b-dace-443c-b91f-0d5a3cf812b0.png",
+    "path": "/assets/icons/beast-skill-thunderstorm-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 43136
+  },
+  {
+    "name": "ui-armor",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: a simple ancient Chinese sleeveless lamellar chest armor, broad shoulders and clear waist, charcoal body with muted cinnabar cloth",
+    "originalFilename": "exec-a8bb0ec8-682b-4ed1-96d3-9d0a8ada922c.png",
+    "path": "/assets/icons/ui-armor-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 60416
+  },
+  {
+    "name": "ui-belt",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: a Chinese cinnabar silk waist sash tied at center, two short broad ends with a small jade buckle, complete horizontal silhouette",
+    "originalFilename": "exec-b2fa37ef-840b-4e56-b49b-7ce3a6e5f5b6.png",
+    "path": "/assets/icons/ui-belt-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 37394
+  },
+  {
+    "name": "ui-boots",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: a pair of ancient Chinese cloth boots, broad ink-blue cuffs and charcoal soles, one boot slightly in front",
+    "originalFilename": "exec-dd974163-5dbd-4eb0-b3d6-bc0408359e8c.png",
+    "path": "/assets/icons/ui-boots-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 49442
+  },
+  {
+    "name": "ui-candle",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: one short lit ivory candle in a broad ancient bronze holder, restrained ochre flame, symbolizes lifespan",
+    "originalFilename": "exec-badfe9f8-4814-484e-a987-98dc7eb533bb.png",
+    "path": "/assets/icons/ui-candle-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 41368
+  },
+  {
+    "name": "ui-crown",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: a low ancient Chinese jade and bronze cultivator head crown, broad horizontal silhouette, ochre and celadon accents, not a European king crown",
+    "originalFilename": "exec-8d188fe7-6a0b-4ed4-9070-8ee93cc89f29.png",
+    "path": "/assets/icons/ui-crown-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 34212
+  },
+  {
+    "name": "ui-lantern",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: one hanging traditional Chinese cinnabar paper lantern with a dark broad frame and short ochre tassel",
+    "originalFilename": "exec-733921c9-ffc3-4019-8c0a-1633b5a4dbce.png",
+    "path": "/assets/icons/ui-lantern-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 36078
+  },
+  {
+    "name": "ui-necklace",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: one broad U-shaped wooden Buddhist bead necklace with a celadon pendant, large clearly separate beads",
+    "originalFilename": "exec-12220693-edfa-40f0-9f66-94e3f38fb8ac.png",
+    "path": "/assets/icons/ui-necklace-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 36604
+  },
+  {
+    "name": "ui-taiji",
+    "prompt": "Use case: stylized-concept. ONE standalone icon for a Chinese xianxia game. Square, centered, full silhouette, real transparent outer background and open negative spaces. Warm charcoal broad ink-wash structure, restrained mineral watercolor accents, deliberate dry brush and large readable shapes, clean margins. Readable at 24/32/40px. No text, seals, labels, frames, paper background, 3D, photorealism, neon, fine detail or emoji style. Subject: a bold flat Chinese yin-yang motif painted in warm charcoal and ivory dry brush, two broad interlocking swirls, no frame or decoration",
+    "originalFilename": "exec-6d859fb9-f7e1-47fd-9d89-3872e99a9086.png",
+    "path": "/assets/icons/ui-taiji-ink-v1.webp",
+    "width": 256,
+    "height": 256,
+    "bytes": 55510
+  }
+]

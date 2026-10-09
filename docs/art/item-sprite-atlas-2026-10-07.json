@@ -1,0 +1,159 @@
+{
+  "mode": "built-in image_gen sprite atlas",
+  "prompt": "Create ONE production SPRITE ATLAS, a perfectly regular 3 by 3 grid of NINE DISTINCT inventory icons on a TRUE TRANSPARENT square canvas, ideally 1536x1536. Each icon strictly confined to its own one-third-width one-third-height cell. The cells have equal dimensions and NO visible grid lines, NO frames, NO labels, NO text. Each complete object is centered in its cell, fits inside the central 76 percent of that cell, and has generous fully transparent margins on all sides, so it can be mechanically cut into nine images without touching neighboring content. No shadows, no particles or detached tiny marks in gutters. Do not add extra objects or repeat icons. The supplied image is STYLE REFERENCE ONLY: match its elegant pale celadon mineral-pigment colors, warm charcoal brush contour used sparingly, refined hand-painted Chinese ink-wash treatment, broad readable silhouette and restrained detail. Do NOT reproduce that bottle in the atlas. All nine icons MUST look as if painted by the same artist and belong to that bottle's item set: comparable contour weight, same lighting direction upper left, same lightness and brush texture, simple natural three-quarter views, balanced equal visual scale, muted jade green/blue, warm ivory, pale ochre and small vermilion accents. At 24-40 pixels, distinguish each item immediately by broad shape. No black masses, no aura, no photorealism, no 3D, no emoji cartoon. Exact placement in reading order: TOP LEFT: one ripe celestial peach, muted coral pink with one green leaf and obvious peach cleft; TOP CENTER: one broad vertical pale ochre paper talisman with slightly curled lower corner, 3 thick abstract vermilion brush strokes, absolutely no readable lettering; TOP RIGHT: one small open warm ivory cloth seed pouch with three large jade green oval seeds at its base, one seed has a short tiny sprout. MIDDLE LEFT: one jade bamboo-slip manual, five broad pale celadon rectangular jade tablets tied by two teal cords, slightly fanned, no book pages; MIDDLE CENTER: one thick rounded square jade beast seal pendant with a single large abstract teal paw-shaped motif and short hanging cord, no lettering; MIDDLE RIGHT: one compact dark warm gray mineral ore lump, broad visible muted copper-red mineral seams and one pale jade-blue facet, no debris. BOTTOM LEFT: one broad curved warm ivory beast fang with one short broad gray scale plate at its base, no animal face, no blood; BOTTOM CENTER: one short thick spool of ivory silk with two natural pale wood ends, one loose short broad blue-gray thread loop at its base, no brush or needle; BOTTOM RIGHT: one rare jade blue-green crystal cluster with three large translucent crystal points on a compact pale ochre stone base, tiny mineral gold accent, no coins or pile of currency. Palette variations serve object identity while all nine share the exact same refined ink-painting UI style.",
+  "styleReference": "item-origin-dew-ink-v2.webp",
+  "grid": [3, 3],
+  "atlasSize": [1254, 1254],
+  "boundaries": {
+    "x": [0, 419, 838, 1254],
+    "y": [0, 422, 836, 1254]
+  },
+  "cutting": "Cut through measured gutters with maximum alpha at most 8/255, retaining complete visible silhouettes; trim alpha then fit within 224x224 with 16px margin.",
+  "assets": [
+    {
+      "name": "item-spirit-fruit",
+      "label": "灵果",
+      "filename": "item-spirit-fruit-ink-v2.webp",
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 419,
+        "height": 422
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 56952,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-spirit-fruit-ink-v2.webp"
+    },
+    {
+      "name": "item-talisman",
+      "label": "符箓",
+      "filename": "item-talisman-ink-v2.webp",
+      "crop": {
+        "left": 419,
+        "top": 0,
+        "width": 419,
+        "height": 422
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 46800,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-talisman-ink-v2.webp"
+    },
+    {
+      "name": "item-spirit-seed",
+      "label": "灵种",
+      "filename": "item-spirit-seed-ink-v2.webp",
+      "crop": {
+        "left": 838,
+        "top": 0,
+        "width": 416,
+        "height": 422
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 65038,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-spirit-seed-ink-v2.webp"
+    },
+    {
+      "name": "item-manual-jade",
+      "label": "功法玉简",
+      "filename": "item-manual-jade-ink-v2.webp",
+      "crop": {
+        "left": 0,
+        "top": 422,
+        "width": 419,
+        "height": 414
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 66898,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-manual-jade-ink-v2.webp"
+    },
+    {
+      "name": "item-beast-seal",
+      "label": "传承灵印",
+      "filename": "item-beast-seal-ink-v2.webp",
+      "crop": {
+        "left": 419,
+        "top": 422,
+        "width": 419,
+        "height": 414
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 59652,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-beast-seal-ink-v2.webp"
+    },
+    {
+      "name": "item-spirit-ore",
+      "label": "灵矿",
+      "filename": "item-spirit-ore-ink-v2.webp",
+      "crop": {
+        "left": 838,
+        "top": 422,
+        "width": 416,
+        "height": 414
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 61642,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-spirit-ore-ink-v2.webp"
+    },
+    {
+      "name": "item-beast-material",
+      "label": "妖兽材料",
+      "filename": "item-beast-material-ink-v2.webp",
+      "crop": {
+        "left": 0,
+        "top": 836,
+        "width": 419,
+        "height": 418
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 35444,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-beast-material-ink-v2.webp"
+    },
+    {
+      "name": "item-crafting-aux",
+      "label": "特殊辅料",
+      "filename": "item-crafting-aux-ink-v2.webp",
+      "crop": {
+        "left": 419,
+        "top": 836,
+        "width": 419,
+        "height": 418
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 57952,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-crafting-aux-ink-v2.webp"
+    },
+    {
+      "name": "item-heavenly-treasure",
+      "label": "天材地宝",
+      "filename": "item-heavenly-treasure-ink-v2.webp",
+      "crop": {
+        "left": 838,
+        "top": 836,
+        "width": 416,
+        "height": 418
+      },
+      "width": 256,
+      "height": 256,
+      "bytes": 60520,
+      "transparentCorners": true,
+      "path": "/assets/icons/item-heavenly-treasure-ink-v2.webp"
+    }
+  ],
+  "sourceFilename": "exec-ba0ed913-cb47-4146-83f1-176a505d0099.png"
+}

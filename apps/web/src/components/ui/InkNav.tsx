@@ -1,3 +1,4 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkLink } from './InkLink';
 
 export interface InkNavProps {
@@ -12,7 +13,7 @@ export function InkNav({ items, currentPath }: InkNavProps) {
         const isActive = currentPath === item.href;
         return (
           <InkLink key={item.href} href={item.href} active={isActive}>
-            {item.label}
+            <GameIconText>{item.label}</GameIconText>
           </InkLink>
         );
       })}

@@ -3,27 +3,27 @@ import { GameIcon } from '@app/components/ui/GameIcon';
 import { GameImage } from '@app/components/ui/GameImage';
 import { InkButton } from '@app/components/ui/InkButton';
 import type { InventoryView } from '@daoyou/contracts/inventory';
-import { compileDaoEquipmentSpecialLoadoutV1 } from '@daoyou/game-rules/equipment/projection';
 import type {
   DaoEquipmentInstanceV1,
   DaoEquipmentLoadoutV1,
   DaoEquipmentSlot,
 } from '@daoyou/game-domain/equipment';
 import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
+import { compileDaoEquipmentSpecialLoadoutV1 } from '@daoyou/game-rules/equipment/projection';
 
 type Item = InventoryView['items'][number];
 const columns: DaoEquipmentSlot[][] = [
   ['head', 'weapon', 'belt'],
   ['necklace', 'armor', 'footwear'],
 ];
-const icons = {
-  head: '👑',
-  weapon: '⚔️',
-  belt: '🎗️',
-  necklace: '📿',
-  armor: '🥋',
-  footwear: '👢',
-};
+const emptyIcons = {
+  head: 'icon:equipment-empty-head',
+  weapon: 'icon:equipment-empty-weapon',
+  belt: 'icon:equipment-empty-belt',
+  necklace: 'icon:equipment-empty-necklace',
+  armor: 'icon:equipment-empty-armor',
+  footwear: 'icon:equipment-empty-footwear',
+} satisfies Record<DaoEquipmentSlot, string>;
 
 export function EquipmentAction({
   item,
@@ -122,9 +122,7 @@ export function EquipmentRack({
                   <ItemSlot
                     item={item}
                     emptyLabel={EQUIPMENT_SLOT_NAMES[slot]}
-                    emptyIcon={
-                      <GameIcon value={icons[slot]} className="opacity-30" />
-                    }
+                    emptyIcon={<GameIcon value={emptyIcons[slot]} />}
                     disabled={pending}
                     badge={item ? '穿' : undefined}
                     className="block w-full"

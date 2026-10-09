@@ -1,4 +1,5 @@
 import Link from '@app/components/router/AppLink';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { ReactNode } from 'react';
@@ -66,7 +67,7 @@ export function InkButton({
   if (href && !unavailable) {
     return (
       <Link href={href} className={combinedClass}>
-        [{content}]
+        [<GameIconText>{content}</GameIconText>]
       </Link>
     );
   }
@@ -80,7 +81,7 @@ export function InkButton({
       aria-busy={pending || undefined}
       className={combinedClass}
     >
-      [{content}]
+      [<GameIconText>{content}</GameIconText>]
     </button>
   );
 }

@@ -1,4 +1,5 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkButton } from '@app/components/ui/InkButton';
 
 type CaveQuickArea = {
@@ -23,7 +24,11 @@ const CAVE_AREA_GROUPS: CaveQuickGroup[] = [
       { label: '阵纹室', icon: '🔶', href: '/game/inscriptions' },
       { label: '👊 练功房', href: '/game/training-room' },
       { label: '💧 灵眼之泉', href: '/game/inn' },
-      { label: '储藏室', icon: '📦', href: '/game/cave/storage/new?location=storage' },
+      {
+        label: '储藏室',
+        icon: '📦',
+        href: '/game/cave/storage/new?location=storage',
+      },
       { label: '灵田', icon: '🌱', href: '/game/spirit-field' },
       { label: '育兽室', icon: '🐯', href: '/game/beast-room' },
     ],
@@ -69,12 +74,14 @@ export function CaveQuickGrid() {
             {group.areas.map((area) => (
               <span
                 key={area.href}
-                data-guide={area.href === '/game/inn' ? 'cave.spring' : undefined}
+                data-guide={
+                  area.href === '/game/inn' ? 'cave.spring' : undefined
+                }
                 className="inline-flex"
               >
                 <InkButton href={area.href}>
                   {area.icon && <GameIcon value={area.icon} className="mr-1" />}
-                  {area.label}
+                  <GameIconText>{area.label}</GameIconText>
                 </InkButton>
               </span>
             ))}

@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { cn } from '@app/lib/cn';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { RoomActorAppearance } from './RoomView';
@@ -108,7 +109,7 @@ export function NpcConversation({
               : 'font-heading text-[3.75rem] md:text-[5.75rem]',
           )}
         >
-          {actor.sigil}
+          <GameIcon value={actor.sigil} />
         </span>
         <div>
           <h2 className="text-ink text-lg font-normal md:mt-4 md:text-xl">

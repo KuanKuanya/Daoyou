@@ -1,8 +1,9 @@
 import { GameLoadingState } from '@app/components/game-shell';
 import { InkButton, InkNotice } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import type {
-  BlackMarketNpcSummary,
   BlackMarketNpcStatus,
+  BlackMarketNpcSummary,
 } from '@daoyou/game-domain/black-market';
 
 const OPENING_STEPS = [
@@ -59,7 +60,7 @@ export function BlackMarketEntryPreview({
           aria-hidden="true"
           className="text-ink-secondary text-3xl leading-none"
         >
-          {npc.sigil}
+          <GameIcon value={npc.sigil} />
         </span>
         <h2 className="text-ink mt-3 text-lg font-medium">{npc.name}</h2>
         <p className="text-ink-secondary mt-1 text-sm">{npc.identity}</p>
@@ -76,11 +77,15 @@ export function BlackMarketEntryPreview({
           </div>
         ) : (
           <div className="mt-8 space-y-5">
-            {retryableMessage ? <InkNotice>{retryableMessage}</InkNotice> : null}
+            {retryableMessage ? (
+              <InkNotice>{retryableMessage}</InkNotice>
+            ) : null}
             {error ? <InkNotice>{error}</InkNotice> : null}
             <div className="text-sm leading-7">
               {existingEntry ? (
-                <p className="text-ink-secondary">今日的入场凭证仍然有效，不会再次收费。</p>
+                <p className="text-ink-secondary">
+                  今日的入场凭证仍然有效，不会再次收费。
+                </p>
               ) : entryCost === 0 ? (
                 <p className="text-teal">今日首次入场，不消耗天地灵气。</p>
               ) : (

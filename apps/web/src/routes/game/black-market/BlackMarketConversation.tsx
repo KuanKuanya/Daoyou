@@ -6,12 +6,13 @@ import {
   type InkDialogState,
   InkNotice,
 } from '@app/components/ui';
-import { normalizeBlackMarketPlayerBody } from '@daoyou/game-rules/black-market';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
 import type {
   BlackMarketNpcSummary,
   BlackMarketSessionView,
 } from '@daoyou/game-domain/black-market';
+import { normalizeBlackMarketPlayerBody } from '@daoyou/game-rules/black-market';
 import { useState } from 'react';
 
 const SPIRIT_STONES = getGameConceptInfo('spirit_stones');
@@ -75,8 +76,9 @@ export function BlackMarketConversation({
             」？成交后将当场揭晓真品。
           </p>
           <p className="text-gold font-semibold">
-            将消耗：{SPIRIT_STONES.icon} {session.currentPrice.toLocaleString()}{' '}
-            {SPIRIT_STONES.label}
+            将消耗：
+            <GameIcon value={SPIRIT_STONES.icon} />{' '}
+            {session.currentPrice.toLocaleString()} {SPIRIT_STONES.label}
           </p>
           <p className="text-ink-secondary">暗巷交易落子无悔。</p>
         </div>
@@ -131,22 +133,22 @@ export function BlackMarketConversation({
         ? inspectionObservationsByTurn.get(entry.turn)
         : undefined;
     const after = observation ? (
-        <div className="border-crimson/25 space-y-1.5 border-l pl-3 text-sm leading-6">
-          <button
-            type="button"
-            disabled={actionDisabled}
-            onClick={() =>
-              fillAndOpenComposer(`关于“${observation.text}”，我想再问清楚。`)
-            }
-            className="text-ink-secondary hover:text-crimson focus-visible:outline-crimson block w-full text-left transition-colors focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <span className="text-crimson">
-              你看出·{observationTopicLabel[observation.topic]}
-            </span>
-            ：{observation.text}
-          </button>
-        </div>
-      ) : undefined;
+      <div className="border-crimson/25 space-y-1.5 border-l pl-3 text-sm leading-6">
+        <button
+          type="button"
+          disabled={actionDisabled}
+          onClick={() =>
+            fillAndOpenComposer(`关于“${observation.text}”，我想再问清楚。`)
+          }
+          className="text-ink-secondary hover:text-crimson focus-visible:outline-crimson block w-full text-left transition-colors focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="text-crimson">
+            你看出·{observationTopicLabel[observation.topic]}
+          </span>
+          ：{observation.text}
+        </button>
+      </div>
+    ) : undefined;
     return {
       id: entry.id,
       speaker: entry.role === 'npc' ? npc.name : undefined,

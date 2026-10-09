@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 /**
  * 通用物品卡片
  *
@@ -43,7 +44,11 @@ export function ItemCard({
     <InkListItem
       title={
         <div className="flex flex-wrap items-center gap-1">
-          {icon && <span className="shrink-0">{icon}</span>}
+          {icon && (
+            <span className="shrink-0">
+              <GameIcon value={icon} purpose="artwork" />
+            </span>
+          )}
           <span
             className={`text-ink-secondary relative inline-flex max-w-full items-baseline ${
               nameMark ? 'pr-7' : ''

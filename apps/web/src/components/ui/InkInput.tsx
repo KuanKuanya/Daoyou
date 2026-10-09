@@ -1,10 +1,7 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
-import type { ChangeEvent, KeyboardEvent } from 'react';
-import type { HTMLInputTypeAttribute } from 'react';
-import {
-  inkFieldVariants,
-  type InkFieldVariantProps,
-} from './inkFieldStyles';
+import type { ChangeEvent, HTMLInputTypeAttribute, KeyboardEvent } from 'react';
+import { inkFieldVariants, type InkFieldVariantProps } from './inkFieldStyles';
 
 export interface InkInputProps extends InkFieldVariantProps {
   label?: string;
@@ -63,8 +60,13 @@ export function InkInput({
   return (
     <label className="flex flex-col gap-1">
       {label && (
-        <span className={cn('text-ink font-semibold tracking-[0.08em]', labelClassName)}>
-          {label}
+        <span
+          className={cn(
+            'text-ink font-semibold tracking-[0.08em]',
+            labelClassName,
+          )}
+        >
+          <GameIconText>{label}</GameIconText>
         </span>
       )}
       {multiline ? (

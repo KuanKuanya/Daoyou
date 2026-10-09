@@ -1,8 +1,10 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { InkModal } from '@app/components/layout';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
+import { GameIcon } from '@app/components/ui/GameIcon';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkNotice } from '@app/components/ui/InkNotice';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import { mailLocationText } from '@daoyou/game-rules/mail';
 import { useState } from 'react';
@@ -76,7 +78,7 @@ export function MailDetailModal({
         {hasAttachments && (
           <div className="space-y-2 pt-2">
             <h4 className="text-ink-secondary text-sm font-bold">
-              🎁 附赠物品
+              <GameIcon value="🎁" /> 附赠物品
             </h4>
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {mail.attachments?.map((item, idx) => (
@@ -99,7 +101,9 @@ export function MailDetailModal({
               onClick={handleClaim}
               disabled={isClaiming}
             >
-              {isClaiming ? '收取中...' : '🎁 收下心意'}
+              <GameIconText>
+                {isClaiming ? '收取中...' : '🎁 收下心意'}
+              </GameIconText>
             </InkButton>
           ) : (
             <InkButton onClick={onClose}>阅毕</InkButton>

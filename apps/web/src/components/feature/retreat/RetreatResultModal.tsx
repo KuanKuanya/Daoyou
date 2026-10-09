@@ -1,12 +1,17 @@
 import { InkModal } from '@app/components/layout';
 import { InkButton, InkIdentifyCelebration } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import type { RetreatResultData } from '@daoyou/contracts/retreat';
-import type { BreakthroughResult, CultivationResult } from '@daoyou/game-domain/cultivation';
 import {
-  getGameConceptLabel,
   getAttributeInfo,
+  getGameConceptLabel,
 } from '@daoyou/game-content/presentation/concepts';
 import type { Attributes } from '@daoyou/game-domain/character';
+import type {
+  BreakthroughResult,
+  CultivationResult,
+} from '@daoyou/game-domain/cultivation';
 import { format } from 'd3-format';
 import { useMemo } from 'react';
 import { BreakthroughChanceDetails } from './BreakthroughChanceDetails';
@@ -76,7 +81,11 @@ export function RetreatResultModal({
               variant="primary"
               onClick={retreatResult.depleted ? onGoReincarnate : onClose}
               disabled={isStreaming}
-              className={canGoAllocateAttributes && allowAttributeNavigation ? 'w-full sm:w-auto' : 'w-full'}
+              className={
+                canGoAllocateAttributes && allowAttributeNavigation
+                  ? 'w-full sm:w-auto'
+                  : 'w-full'
+              }
             >
               {primaryLabel}
             </InkButton>
@@ -116,7 +125,9 @@ function CultivationResultContent({
 
   return (
     <div className="border-ink/10 space-y-3 border border-dashed bg-[rgba(255,252,245,0.78)] p-4 text-sm leading-7">
-      <p className="text-ink text-base font-medium">🌱 修炼有成</p>
+      <p className="text-ink text-base font-medium">
+        <GameIcon value="🌱" /> 修炼有成
+      </p>
       <p>修为增长：+{Number(summary.exp_gained)}</p>
       <p>当前进度：{format('.2f')(summary.progress)}%</p>
 
@@ -130,12 +141,15 @@ function CultivationResultContent({
       ) : null}
 
       {summary.epiphany_triggered ? (
-        <p className="text-gold">✨ 触发顿悟！修为翻倍，感悟大增！</p>
+        <p className="text-gold">
+          <GameIcon value="✨" /> 触发顿悟！修为翻倍，感悟大增！
+        </p>
       ) : null}
 
       {summary.bottleneck_entered ? (
         <p className="text-wood">
-          ⚠️ 已入瓶颈期，闭关效率降低。建议通过副本、战斗等方式寻求突破。
+          <GameIcon value="⚠️" />{' '}
+          已入瓶颈期，闭关效率降低。建议通过副本、战斗等方式寻求突破。
         </p>
       ) : null}
     </div>
@@ -179,7 +193,9 @@ function BreakthroughResultContent({
   return (
     <div className="border-ink/10 space-y-3 border border-dashed bg-[rgba(255,252,245,0.78)] p-4 text-sm leading-7">
       <p className="text-ink text-base font-medium">
-        {summary.success ? '🌅 突破成功！' : '☁️ 冲关失败'}
+        <GameIconText>
+          {summary.success ? '🌅 突破成功！' : '☁️ 冲关失败'}
+        </GameIconText>
       </p>
 
       <div className="border-teal/25 bg-bgpaper/60 space-y-3 border border-dashed p-3">
@@ -228,7 +244,7 @@ function BreakthroughResultContent({
 
           {summary.inner_demon_triggered ? (
             <p className="text-crimson font-medium">
-              ⚠️ 屡战屡败，已生心魔！下次突破成功率将降低
+              <GameIcon value="⚠️" /> 屡战屡败，已生心魔！下次突破成功率将降低
               <span className="ml-1 text-xs opacity-80">
                 （可通过副本、战斗等历练消除）
               </span>

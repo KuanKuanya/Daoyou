@@ -1,3 +1,4 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import type { ReactNode } from 'react';
 
@@ -63,9 +64,17 @@ export function InkListItem({
         <div className="absolute top-1 right-1 z-10">{cornerMeta}</div>
       )}
       {/* 主内容区 */}
-      <div className={cn('min-w-0 flex-1', cornerMeta && 'pr-16', isColumn && 'w-full')}>
+      <div
+        className={cn(
+          'min-w-0 flex-1',
+          cornerMeta && 'pr-16',
+          isColumn && 'w-full',
+        )}
+      >
         {/* 标题行 */}
-        <div className="font-semibold">{title}</div>
+        <div className="font-semibold">
+          <GameIconText>{title}</GameIconText>
+        </div>
         {/* 元信息 */}
         {meta && (
           <div className="text-ink-secondary mt-1 text-[0.85rem] whitespace-pre-line">

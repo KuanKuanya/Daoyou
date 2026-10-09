@@ -1,12 +1,13 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
-import { consumableFactsOf } from '@daoyou/game-domain/inventory';
 import { cn } from '@app/lib/cn';
+import { consumableFactsOf } from '@daoyou/game-domain/inventory';
 import { FurnaceGatherEffect } from '../craft/FurnaceGatherEffect';
 import { ItemSlot } from '../items/ItemSlot';
-import { ALCHEMY_MAX_DOSE } from './useAlchemyCraftSessionState.js';
 import { useAlchemyCraftSession } from './alchemyCraftContext';
+import { ALCHEMY_MAX_DOSE } from './useAlchemyCraftSessionState.js';
 
 const ringPositions = (count: number): [number, number][] =>
   Array.from({ length: count }, (_, index) => {
@@ -55,7 +56,7 @@ export function AlchemyFurnace({
                   : 'text-ink/25 inset-0 text-xl',
               )}
             >
-              {session.formula ? '📜' : '＋'}
+              <GameIconText>{session.formula ? '📜' : '＋'}</GameIconText>
             </span>
             <span className="absolute inset-x-0.5 bottom-[8%] truncate text-center text-[clamp(0.625rem,17cqw,0.75rem)] leading-tight">
               {session.formula?.name ?? '选择丹方'}

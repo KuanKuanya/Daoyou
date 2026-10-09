@@ -1,4 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { combatV6Request } from '@app/components/feature/combat-v6/request';
 import { CultivatorInspectionModal } from '@app/components/feature/cultivator-inspection';
 import {
@@ -21,24 +20,26 @@ import {
 } from '@app/components/game-shell';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton, InkList, InkListItem, InkNotice } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
+import { apiFetch } from '@app/lib/api/fetch';
+import { cn } from '@app/lib/cn';
 import {
   useCultivatorCurrency,
   useCultivatorIdentity,
   usePlayerSession,
 } from '@app/lib/resources/player';
-import { MAX_DAILY_RANKING_CHALLENGES } from '@daoyou/game-rules/rankings/ranking';
+import { REALM_VALUES, type RealmType } from '@daoyou/constants/realms';
 import type { RankingChallengeRequest } from '@daoyou/contracts/combat/ranking';
 import type { CultivatorInspectionData } from '@daoyou/contracts/player';
-import { cn } from '@app/lib/cn';
-import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
-import { RANKING_REWARDS } from '@daoyou/game-content/economy';
-import { REALM_VALUES, type RealmType } from '@daoyou/constants/realms';
 import type {
   BattleRankingItem,
   ItemRankingEntry,
   RankingsDisplayItem,
   WealthRankingEntry,
 } from '@daoyou/contracts/rankings';
+import { RANKING_REWARDS } from '@daoyou/game-content/economy';
+import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
+import { MAX_DAILY_RANKING_CHALLENGES } from '@daoyou/game-rules/rankings/ranking';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { toRankingDetailItem } from './rankingDetailItem';
@@ -103,7 +104,7 @@ function MyChallengeLedger({
         </div>
         <div className="px-3 py-2">
           <span className="text-battle-muted text-xs">
-            {REPUTATION_INFO.icon} 预计声望
+            <GameIcon value={REPUTATION_INFO.icon} /> 预计声望
           </span>
           <span className="text-ink ml-2 font-semibold">
             {expectedReputation ?? '--'}

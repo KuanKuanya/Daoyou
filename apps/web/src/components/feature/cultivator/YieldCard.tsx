@@ -1,14 +1,18 @@
-import { postEvents } from '@app/lib/api/postEvents';
-import { hasPendingCommandRequest, pendingCommandRequest } from '@app/lib/pendingCommandRequest';
-import { usePlayerSession } from '@app/lib/resources/player';
 import { HomeUrgentRow } from '@app/components/feature/home/HomeUrgentRow';
 import { InkModal } from '@app/components/layout';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkBadge } from '@app/components/ui/InkBadge';
 import { InkButton } from '@app/components/ui/InkButton';
+import { postEvents } from '@app/lib/api/postEvents';
+import {
+  hasPendingCommandRequest,
+  pendingCommandRequest,
+} from '@app/lib/pendingCommandRequest';
 import { consumeResourceChanges } from '@app/lib/resources/mutations';
-import { GeneratedMaterial } from '@daoyou/game-domain/materials/generation';
+import { usePlayerSession } from '@app/lib/resources/player';
 import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
+import { GeneratedMaterial } from '@daoyou/game-domain/materials/generation';
 import { useEffect, useState } from 'react';
 
 interface YieldCardProps {
@@ -136,7 +140,9 @@ export function YieldCard({
         <HomeUrgentRow
           title={
             <>
-              <span>🗺️ 外出历练</span>
+              <span>
+                <GameIcon value="🗺️" /> 外出历练
+              </span>
               {timeSinceYield >= 24 ? (
                 <InkBadge tone="danger" compact>
                   已满
@@ -152,7 +158,9 @@ export function YieldCard({
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <div className="text-ink-primary flex items-center gap-1 text-lg font-bold">
-                <span>🗺️ 历练收益</span>
+                <span>
+                  <GameIcon value="🗺️" /> 历练收益
+                </span>
                 {timeSinceYield >= 24 && (
                   <InkBadge tone="danger">已满</InkBadge>
                 )}
@@ -194,7 +202,7 @@ export function YieldCard({
             获得{spiritStonesInfo.label}：
           </span>
           <span className="text-gold flex items-center gap-1 text-2xl font-bold">
-            {spiritStonesInfo.icon} {yieldResult?.amount}
+            <GameIcon value={spiritStonesInfo.icon} /> {yieldResult?.amount}
           </span>
         </div>
 
@@ -202,7 +210,7 @@ export function YieldCard({
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">修为精进：</span>
             <span className="text-teal text-2xl font-bold">
-              {cultivationInfo.icon} {yieldResult.expGain}
+              <GameIcon value={cultivationInfo.icon} /> {yieldResult.expGain}
             </span>
           </div>
         )}
@@ -211,7 +219,7 @@ export function YieldCard({
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">{insightInfo.label}：</span>
             <span className="text-wood text-2xl font-bold">
-              {insightInfo.icon} {yieldResult.insightGain}
+              <GameIcon value={insightInfo.icon} /> {yieldResult.insightGain}
             </span>
           </div>
         )}

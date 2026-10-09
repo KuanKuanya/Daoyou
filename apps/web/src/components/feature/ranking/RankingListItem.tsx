@@ -3,22 +3,23 @@ import {
   toPillDisplayModel,
 } from '@app/components/feature/consumables';
 import { InkBadge, InkButton, type Tier } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { cn } from '@app/lib/cn';
-import { isPillSpec } from '@daoyou/game-domain/consumables';
-import { CONSUMABLE_TYPE_DISPLAY_MAP } from '@daoyou/game-content/presentation/concepts';
-import {
-  formatCompactGameNumber,
-  formatFullGameNumber,
-} from '@daoyou/game-rules/presentation/numbers';
 import type { RealmType } from '@daoyou/constants/realms';
-import type { PillSpec } from '@daoyou/game-domain/consumables';
-import type { Consumable } from '@daoyou/game-domain/character';
 import type {
   BattleRankingItem,
   ItemRankingEntry,
   RankingsDisplayItem,
   WealthRankingEntry,
 } from '@daoyou/contracts/rankings';
+import { CONSUMABLE_TYPE_DISPLAY_MAP } from '@daoyou/game-content/presentation/concepts';
+import type { Consumable } from '@daoyou/game-domain/character';
+import type { PillSpec } from '@daoyou/game-domain/consumables';
+import { isPillSpec } from '@daoyou/game-domain/consumables';
+import {
+  formatCompactGameNumber,
+  formatFullGameNumber,
+} from '@daoyou/game-rules/presentation/numbers';
 import { memo } from 'react';
 
 interface BattleRankingCardProps {
@@ -256,7 +257,7 @@ function ItemRankingCardComponent({
         <div className="min-w-0">
           <div className="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-2">
             <span className="text-ink inline-flex h-7 w-7 items-center justify-center text-sm">
-              {icon}
+              <GameIcon value={icon} purpose="artwork" />
             </span>
             <h3 className="text-ink min-w-0 text-[1.05rem] leading-6 font-semibold wrap-break-word sm:text-lg sm:leading-7">
               {item.name}

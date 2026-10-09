@@ -1,3 +1,4 @@
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { cn } from '@app/lib/cn';
 import { InkButton } from './InkButton';
 
@@ -42,21 +43,17 @@ export function InkToast({
   return (
     <div
       className={cn(
-        'flex items-start gap-2 p-3 text-[0.9rem] leading-[1.6] bg-bgpaper border shadow',
+        'bg-bgpaper flex items-start gap-2 border p-3 text-[0.9rem] leading-[1.6] shadow',
         toneMeta.borderClass,
       )}
     >
       <span aria-hidden="true" className="shrink-0 pt-px">
-        {toneMeta.icon}
+        <GameIcon value={toneMeta.icon} />
       </span>
       <span className="min-w-0 flex-1">{message}</span>
       <div className="flex shrink-0 items-center gap-1">
         {actionLabel && onAction && (
-          <InkButton
-            variant="primary"
-            onClick={onAction}
-            className="px-0"
-          >
+          <InkButton variant="primary" onClick={onAction} className="px-0">
             {actionLabel}
           </InkButton>
         )}
@@ -88,7 +85,7 @@ export function InkToastHost({ toasts, onDismiss }: InkToastHostProps) {
     <div
       className={cn(
         'fixed right-[max(env(safe-area-inset-right),0.75rem)] bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-[max(env(safe-area-inset-left),0.75rem)] z-200 flex flex-col gap-2',
-        'md:left-1/2 md:right-auto md:w-md md:-translate-x-1/2',
+        'md:right-auto md:left-1/2 md:w-md md:-translate-x-1/2',
       )}
       aria-live="polite"
     >

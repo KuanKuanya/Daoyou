@@ -1,0 +1,12 @@
+{
+  "mode": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Production asset: ONE small inventory item icon of 'Origin Dew', a bottled spiritual elixir used to rejuvenate mythical beasts in a Chinese xianxia ink-wash browser game. A graceful compact celadon jade flask with a broad pear-shaped body, short narrow neck, simple ivory jade stopper and one small warm ivory cord tied around its neck. Three-quarter view, subtle asymmetry of hand-crafted Chinese ceramic. The body has a broad elegant pale jade-green ink wash with one clear darker teal curved brushstroke hinting at a water droplet, no lettering, no invented symbols. Traditional Chinese hand-painted brush and mineral pigment style, refined calm understated beauty, broad flowing contours, soft pale green-blue color, warm charcoal edges used sparingly, open highlights and generous translucent washes. Silhouette recognizable at 24–32px, simple enough to remain clear, flask occupies 82% of square centered canvas, complete object and safe margins, no tiny ornaments. TRUE transparent background and transparent outside negative space. No black water-drop mass, no swirly flame, no glowing aura, no particles, no ground shadow, no paper, no frame, no text, no logo, no lettering, no photorealism, no 3D rendering, no cartoon emoji. This is a single appealing bottle icon, not a sheet.",
+  "name": "item-origin-dew",
+  "filename": "item-origin-dew-ink-v2.webp",
+  "originalFilename": "exec-48f18e52-dd75-4046-bbf9-b51437e3d38c.png",
+  "projectPath": "/Users/kuankuan/github_project/Daoyou/apps/web/public/assets/icons/item-origin-dew-ink-v2.webp",
+  "width": 256,
+  "height": 256,
+  "safeMargin": 16,
+  "bytes": 36846
+}

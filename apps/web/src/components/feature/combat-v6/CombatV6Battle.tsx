@@ -1,15 +1,22 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
-import { AUTO_DELAY_MS } from '@daoyou/game-rules/combat/auto';
-import type { CombatV6TrainingCommandV1 } from '@daoyou/game-domain/combat';
 import type { ArenaSessionView } from '@daoyou/contracts/combat/arena';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { CombatV6TrainingCommandV1 } from '@daoyou/game-domain/combat';
+import { AUTO_DELAY_MS } from '@daoyou/game-rules/combat/auto';
+import { frameFeedback, unitLabels } from '@daoyou/game-rules/combat/log';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router';
 import { CombatV6Commands, type Choice } from './CombatV6Commands';
 import { CombatV6Details } from './CombatV6Details';
 import { CombatV6Log } from './CombatV6Log';
 import { CombatV6Roster } from './CombatV6Roster';
 import { CombatV6Status } from './CombatV6Status';
-import { frameFeedback, unitLabels } from '@daoyou/game-rules/combat/log';
 import type { CombatV6Session, SessionState } from './session';
 
 type Props = {

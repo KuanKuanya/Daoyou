@@ -1,3 +1,4 @@
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
 import { type ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -73,7 +74,7 @@ export function InkModal({
       >
         {title && (
           <h3 className="text-ink font-heading text-center text-[1.35rem]">
-            {title}
+            <GameIconText>{title}</GameIconText>
           </h3>
         )}
 

@@ -1,8 +1,9 @@
 import { InkButton } from '@app/components/ui';
-import { resolveGameScene } from '@app/lib/router/routeTitle';
+import { GameIconText } from '@app/components/ui/GameIconText';
 import { cn } from '@app/lib/cn';
-import type { ReactNode } from 'react';
+import { resolveGameScene } from '@app/lib/router/routeTitle';
 import { useStory } from '@app/lib/story/useStory';
+import type { ReactNode } from 'react';
 import { useMatches } from 'react-router';
 import { GameLoadingState } from './GameLoadingState';
 import { getGameSceneGroupTitle } from './gameNavigation';
@@ -143,7 +144,7 @@ export function GameSceneAsideSection({
         )}
       >
         <div className="text-battle-muted min-w-0 text-[0.75rem] tracking-[0.2em]">
-          {title}
+          <GameIconText>{title}</GameIconText>
         </div>
         {help ? <GameSceneHelpButton help={help} /> : null}
       </div>
@@ -168,7 +169,7 @@ function SceneStrip({
       <div className="min-w-0">
         <div className="flex flex-wrap items-end gap-x-2 gap-y-1 md:gap-x-3">
           <div className="font-heading text-ink text-[1.45rem] leading-none md:text-[1.8rem]">
-            {label}
+            <GameIconText>{label}</GameIconText>
           </div>
           {group ? (
             <>

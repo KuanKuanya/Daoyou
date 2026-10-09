@@ -1,4 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { InventoryHeader } from '@app/components/feature/items/InventoryHeader';
 import { InventoryItems } from '@app/components/feature/items/InventoryItems';
 import {
@@ -9,6 +8,7 @@ import { GameSceneFrame } from '@app/components/game-shell';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
 import { InkDialog, type InkDialogState } from '@app/components/ui/InkDialog';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useInventoryBag } from '@app/lib/resources/bag';
 import { consumeResourceMutation } from '@app/lib/resources/mutations';
 import {
@@ -19,12 +19,15 @@ import type {
   MarketBuyInput,
   MarketPurchaseResult,
 } from '@daoyou/contracts/market';
+import type {
+  MarketAccessState,
+  MarketListing,
+} from '@daoyou/game-domain/market';
+import { formatCompactGameNumber } from '@daoyou/game-rules/presentation/numbers';
 import {
   getMarketNodeSwitchOptions,
   resolveMarketSwitchLayer,
 } from '@daoyou/game-rules/world/market';
-import { formatCompactGameNumber } from '@daoyou/game-rules/presentation/numbers';
-import type { MarketAccessState, MarketListing } from '@daoyou/game-domain/market';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 
