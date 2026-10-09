@@ -216,3 +216,7 @@ sponsorkit/sponsors.json
 
 # Keep the shared TypeScript config despite the case-insensitive *.BASE.* rule.
 !/tsconfig.base.json
+
+# Local IDE and tool directories
+.idea
+道友
