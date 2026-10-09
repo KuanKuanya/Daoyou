@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": { "@app/*": ["../src/*"] },
+    "tsBuildInfoFile": "../../../node_modules/.tmp/workbench.tsbuildinfo"
+  },
+  "include": ["*.ts", "*.tsx", "../../../scripts/workbench/**/*.ts"]
+}

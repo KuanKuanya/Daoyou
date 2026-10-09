@@ -25,9 +25,15 @@
     "sponsors:render": "node scripts/render-sponsors.ts",
     "sponsors:sync": "pnpm run sponsors:fetch && pnpm run sponsors:render && pnpm run sponsors:check",
     "test": "turbo run build --filter=\"./packages/*\" && vitest run",
-    "typecheck": "turbo run typecheck && tsc --noEmit -p tsconfig.node.json"
+    "typecheck": "turbo run typecheck && tsc --noEmit -p tsconfig.node.json",
+    "workbench": "turbo run build --filter=\"./packages/*\" && pnpm --filter @daoyou/web run workbench"
   },
   "devDependencies": {
+    "@daoyou/combat-core": "workspace:*",
+    "@daoyou/constants": "workspace:*",
+    "@daoyou/contracts": "workspace:*",
+    "@daoyou/game-content": "workspace:*",
+    "@daoyou/game-domain": "workspace:*",
     "@eslint/js": "10.0.1",
     "@types/d3-format": "^3.0.4",
     "@types/node": "^26.5.1",
@@ -45,12 +51,7 @@
     "turbo": "2.11.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "8.70.0",
-    "vitest": "^4.1.11",
-    "@daoyou/constants": "workspace:*",
-    "@daoyou/game-domain": "workspace:*",
-    "@daoyou/combat-core": "workspace:*",
-    "@daoyou/game-content": "workspace:*",
-    "@daoyou/contracts": "workspace:*"
+    "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@12.10.1",
   "engines": {
