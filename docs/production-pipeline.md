@@ -16,6 +16,8 @@
 
 `ci.yml` 同时是可复用工作流，生产发布调用它后再发布产物，避免仅依赖先前的 PR 检查。Node 固定 24.18.0，pnpm 固定 12.10.1，使用现有 pnpm 锁文件。构建不读取本地或预发布配置，也不连接生产数据库。
 
+CI 共享逻辑测试使用单个 Vitest worker，避免多种子战斗模拟在 Runner 上因 CPU 竞争触发既有超时；不放宽测试超时、不跳过测试。
+
 ## GitHub 配置
 
 在本 fork 的 Settings → Secrets and variables → Actions 添加：
