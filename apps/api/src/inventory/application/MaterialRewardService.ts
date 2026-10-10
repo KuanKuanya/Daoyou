@@ -1,14 +1,22 @@
-import type { DbExecutor } from '@server/lib/drizzle/db.js';
-import { MaterialGenerator } from '@server/lib/generation/MaterialGenerator.js';
-import { YieldCalculator } from '@daoyou/game-rules/yield';
-import { MATERIAL_TYPE_VALUES, type MaterialType } from '@daoyou/game-domain/inventory';
-import { QUALITY_ORDER, QUALITY_VALUES, type Quality } from '@daoyou/constants/qualities';
+import {
+  QUALITY_ORDER,
+  QUALITY_VALUES,
+  type Quality,
+} from '@daoyou/constants/qualities';
 import { type RealmType } from '@daoyou/constants/realms';
+import { getFallbackMaterialPreset } from '@daoyou/game-content/materials';
 import type { Material } from '@daoyou/game-domain/character';
+import {
+  MATERIAL_TYPE_VALUES,
+  type MaterialType,
+} from '@daoyou/game-domain/inventory';
+import { YieldCalculator } from '@daoyou/game-rules/yield';
 import {
   materialLibraryEntryToMaterial,
   sampleMaterialLibraryEntryByPreferences,
 } from '@server/admin/application/MaterialLibraryService.js';
+import type { DbExecutor } from '@server/lib/drizzle/db.js';
+import { MaterialGenerator } from '@server/lib/generation/MaterialGenerator.js';
 import { computeItemLibrarySampleKey } from '@server/lib/utils/itemLibrarySampleKey.js';
 
 function createDeterministicRng(seed: string): () => number {
@@ -82,7 +90,21 @@ export async function generateRealmMaterials(
       entry = await sampleMaterialLibraryEntryByPreferences(request, executor);
     }
     if (!entry) {
-      throw new Error(`奖励道具库暂无可用材料: ${seed}`);
+      // The library is an optional content source for rewards. Keep the
+      // settlement path available when an environment has not been seeded
+      // yet (or a particular quality/type is temporarily empty), using the
+      // same deterministic skeleton facts and the built-in content preset.
+      const fallback = getFallbackMaterialPreset(skeleton.type, skeleton.rank);
+      materials.push({
+        name: fallback.name,
+        type: skeleton.type,
+        rank: skeleton.rank,
+        element: skeleton.forcedElement ?? fallback.element,
+        description: fallback.description,
+        details: {},
+        quantity: unitQuantity ? 1 : skeleton.quantity,
+      });
+      continue;
     }
 
     selectedItemIds.add(entry.itemId);
