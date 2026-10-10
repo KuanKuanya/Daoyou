@@ -5,7 +5,7 @@ import { getSectIdentityLabels } from '@app/components/feature/sect/sectIdentity
 import { useSectIdentityDialog } from '@app/components/feature/sect/useSectIdentityDialog';
 import Link from '@app/components/router/AppLink';
 import { InkHorizontalScroll } from '@app/components/ui';
-import { GameImage } from '@app/components/ui/GameImage';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
@@ -142,11 +142,10 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
             aria-label="查看角色"
             className="border-ink/12 bg-bgpaper/85 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed md:h-16 md:w-16"
           >
-            <GameImage
+            <GameIcon
               purpose="interface"
-              src="/assets/daoyou_logo.webp"
-              alt=""
-              className="-mt-0.5 h-9 w-9 object-contain md:h-12 md:w-12"
+              value={snapshot.portraitIcon}
+              className="h-9 w-9 md:h-12 md:w-12"
             />
           </Link>
 

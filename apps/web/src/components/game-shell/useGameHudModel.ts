@@ -81,6 +81,7 @@ export interface GameHudCultivationProgress {
 export interface GameHudSnapshot {
   cultivatorId: string;
   name: string;
+  portraitIcon: string;
   realm: RealmType;
   realmStage: string;
   title: string | null;
@@ -101,6 +102,7 @@ type HudCultivatorView = CultivatorDisplayInput &
   Pick<
     Cultivator,
     | 'title'
+    | 'gender'
     | 'pre_heaven_fates'
     | 'unallocated_attribute_points'
     | 'cultivation_progress'
@@ -241,6 +243,10 @@ export function buildGameHudSnapshot(input: {
   return {
     cultivatorId: cultivator.id ?? '',
     name: cultivator.name,
+    portraitIcon:
+      cultivator.gender === '女'
+        ? 'icon:cultivator-female-avatar'
+        : 'icon:cultivator-male-avatar',
     realm: cultivator.realm,
     realmStage: cultivator.realm_stage,
     title: cultivator.title ?? null,

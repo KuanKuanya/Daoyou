@@ -1,3 +1,4 @@
+import { getGameSceneIcon } from '@app/components/game-shell/gameNavigation';
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 
@@ -18,36 +19,48 @@ const CAVE_AREA_GROUPS: CaveQuickGroup[] = [
     areas: [
       {
         label: '修炼室',
-        icon: 'icon:beast-skill-meditation',
+        icon: getGameSceneIcon('retreat'),
         href: '/game/retreat',
       },
-      { label: '炼丹房', icon: 'icon:ui-elixir', href: '/game/craft/alchemy' },
+      {
+        label: '炼丹房',
+        icon: getGameSceneIcon('alchemy'),
+        href: '/game/craft/alchemy',
+      },
       {
         label: '炼器室',
-        icon: 'icon:earthfire-furnace',
+        icon: getGameSceneIcon('refine'),
         href: '/game/craft/refine',
       },
-      { label: '悟道室', icon: 'icon:ui-scroll', href: '/game/enlightenment' },
-      { label: '阵纹室', icon: 'icon:ui-compass', href: '/game/inscriptions' },
+      {
+        label: '悟道室',
+        icon: getGameSceneIcon('enlightenment'),
+        href: '/game/enlightenment',
+      },
+      {
+        label: '阵纹室',
+        icon: getGameSceneIcon('inscriptions'),
+        href: '/game/inscriptions',
+      },
       {
         label: '练功房',
-        icon: 'icon:beast-skill-strength',
+        icon: getGameSceneIcon('training-room'),
         href: '/game/training-room',
       },
-      { label: '灵眼之泉', icon: 'icon:ui-spirit-water', href: '/game/inn' },
+      { label: '灵眼之泉', icon: getGameSceneIcon('inn'), href: '/game/inn' },
       {
         label: '储藏室',
-        icon: 'icon:ui-treasure-chest',
+        icon: getGameSceneIcon('storage'),
         href: '/game/cave/storage/new?location=storage',
       },
       {
         label: '灵田',
-        icon: 'icon:ui-spirit-herb',
+        icon: getGameSceneIcon('spirit-field'),
         href: '/game/spirit-field',
       },
       {
         label: '育兽室',
-        icon: 'icon:beast-nether-tiger',
+        icon: getGameSceneIcon('beast-room'),
         href: '/game/beast-room',
       },
     ],
@@ -55,19 +68,31 @@ const CAVE_AREA_GROUPS: CaveQuickGroup[] = [
   {
     title: '出洞府',
     areas: [
-      { label: '外出云游', icon: 'icon:map-landmark', href: '/game/dungeon' },
+      {
+        label: '外出云游',
+        icon: getGameSceneIcon('dungeon'),
+        href: '/game/dungeon',
+      },
       {
         label: '坊市',
-        icon: 'icon:map-market',
+        icon: getGameSceneIcon('market'),
         href: '/game/map-v2?intent=market',
       },
-      { label: '蜃楼幻境', icon: 'icon:ui-mirror', href: '/game/tower' },
+      {
+        label: '蜃楼幻境',
+        icon: getGameSceneIcon('tower'),
+        href: '/game/tower',
+      },
       {
         label: '拍卖行',
-        icon: 'icon:beast-skill-mountain-breaker',
+        icon: getGameSceneIcon('auction'),
         href: '/game/auction',
       },
-      { label: '组队讨伐', icon: 'icon:ui-sword', href: '/game/hunt-team' },
+      {
+        label: '组队讨伐',
+        icon: getGameSceneIcon('hunt-team'),
+        href: '/game/hunt-team',
+      },
     ],
   },
 ];

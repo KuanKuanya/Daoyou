@@ -4,11 +4,7 @@ import {
   GameSceneFrame,
 } from '@app/components/game-shell';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
-import {
-  InkDialog,
-  InkNotice,
-  type InkDialogState,
-} from '@app/components/ui';
+import { InkDialog, InkNotice, type InkDialogState } from '@app/components/ui';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import { useCultivatorCurrency } from '@app/lib/resources/player';
 import type {
@@ -30,6 +26,7 @@ import {
   leaveBlackMarketSession,
   openBlackMarketSession,
 } from './blackMarketApi';
+import { BLACK_MARKET_NPC_ARTWORK } from './blackMarketArtwork';
 
 const DEFAULT_NODE_ID = 'TN_YUE_01';
 
@@ -56,7 +53,16 @@ export default function BlackMarketPage() {
   useEffect(() => () => interactionControllerRef.current?.abort(), []);
 
   const loadOverview = useCallback(
-    (signal?: AbortSignal) => fetchBlackMarketOverview(nodeId, signal),
+    async (signal?: AbortSignal) => {
+      const next = await fetchBlackMarketOverview(nodeId, signal);
+      return {
+        ...next,
+        npcs: next.npcs.map((npc) => ({
+          ...npc,
+          sigil: BLACK_MARKET_NPC_ARTWORK[npc.id],
+        })),
+      };
+    },
     [nodeId],
   );
 

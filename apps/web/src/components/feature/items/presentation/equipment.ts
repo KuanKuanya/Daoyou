@@ -122,7 +122,7 @@ export const equipmentAdapter: ItemAdapter = (item) => {
   const tier = getLevelRealmStage(equipment.equipmentLevel).realm;
   return {
     summary: {
-      icon: icons[equipment.slot],
+      icon: weaponType ? `icon:item-weapon-${weaponType}` : icons[equipment.slot],
       color: tierColorMap[tier],
       type: `${equipmentType} · 御使境界`,
       tier,

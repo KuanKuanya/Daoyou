@@ -27,7 +27,7 @@ export const consumableAdapter: ItemAdapter = (item) => {
     summary: {
       icon:
         facts.type === '丹药'
-          ? 'icon:ui-elixir'
+          ? 'icon:item-pill'
           : facts.type === '灵果'
             ? 'icon:item-spirit-fruit'
             : 'icon:item-talisman',

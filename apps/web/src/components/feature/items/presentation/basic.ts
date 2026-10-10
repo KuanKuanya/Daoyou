@@ -24,7 +24,7 @@ export const blueprintAdapter: ItemAdapter = (item, def) => {
   const realm = getLevelRealmStage(def.level!).realm;
   return {
     summary: {
-      icon: 'icon:ui-scroll',
+      icon: 'icon:item-equipment-blueprint',
       color: tierColorMap[realm],
       tier: realm,
       type: '道装图纸',
@@ -42,13 +42,13 @@ export const materialAdapter: ItemAdapter = (item) => {
   return {
     summary: {
       icon: {
-        herb: 'icon:ui-spirit-herb',
+        herb: 'icon:item-spirit-herb',
         ore: 'icon:item-spirit-ore',
         tcdb: 'icon:item-heavenly-treasure',
         aux: 'icon:item-crafting-aux',
         monster: 'icon:item-beast-material',
-        gongfa_manual: 'icon:ui-manual',
-        skill_manual: 'icon:ui-manual',
+        gongfa_manual: 'icon:item-gongfa-tome',
+        skill_manual: 'icon:item-secret-technique',
       }[facts.type],
       color: tierColorMap[facts.rank],
       tier: facts.rank,

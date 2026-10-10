@@ -120,12 +120,14 @@ export function GameBottomDock({
                       dockMode === 'expanded' ? undefined : onToggleExpanded
                     }
                     className={cn(
-                      'hover:text-crimson min-w-0 leading-6 transition',
+                      'hover:text-crimson flex min-h-9 min-w-0 items-center gap-2 leading-6 transition',
                       sceneId === action.id ? 'text-crimson' : '',
                     )}
                   >
-                    [{action.icon && <GameIcon value={action.icon} />}{' '}
-                    {action.label}]
+                    {action.icon && (
+                      <GameIcon value={action.icon} className="size-5" />
+                    )}
+                    <span>[{action.label}]</span>
                   </Link>
                 ))}
               </div>

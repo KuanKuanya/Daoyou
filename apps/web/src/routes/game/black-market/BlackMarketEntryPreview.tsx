@@ -58,7 +58,7 @@ export function BlackMarketEntryPreview({
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center py-8 text-center">
         <span
           aria-hidden="true"
-          className="text-ink-secondary text-3xl leading-none"
+          className="text-ink-secondary text-[5rem] leading-none"
         >
           <GameIcon value={npc.sigil} />
         </span>

@@ -197,15 +197,15 @@ export function WildSeekingScene({
 }
 
 const SCENERY_ICONS: Record<WildRegionView['scenery'], string> = {
-  meadow: 'icon:ui-spirit-herb',
-  mine: 'icon:beast-skill-falling-rock',
-  volcanic: 'icon:earthfire-furnace',
-  lake: 'icon:beast-skill-eternity',
-  stone: 'icon:beast-skill-falling-rock',
-  river: 'icon:ui-spirit-water',
-  forest: 'icon:ui-spirit-herb',
-  cave: 'icon:beast-lantern-butterfly',
-  storm: 'icon:beast-skill-spell-fluctuation',
+  meadow: 'icon:wild-meadow',
+  mine: 'icon:wild-mine',
+  volcanic: 'icon:wild-volcanic',
+  lake: 'icon:wild-lake',
+  stone: 'icon:wild-stone',
+  river: 'icon:wild-river',
+  forest: 'icon:wild-forest',
+  cave: 'icon:wild-cave',
+  storm: 'icon:wild-storm',
 };
 
 function WildLandscape({ scenery }: { scenery: WildRegionView['scenery'] }) {

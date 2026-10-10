@@ -28,7 +28,7 @@ const ARENA_ROOM_TOUCH_INTERVAL_MS = 5 * 60_000;
 const ACTORS: readonly RoomActorView[] = [
   {
     id: 'wang-hu',
-    sigil: '虎',
+    sigil: 'icon:npc-wang-hu',
     name: '王虎',
     identity: '擂台切磋主持人',
     responsibility: '简要说明切磋规则。',

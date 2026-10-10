@@ -18,7 +18,7 @@ export const inscriptionAdapter: ItemAdapter = (item, def) => {
   const realm = getLevelRealmStage(equipmentLevel).realm;
   return {
     summary: {
-      icon: 'icon:ui-compass',
+      icon: 'icon:item-formation-inscription',
       color: tierColorMap[realm],
       tier: `${def.level}级`,
       type: '阵纹',

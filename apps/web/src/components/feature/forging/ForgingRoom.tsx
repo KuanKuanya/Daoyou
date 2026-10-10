@@ -54,7 +54,7 @@ const facilities: RoomActorView[] = [
   },
   {
     id: 'guide',
-    sigil: 'icon:beast-skill-falling-rock',
+    sigil: 'icon:facility-teaching-stele',
     name: '铸器碑',
     identity: '指引设施',
     responsibility: '辨灵材之性，知铸器之理',

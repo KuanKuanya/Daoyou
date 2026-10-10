@@ -1,4 +1,5 @@
 import Link from '@app/components/router/AppLink';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import {
   AUTH_LAYOUT_ROUTE_ID,
   type AuthLoaderData,
@@ -78,9 +79,9 @@ export function AuthPageShell({
               DAOYOU.ORG
             </p>
             <div className="border-ink/12 bg-paper/90 mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full border border-dashed shadow-[0_12px_36px_rgba(44,24,16,0.08)] sm:mb-5 sm:h-32 sm:w-32">
-              <img
-                src="/assets/daoyou_logo.webp"
-                alt="万界道友 Logo"
+              <GameIcon
+                value="icon:brand-ding"
+                label="万界道友 Logo"
                 className="h-20 w-20 object-contain opacity-95 sm:h-24 sm:w-24"
               />
             </div>
