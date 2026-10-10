@@ -1,6 +1,6 @@
 import type { Params, UIMatch } from 'react-router';
 
-export const APP_TITLE = '万界道友';
+export const APP_TITLE = '九霄道纪';
 
 const SECT_VISIT_TITLES: Readonly<Record<string, string>> = {
   lingxiao: '红尘剑宗舆图',

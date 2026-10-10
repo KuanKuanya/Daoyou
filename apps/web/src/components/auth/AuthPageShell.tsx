@@ -76,20 +76,20 @@ export function AuthPageShell({
 
           <header className="mb-4 text-center">
             <p className="text-ink-secondary/80 mb-3 text-[0.72rem] tracking-[0.38em] sm:mb-4">
-              DAOYOU.ORG
+              九霄修行录
             </p>
             <div className="border-ink/12 bg-paper/90 mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full border border-dashed shadow-[0_12px_36px_rgba(44,24,16,0.08)] sm:mb-5 sm:h-32 sm:w-32">
               <GameIcon
                 value="icon:brand-ding"
-                label="万界道友 Logo"
+                label="九霄道纪 Logo"
                 className="h-20 w-20 object-contain opacity-95 sm:h-24 sm:w-24"
               />
             </div>
             <h1 className="font-heading text-ink text-[3.15rem] leading-none sm:text-[4.4rem]">
-              万界道友
+              九霄道纪
             </h1>
             <p className="text-crimson mt-3 text-sm tracking-[0.28em] sm:mt-4 sm:text-[0.95rem]">
-              一入万界，修行不止。
+              一入九霄，修行不止。
             </p>
             <p className="text-ink-secondary mx-auto mt-4 max-w-md text-sm leading-7 sm:text-base">
               在纸墨之间落下道号，自此入界修行、历练、炼造与论道。

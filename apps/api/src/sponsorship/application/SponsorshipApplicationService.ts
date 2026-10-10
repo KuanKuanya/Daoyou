@@ -749,7 +749,7 @@ async function ensureClaimAndSendMessage(orderId: string): Promise<void> {
   try {
     await provider.sendMessage(
       order.providerUserId,
-      `感谢支持《万界道友》。本次「${tierName}」功德认领码：${claim.code}。请在游戏“功德簿”中于90天内认领。`,
+      `感谢支持《九霄道纪》。本次「${tierName}」功德认领码：${claim.code}。请在游戏“功德簿”中于90天内认领。`,
     );
     await db
       .update(sponsorshipClaims)
@@ -1763,7 +1763,7 @@ export async function sendSponsorshipAdminDigest(
     '请前往 /admin/sponsorship 核查异常订单。',
   ].join('\n');
   for (const email of recipients) {
-    await sendViaSmtp(email, '【万界道友】爱发电功德簿日报', content);
+    await sendViaSmtp(email, '【九霄道纪】爱发电功德簿日报', content);
   }
   return recipients.length;
 }

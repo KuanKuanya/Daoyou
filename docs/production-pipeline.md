@@ -2,6 +2,8 @@
 
 本方案只作用于 `KuanKuanya/Daoyou`，部署到 `root@<PRODUCTION_HOST>:22` 的 `/opt/daoyou`。上游 `ChurchTao/Daoyou` 的更新先进入开发流程，不直接进入生产。
 
+本 fork 面向玩家的游戏名称为「九霄道纪」；登录页、网页标题、PWA 安装名称、分享与认证邮件使用此名称。上游来源和许可证保留在仓库说明中。
+
 ## 分支与触发
 
 | 入口 | 行为 |
@@ -35,6 +37,8 @@ Docker Hub 仓库使用 `kuankuan/daoyou-app`。服务器需能拉取该镜像�
 创建名为 `production` 的 Environment，Deployment branches 只允许 `production`。上述 Repository Secrets 可以被引用该 Environment 的作业读取；若设置了同名 Environment Secret，会覆盖仓库值。需要人工发布审核时可以在该 Environment 配置审核人，具体可用功能取决于 GitHub 套餐。
 
 当前 IP 入口使用同源 `/api`，不设置 Repository Variable `VITE_API_BASE_URL`。切换分离域名后，再设置它为实际 API 地址并重新构建。只允许公开配置使用 `VITE_*`。
+
+玩家入口必须使用可信 HTTPS：ALTCHA 在普通公网 HTTP 上无法工作。服务器已配置 Let's Encrypt IP 短期证书和 `daoyou-certbot-renew.timer`，每天两次检查续期；云安全组必须允许入站 TCP 443。`BETTER_AUTH_URL`、`PUBLIC_WEB_ORIGINS` 使用同一 HTTPS origin。端口 80 保留 ACME 验证和只读 `/api/health-check`、`/version.json` 发布验收入口，其他请求在 443 放行后跳转 HTTPS。
 
 ## 服务器一次性准备
 
@@ -82,7 +86,7 @@ API 镜像同时发布 `sha-<完整提交 SHA>` 和兼容查询用的 `latest`�
 服务器发布顺序：
 
 1. Runner 用 `actions: read` 获取本次不可变 artifact ID 的短期签名下载链接，通过 SSH stdin 交给服务器。服务器用八个 HTTPS Range 连接下载，核对每段长度和响应区间，再通过 ZIP CRC 校验解出 `/opt/daoyou/incoming/<run-id>-<attempt>.tgz`。签名链接不写入服务器文件、不输出日志，GitHub 令牌留在 Runner。随后获取发布锁，核对提交、运行 ID、镜像 namespace/digest 和前端 buildId。
-2. 解压至 `releases/<SHA>/<run-id>-<attempt>/`，拉取镜像并安装该版本的迁移工具。此时仍提供旧版服务。
+2. 解压至 `releases/<SHA>/<run-id>-<attempt>/`，拉取镜像并安装该版本的迁移工具。此时仍提供旧版服务。CI 已验证同一锁文件的供应链策略，服务器以 `--frozen-lockfile --trust-lockfile` 保留版本和完整性校验，避免重复元数据查询，并限定网络请求超时；迁移直接调用已安装的 Drizzle CLI，不重复下载 pnpm。
 3. 创建 `/opt/daoyou/maintenance`，nginx 对新 HTTP/WS 请求返回503；停止两色API实例并等待最多75秒排空，关闭 cron/消息写入。
 4. 备份完整 PostgreSQL 至 `backups/<SHA>-<run-id>-<attempt>.dump`，检查备份非空及 pg_restore 可读取其目录。
 5. 在现有Docker网络、显式生产配置下执行认证迁移，再执行业务迁移。根 `pnpm run db:migrate` 绑定本地环境，不能用于此处。

@@ -84,8 +84,10 @@ test -f "$source/drizzle.auth.config.ts"
 docker pull "$image"
 docker pull "$NODE_IMAGE"
 docker pull "$POSTGRES_IMAGE"
+# CI already verified this exact lockfile against pnpm's supply-chain policies.
+# Keep versions/integrity pinned without repeating metadata checks on the host.
 docker run --rm -v "$source:/app" -w /app "$NODE_IMAGE" bash -ec \
-  'npm install --global pnpm@12.10.1 && pnpm install --frozen-lockfile --prod=false'
+  'npm install --global pnpm@12.10.1 && pnpm install --frozen-lockfile --trust-lockfile --fetch-timeout=30000 --network-concurrency=8 --prod=false'
 
 previous_port="$(sed -nE 's/^[[:space:]]*server[[:space:]]+127\.0\.0\.1:([0-9]+);.*$/\1/p' "$UPSTREAM_CONF" | head -n 1)"
 previous_container=""
@@ -148,7 +150,7 @@ umask 022
 
 docker run --rm --network "$APP_NETWORK" --env-file "$ENV_FILE" \
   -v "$source:/app" -w /app "$NODE_IMAGE" bash -ec \
-  'npm install --global pnpm@12.10.1 && pnpm exec drizzle-kit migrate --config drizzle.auth.config.ts && pnpm exec drizzle-kit migrate --config drizzle.config.ts'
+  'node node_modules/drizzle-kit/bin.cjs migrate --config drizzle.auth.config.ts && node node_modules/drizzle-kit/bin.cjs migrate --config drizzle.config.ts'
 
 APP_IMAGE="$image" PULL_IMAGE=0 ENV_FILE="$ENV_FILE" \
 COMPOSE_FILE="$source/scripts/docker-compose.production.yml" \
