@@ -112,9 +112,9 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }) => {
       await sendViaSmtp(
         user.email,
-        '【万界道友】验证邮箱',
+        '【九霄道纪】验证邮箱',
         [
-          `${user.name || '玩家'}，欢迎来到万界道友。`,
+          `${user.name || '玩家'}，欢迎来到九霄道纪。`,
           '',
           '请点击下方链接验证邮箱，验证完成后即可进入游戏：',
           url,
@@ -134,7 +134,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       await sendViaSmtp(
         user.email,
-        '【万界道友】重置密码',
+        '【九霄道纪】重置密码',
         [
           `${user.name || '玩家'}，你正在申请重置密码。`,
           '',
@@ -190,8 +190,8 @@ export const auth = betterAuth({
       sendVerificationOTP: async ({ email, otp, type }) => {
         const subject =
           type === 'forget-password'
-            ? '【万界道友】重置密码验证码'
-            : '【万界道友】邮箱验证码';
+            ? '【九霄道纪】重置密码验证码'
+            : '【九霄道纪】邮箱验证码';
 
         const headline =
           type === 'forget-password'

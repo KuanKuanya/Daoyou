@@ -395,8 +395,8 @@ export default function MailPage() {
 
     try {
       await navigator.share({
-        title: '万界道友',
-        text: '来万界道友与我结缘，一同踏上修仙之路。',
+        title: '九霄道纪',
+        text: '来九霄道纪与我结缘，一同踏上修仙之路。',
         url: link,
       });
     } catch (shareError) {
