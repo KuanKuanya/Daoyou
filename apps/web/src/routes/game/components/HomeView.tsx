@@ -20,7 +20,7 @@ import {
   getPillToxicityStage,
   isConditionStatusActive,
 } from '@daoyou/game-rules/condition';
-import { getNextMajorRealm } from '@daoyou/game-rules/consumables/breakthrough';
+import { calculateBreakthroughChance } from '@daoyou/game-rules/cultivation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 function calculateYieldHours(lastYieldAt: Date | string | undefined) {
@@ -80,14 +80,6 @@ export function HomeView() {
         isConditionStatusActive(status, projection.data?.now ?? new Date()),
     );
     const pillToxicityStage = getPillToxicityStage(cultivator.condition);
-    const cultivationProgress = cultivator.cultivation_progress;
-    const cultivationPercent = cultivationProgress
-      ? Math.floor(
-          (cultivationProgress.cultivation_exp / cultivationProgress.exp_cap) *
-            100,
-        )
-      : 0;
-
     const bodySummary = getBodyCultivationSummary(cultivator.condition);
     const strongestBodyTrack = [...bodySummary.tracks].sort(
       (a, b) => b.level - a.level,
@@ -108,11 +100,17 @@ export function HomeView() {
       maxHp,
       maxMp,
       pillToxicityStage,
-      cultivationPercent,
       bodySummaryText,
-      insight: cultivationProgress?.comprehension_insight ?? 0,
     };
   }, [cultivator, display, projection.data?.now]);
+
+  const breakthrough = useMemo(
+    () =>
+      cultivator?.cultivation_progress
+        ? calculateBreakthroughChance(cultivator)
+        : null,
+    [cultivator],
+  );
 
   const currentMajorTask = useMemo(
     () => (tasks ? findCurrentMajorBreakthroughTask(cultivator, tasks) : null),
@@ -148,9 +146,9 @@ export function HomeView() {
       caveStatus.currentMp < caveStatus.maxMp ||
       caveStatus.pillToxicityStage.key !== 'none' ||
       caveStatus.activeStatuses.length > 0);
-  const hasBreakthroughAlert = (caveStatus?.cultivationPercent ?? 0) >= 60;
   const isMajorBreakthroughCandidate = Boolean(
-    cultivator.realm_stage === '圆满' && getNextMajorRealm(cultivator.realm),
+    breakthrough?.nextStage &&
+    breakthrough.nextStage.realm !== cultivator.realm,
   );
   if (storyCue) {
     urgentItems.push(
@@ -194,52 +192,70 @@ export function HomeView() {
   }
 
   if (currentMajorTask) {
-    const summary =
-      currentMajorTask.status === 'completed'
-        ? '准备充分，可冲关'
-        : '完成破境任务后可冲关';
+    const taskCompleted = currentMajorTask.status === 'completed';
+    const summary = !taskCompleted
+      ? '破境任务尚未完成，先查看卷宗'
+      : !breakthrough?.canAttempt
+        ? '破境任务已完成，仍需继续积累修为'
+        : breakthrough.breakthroughType === 'forced'
+          ? '破境任务已完成，强行突破风险较高，可继续积累'
+          : '破境任务已完成，可前往静室评估冲关';
     urgentItems.push(
       <HomeUrgentRow
         key="major-breakthrough-task"
         title={
           <span className="text-crimson">
-            <GameIcon value="icon:beast-skill-thunder" /> 突破境界
+            <GameIcon value="icon:beast-skill-thunder" /> 破境准备
           </span>
         }
         summary={summary}
         action={
           <InkButton
-            href={
-              currentMajorTask.status === 'completed'
-                ? '/game/retreat'
-                : '/game/tasks'
-            }
+            href={taskCompleted ? '/game/retreat' : '/game/tasks'}
             variant="primary"
           >
-            {currentMajorTask.status === 'completed' ? '前往静室' : '查看任务'}
+            {taskCompleted ? '前往静室' : '查看任务'}
           </InkButton>
         }
       />,
     );
   }
 
-  if (
-    hasBreakthroughAlert &&
-    !currentMajorTask &&
-    (!isMajorBreakthroughCandidate || taskError || !tasksLoading)
-  ) {
+  if (breakthrough?.canAttempt && !currentMajorTask) {
+    const isForced = breakthrough.breakthroughType === 'forced';
+    const title = isMajorBreakthroughCandidate
+      ? '破境准备'
+      : isForced
+        ? '修为渐进'
+        : '准备突破';
+    const summary = isMajorBreakthroughCandidate
+      ? taskError
+        ? '破境卷宗暂时无法读取，请稍后查看任务'
+        : '先查看破境任务，再决定冲关'
+      : isForced
+        ? '尚属强行突破阶段，可继续静修积累'
+        : '修为已达突破门槛，先在静室查看风险';
     urgentItems.push(
       <HomeUrgentRow
         key="breakthrough"
         title={
-          <span className="text-crimson">
-            <GameIcon value="icon:beast-skill-thunder" /> 突破瓶颈
+          <span className={isForced ? 'text-wood' : 'text-crimson'}>
+            <GameIcon value="icon:beast-skill-thunder" /> {title}
           </span>
         }
-        summary={`修为进度已达 ${Math.min(100, caveStatus?.cultivationPercent ?? 0)}%`}
+        summary={summary}
         action={
-          <InkButton href="/game/retreat" variant="primary">
-            前往静室
+          <InkButton
+            href={
+              isMajorBreakthroughCandidate ? '/game/tasks' : '/game/retreat'
+            }
+            variant="primary"
+          >
+            {isMajorBreakthroughCandidate
+              ? '查看任务'
+              : isForced
+                ? '继续修炼'
+                : '评估突破'}
           </InkButton>
         }
       />,
