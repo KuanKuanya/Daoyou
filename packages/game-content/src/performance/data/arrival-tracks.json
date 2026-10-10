@@ -1,22 +1,22 @@
 {
   "id": "arrival-tracks",
   "title": "第一次独自下山",
-  "requires": [
-    "name",
-    "instructor"
-  ],
+  "requires": ["name", "instructor"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "instructor": {
-      "name": "{instructor}"
+      "name": "{instructor}",
+      "portrait": "icon:npc-sect-instructor"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "雨后的山路通向青溪坡，教习在舆图上点出这次要查看的地方。"
+      "alt": "雨后的山路通向青溪坡，教习在舆图上点出这次要查看的地方。",
+      "src": "/assets/story/scene-arrival-creek-road-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

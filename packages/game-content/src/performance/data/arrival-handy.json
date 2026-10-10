@@ -1,22 +1,22 @@
 {
   "id": "arrival-handy",
   "title": "自己铸件兵器",
-  "requires": [
-    "name",
-    "forge_teacher"
-  ],
+  "requires": ["name", "forge_teacher"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "teacher": {
-      "name": "{forge_teacher}"
+      "name": "{forge_teacher}",
+      "portrait": "icon:npc-sect-forge-keeper"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "宗门器坊里，前辈把入门图纸铺在器炉旁。"
+      "alt": "宗门器坊里，前辈把入门图纸铺在器炉旁。",
+      "src": "/assets/story/scene-arrival-forge-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

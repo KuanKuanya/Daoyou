@@ -1,4 +1,5 @@
 import { InkButton, InkChoiceButton } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { GameImage } from '@app/components/ui/GameImage';
 import { useTypewriter } from '@app/lib/hooks/useTypewriter';
 import { cn } from '@app/lib/cn';
@@ -90,12 +91,16 @@ function Passage({
       <div>
         <div className="flex items-center gap-3">
           {portrait ? (
-            <GameImage
-              src={portrait}
-              alt=""
-              purpose="artwork"
-              className="h-14 w-11 object-cover"
-            />
+            GameIcon.resolveSource(portrait) ? (
+              <GameIcon value={portrait} purpose="artwork" className="size-14" />
+            ) : (
+              <GameImage
+                src={portrait}
+                alt=""
+                purpose="artwork"
+                className="size-14 object-contain"
+              />
+            )
           ) : null}
           <p className="font-heading text-2xl leading-none text-ink">{entry.speaker}</p>
         </div>

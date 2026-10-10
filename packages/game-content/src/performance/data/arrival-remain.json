@@ -1,22 +1,22 @@
 {
   "id": "arrival-remain",
   "title": "回来交差",
-  "requires": [
-    "name",
-    "instructor"
-  ],
+  "requires": ["name", "instructor"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "instructor": {
-      "name": "{instructor}"
+      "name": "{instructor}",
+      "portrait": "icon:npc-sect-instructor"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "教习听着青溪坡的见闻，在纸上记下需要留意的地方。"
+      "alt": "教习听着青溪坡的见闻，在纸上记下需要留意的地方。",
+      "src": "/assets/story/scene-arrival-training-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

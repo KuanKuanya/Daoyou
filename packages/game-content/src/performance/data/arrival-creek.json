@@ -1,21 +1,22 @@
 {
   "id": "arrival-creek",
   "title": "许伯指路",
-  "requires": [
-    "name"
-  ],
+  "requires": ["name"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "neighbor": {
-      "name": "许伯"
+      "name": "许伯",
+      "portrait": "icon:npc-xu-bo"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "许伯站在洞口，指着溪水与远处通向山门的道路。"
+      "alt": "许伯站在洞口，指着溪水与远处通向山门的道路。",
+      "src": "/assets/story/scene-arrival-cave-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

@@ -1,21 +1,22 @@
 {
   "id": "arrival-gate",
   "title": "选一座山门",
-  "requires": [
-    "name"
-  ],
+  "requires": ["name"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "receptionist": {
-      "name": "山门接引人"
+      "name": "山门接引人",
+      "portrait": "icon:npc-receptionist"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "山门接引处摆着诸宗名册，几个新来的人正在问路。"
+      "alt": "山门接引处摆着诸宗名册，几个新来的人正在问路。",
+      "src": "/assets/story/scene-arrival-gate-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

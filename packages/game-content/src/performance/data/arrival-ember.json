@@ -1,22 +1,22 @@
 {
   "id": "arrival-ember",
   "title": "先备一炉药",
-  "requires": [
-    "name",
-    "alchemy_teacher"
-  ],
+  "requires": ["name", "alchemy_teacher"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "teacher": {
-      "name": "{alchemy_teacher}"
+      "name": "{alchemy_teacher}",
+      "portrait": "icon:npc-sect-alchemy-keeper"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "宗门丹房的炉边摆着药材，前辈让出一块干净的石台。"
+      "alt": "宗门丹房的炉边摆着药材，前辈让出一块干净的石台。",
+      "src": "/assets/story/scene-arrival-alchemy-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

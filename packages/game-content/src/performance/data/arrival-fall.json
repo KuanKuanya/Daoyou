@@ -1,21 +1,22 @@
 {
   "id": "arrival-fall",
   "title": "出门之前",
-  "requires": [
-    "name"
-  ],
+  "requires": ["name"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "neighbor": {
-      "name": "许伯"
+      "name": "许伯",
+      "portrait": "icon:npc-xu-bo"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "洞门外的石阶还湿着，一个背着药篓的老人停在门边。"
+      "alt": "洞门外的石阶还湿着，一个背着药篓的老人停在门边。",
+      "src": "/assets/story/scene-arrival-cave-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",

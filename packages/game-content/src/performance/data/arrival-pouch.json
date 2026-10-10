@@ -1,22 +1,22 @@
 {
   "id": "arrival-pouch",
   "title": "下山前的准备",
-  "requires": [
-    "name",
-    "instructor"
-  ],
+  "requires": ["name", "instructor"],
   "cast": {
     "player": {
       "name": "{name}"
     },
     "instructor": {
-      "name": "{instructor}"
+      "name": "{instructor}",
+      "portrait": "icon:npc-sect-instructor"
     }
   },
   "cues": [
     {
       "type": "scene",
-      "alt": "演武场边，教习留意着新弟子的兵器和随身行装。"
+      "alt": "演武场边，教习留意着新弟子的兵器和随身行装。",
+      "src": "/assets/story/scene-arrival-training-ink-v1.webp",
+      "focus": "50% 50%"
     },
     {
       "type": "title",
