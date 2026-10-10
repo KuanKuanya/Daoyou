@@ -2,8 +2,8 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig, type Plugin, type UserConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 const alias = {
   '@app': fileURLToPath(new URL('./src', import.meta.url)),
@@ -48,7 +48,7 @@ export default defineConfig((): UserConfig => {
             /^assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:js|css)$/,
           globPatterns: [
             'manifest.webmanifest',
-            'favicon.svg',
+            'favicon-ink-v3.png',
             'icons/*.png',
             'assets/paper.webp',
             'assets/app-boot/*.{svg,webp}',

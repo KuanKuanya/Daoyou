@@ -13,7 +13,7 @@ export function AppBootScreen() {
           aria-hidden="true"
           alt=""
           className="app-boot-logo"
-          src="/assets/app-boot/boot-logo.webp"
+          src="/assets/app-boot/boot-logo-v3.webp"
           draggable={false}
           fetchPriority="high"
         />
