@@ -42,7 +42,7 @@ pnpm run db:migrate
 - `pnpm run build` uses Turbo to build the independent API and Web packages; Nest CLI 12 builds `apps/api` with its default tsc builder; libraries are compiled in dependency order with tsc and export JavaScript/declarations from dist; Vite builds `apps/web`. The old V5 resolver Worker target was retired in Phase 10H. Preserve the remaining CI/CD entrypoints.
 - Vitest uses node environment and discovers pure logic tests under `packages/*/src`; tests move with their owning domain during package extraction.
 - Docker runtime contains Node, the pnpm-deployed API production dependencies, package metadata and `dist`; ALTCHA uses the server-side `ALTCHA_HMAC_SECRET` and does not require a frontend site key.
-- GitHub Actions only builds and pushes the API image on tag pushes, always publishing latest; quality checks are run locally as needed.
+- GitHub Actions checks local-dev pushes and PRs to local-dev/production. Only KuanKuanya/Daoyou production releases publish kuankuan/daoyou-app and matching SPA/migration artifacts, then deploy to /opt/daoyou over SSH. master and tag pushes do not release. Setup and recovery are documented in docs/production-pipeline.md.
 
 ## Skills To Use
 

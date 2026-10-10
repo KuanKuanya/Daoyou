@@ -4,8 +4,9 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-${SCRIPT_DIR}/docker-compose.production.yml}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-daoyou}"
-ENV_FILE="${ENV_FILE:-/root/daoyou/.env.production}"
-APP_IMAGE="${APP_IMAGE:-swkzymlyy/daoyou-app:latest}"
+ENV_FILE="${ENV_FILE:-/opt/daoyou/.env.production}"
+APP_IMAGE="${APP_IMAGE:?Set APP_IMAGE to an explicit kuankuan/daoyou-app tag or digest}"
+PULL_IMAGE="${PULL_IMAGE:-1}"
 APP_NETWORK="${APP_NETWORK:-daoyou-runtime}"
 
 BLUE_PORT="${BLUE_PORT:-3000}"
@@ -13,7 +14,8 @@ GREEN_PORT="${GREEN_PORT:-3001}"
 BLUE_CONTAINER="${BLUE_CONTAINER:-daoyou-app-blue}"
 GREEN_CONTAINER="${GREEN_CONTAINER:-daoyou-app-green}"
 OPENRESTY_CONTAINER="${OPENRESTY_CONTAINER:-1Panel-openresty-PkPz}"
-UPSTREAM_CONF="${UPSTREAM_CONF:-/opt/1panel/www/sites/hk.daoyou.org/upstream/daoyou_backend.conf}"
+NGINX_MODE="${NGINX_MODE:-host}"
+UPSTREAM_CONF="${UPSTREAM_CONF:-/etc/nginx/conf.d/upstream/backend.conf}"
 HEALTH_PATH="${HEALTH_PATH:-/api/health-check}"
 MAX_RETRIES="${MAX_RETRIES:-40}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-3}"
@@ -36,6 +38,16 @@ for command in docker curl flock sed cmp; do
   fi
 done
 
+if [ "${NGINX_MODE}" = "host" ]; then
+  if ! command -v nginx >/dev/null 2>&1; then
+    echo "Required command not found: nginx" >&2
+    exit 1
+  fi
+elif [ "${NGINX_MODE}" != "container" ]; then
+  echo "NGINX_MODE must be host or container" >&2
+  exit 1
+fi
+
 if [ "${EUID}" -eq 0 ]; then
   PRIVILEGED=()
 elif command -v sudo >/dev/null 2>&1; then
@@ -56,6 +68,22 @@ fi
 
 compose() {
   docker compose -f "${COMPOSE_FILE}" -p "${COMPOSE_PROJECT_NAME}" "$@"
+}
+
+nginx_validate() {
+  if [ "${NGINX_MODE}" = "host" ]; then
+    "${PRIVILEGED[@]}" nginx -t
+  else
+    "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -t
+  fi
+}
+
+nginx_reload() {
+  if [ "${NGINX_MODE}" = "host" ]; then
+    "${PRIVILEGED[@]}" nginx -s reload
+  else
+    "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload
+  fi
 }
 
 container_is_healthy() {
@@ -122,7 +150,11 @@ if [ -n "${active_container}" ]; then
   docker inspect --format 'Previous image: {{.Config.Image}} / {{.Image}}' "${active_container}"
 fi
 
-compose --profile "${target_profile}" pull "${target_service}"
+if [ "${PULL_IMAGE}" = "1" ]; then
+  compose --profile "${target_profile}" pull "${target_service}"
+else
+  echo "Skipping image pull (PULL_IMAGE=${PULL_IMAGE})"
+fi
 docker image inspect --format 'Target image: {{.Id}} / {{json .RepoDigests}} / revision={{with index .Config "Labels"}}{{index . "org.opencontainers.image.revision"}}{{else}}unknown{{end}}' "${APP_IMAGE}"
 stop_and_remove_service "${target_service}"
 compose --profile "${target_profile}" up -d --no-deps --force-recreate "${target_service}"
@@ -161,12 +193,12 @@ if cmp -s "${UPSTREAM_CONF}" "${temporary}"; then
 
   echo "Upstream already points to ${target_service} on port ${target_port}"
 
-  if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -t; then
+  if ! nginx_validate; then
     echo "OpenResty configuration validation failed" >&2
     exit 1
   fi
 
-  if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload; then
+  if ! nginx_reload; then
     echo "OpenResty reload failed" >&2
     exit 1
   fi
@@ -179,16 +211,16 @@ fi
 "${PRIVILEGED[@]}" cp "${UPSTREAM_CONF}" "${backup}"
 "${PRIVILEGED[@]}" cp "${temporary}" "${UPSTREAM_CONF}"
 
-if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -t; then
+if ! nginx_validate; then
   "${PRIVILEGED[@]}" cp "${backup}" "${UPSTREAM_CONF}"
   stop_and_remove_service "${target_service}"
   echo "OpenResty configuration validation failed; upstream restored" >&2
   exit 1
 fi
 
-if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload; then
+if ! nginx_reload; then
   "${PRIVILEGED[@]}" cp "${backup}" "${UPSTREAM_CONF}"
-  "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload || true
+  nginx_reload || true
   stop_and_remove_service "${target_service}"
   echo "OpenResty reload failed; upstream restored" >&2
   exit 1

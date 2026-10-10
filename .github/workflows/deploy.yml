@@ -1,62 +1,188 @@
-name: Build and Deploy
+name: Production release
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [production]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Finish an active deployment before starting another release.
+concurrency:
+  group: production-release
+  cancel-in-progress: false
 
 env:
-  APP_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/daoyou-app
+  APP_IMAGE_NAME: kuankuan/daoyou-app
 
 jobs:
-  build-and-push:
+  checks:
+    if: github.repository == 'KuanKuanya/Daoyou' && github.ref == 'refs/heads/production'
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish production artifacts
+    needs: checks
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: production
+    outputs:
+      image: ${{ steps.release.outputs.image }}
+      artifact: ${{ steps.release.outputs.artifact }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Image tags and revision
-        id: metadata
-        uses: docker/metadata-action@v5
+      - uses: actions/checkout@v4
         with:
-          images: ${{ env.APP_IMAGE_NAME }}
-          tags: |
-            type=ref,event=tag
-            type=sha,format=long
-            type=raw,value=latest
+          persist-credentials: false
 
-      # 登录 Docker Hub
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - name: Validate Docker Hub configuration
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          test "$DOCKERHUB_USERNAME" = kuankuan || {
+            echo "::error::DOCKERHUB_USERNAME must be kuankuan"
+            exit 1
+          }
+          test -n "$DOCKERHUB_TOKEN" || {
+            echo "::error::DOCKERHUB_TOKEN is missing"
+            exit 1
+          }
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: game-web-${{ github.sha }}
+          path: ${{ runner.temp }}/release
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push app image
+      - name: Build and push API image
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile.app
+          platforms: linux/amd64
           push: true
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          # Share intermediate build layers across release tags.
+          tags: |
+            ${{ env.APP_IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.APP_IMAGE_NAME }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/KuanKuanya/Daoyou
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=registry,ref=${{ env.APP_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.APP_IMAGE_NAME }}:buildcache,mode=max
 
-      - name: Record release identity
+      - name: Package matching source, SPA and release identity
+        id: release
         env:
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
-          IMAGE_TAGS: ${{ steps.metadata.outputs.tags }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: |
+          git archive --format=tar.gz HEAD -o "$RUNNER_TEMP/release/source.tar.gz"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          image = os.environ["APP_IMAGE_NAME"] + "@" + os.environ["IMAGE_DIGEST"]
+          manifest = {
+              "revision": os.environ["GITHUB_SHA"],
+              "image": image,
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "api_base_url": os.environ["VITE_API_BASE_URL"],
+          }
+          path = Path(os.environ["RUNNER_TEMP"]) / "release/release.json"
+          path.write_text(json.dumps(manifest, indent=2) + "\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("image=" + image + "\n")
+          PY
+          tar -C "$RUNNER_TEMP/release" -czf "$RUNNER_TEMP/daoyou-release.tgz" .
+          echo "artifact=release-$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.release.outputs.artifact }}
+          path: ${{ runner.temp }}/daoyou-release.tgz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record published release
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
         run: |
           {
-            printf 'Revision: `%s`\n\n' "$GITHUB_SHA"
-            printf 'Release tag: `%s`\n\n' "$GITHUB_REF_NAME"
-            printf 'Image digest: `%s`\n\n' "$IMAGE_DIGEST"
-            printf 'Image tags:\n```text\n%s\n```\n' "$IMAGE_TAGS"
+            printf 'Revision: %s\n\n' "$GITHUB_SHA"
+            printf 'API image: %s\n\n' "$IMAGE"
+            printf 'SPA and migration source: release-%s-%s-%s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy production server
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.publish.outputs.artifact }}
+          path: ${{ runner.temp }}/release
+
+      - name: Configure deployment SSH
+        env:
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_KEY" && test -n "$SSH_KNOWN_HOSTS" || {
+            echo "::error::Configure PRODUCTION_SSH_KEY and PRODUCTION_SSH_KNOWN_HOSTS"
+            exit 1
+          }
+          umask 077
+          mkdir -p "$RUNNER_TEMP/deploy-ssh"
+          printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/deploy-ssh/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-ssh/known_hosts"
+          ssh-keygen -y -P '' -f "$RUNNER_TEMP/deploy-ssh/key" > /dev/null
+          ssh-keygen -F 120.48.9.69 -f "$RUNNER_TEMP/deploy-ssh/known_hosts" > /dev/null
+
+      - name: Upload and deploy matching release
+        run: |
+          ssh_options=(
+            -i "$RUNNER_TEMP/deploy-ssh/key"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy-ssh/known_hosts"
+            -o ConnectTimeout=15
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=4
+          )
+          target=root@120.48.9.69
+          bundle="/opt/daoyou/incoming/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.tgz"
+          ssh "${ssh_options[@]}" "$target" 'mkdir -p /opt/daoyou/incoming'
+          scp "${ssh_options[@]}" "$RUNNER_TEMP/release/daoyou-release.tgz" "$target:$bundle"
+          ssh "${ssh_options[@]}" "$target" \
+            "bash -s -- '$bundle' '$GITHUB_SHA' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'" \
+            < scripts/deploy-release.sh
+
+      - name: Record deployment
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+        run: |
+          {
+            printf 'Deployed revision: %s\n\n' "$GITHUB_SHA"
+            printf 'API image: %s\n\n' "$IMAGE"
+            printf 'Server release: /opt/daoyou/releases/%s/%s-%s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove runner SSH files
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/deploy-ssh"

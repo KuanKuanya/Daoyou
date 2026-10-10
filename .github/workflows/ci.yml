@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [local-dev]
+  pull_request:
+    branches: [local-dev, production]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@12.10.1
+
+      - name: Locate pnpm store
+        id: store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.store.outputs.path }}
+            .turbo
+          key: ${{ runner.os }}-node24-pnpm12-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-node24-pnpm12-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - run: pnpm install --frozen-lockfile --prod=false
+      # Typecheck also builds library exports needed by the API linter.
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm run test
+      - name: Build API and game SPA
+        env:
+          NODE_ENV: production
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: pnpm run build
+
+      - name: Archive game SPA
+        run: tar -C apps/web/dist -czf "$RUNNER_TEMP/game-web.tar.gz" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-web-${{ github.sha }}
+          path: ${{ runner.temp }}/game-web.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
