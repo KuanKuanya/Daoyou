@@ -5,6 +5,7 @@ import type { Entry, Reference } from '../../../scripts/workbench/catalog';
 import { GameIcon } from '../src/components/ui/GameIcon';
 import AudioOverview from './AudioOverview';
 import { AudioPreview } from './AudioPreview';
+import BalanceOverview from './BalanceOverview';
 import MapOverview from './MapOverview';
 import './style.css';
 
@@ -47,6 +48,7 @@ const sections = [
   '资产资源',
   '地图世界',
   '宗门体系',
+  '数值平衡',
   '背景音乐',
   '检查报告',
 ];
@@ -106,6 +108,7 @@ function References({
 export default function Workbench() {
   const [catalog, setCatalog] = useState<Catalog>();
   const [section, setSection] = useState('项目总览');
+  const [balanceVisited, setBalanceVisited] = useState(false);
   const [mapSession, setMapSession] = useState(0);
   const [category, setCategory] = useState('全部');
   const [query, setQuery] = useState('');
@@ -178,6 +181,7 @@ export default function Workbench() {
   };
   const navigate = (next: string, nextCategory = '全部') => {
     if (!dirtyGuard()) return;
+    if (next === '数值平衡') setBalanceVisited(true);
     reset();
     setMapSession((value) => value + 1);
     setSection(next);
@@ -368,6 +372,11 @@ export default function Workbench() {
             </button>
           </div>
         )}
+        {catalog && balanceVisited && (
+          <div hidden={section !== '数值平衡'}>
+            <BalanceOverview />
+          </div>
+        )}
         {!catalog ? (
           <div className="loading">
             {error ? '索引未加载' : '读取项目内容与资源…'}
@@ -496,7 +505,7 @@ export default function Workbench() {
               </section>
             </div>
           </main>
-        ) : section === '背景音乐' ? (
+        ) : section === '数值平衡' ? null : section === '背景音乐' ? (
           <AudioOverview
             key={catalog.audio.revision}
             audio={catalog.audio}

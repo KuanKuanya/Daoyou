@@ -1,23 +1,26 @@
-import { getRealmStageLevel } from '@daoyou/game-domain/progression';
-import { getRealmStageNaturalAttributeValue, getRealmStageUnallocatedAttributeBudget } from '../progression/attributes.js';
+import type { RealmStage, RealmType } from '@daoyou/constants/realms';
 import { BODY_CULTIVATION_TRACK_KEYS } from '@daoyou/game-content/body-cultivation';
+import { DAO_EQUIPMENT_TEMPLATES_V1 } from '@daoyou/game-content/equipment/base';
+import { COMBAT_V6_SECT_DEFINITIONS } from '@daoyou/game-content/sects';
+import type { CombatV6TrainingPlayerInput } from '@daoyou/game-domain/combat';
+import { type CombatV6SectId } from '@daoyou/game-domain/combat';
 import type {
   BodyCultivationRealm,
   BodyCultivationState,
 } from '@daoyou/game-domain/condition';
-import type { RealmStage, RealmType } from '@daoyou/constants/realms';
-import { generateStarterBeast } from '../beasts/generator.js';
-import { allocateBeast, gainBeastExp } from '../beasts/progression.js';
-import { COMBAT_V6_SECT_DEFINITIONS } from '@daoyou/game-content/sects';
-import { type CombatV6SectId } from '@daoyou/game-domain/combat';
-import type { CombatV6TrainingPlayerInput } from '@daoyou/game-domain/combat';
 import {
   DAO_EQUIPMENT_GENERATOR_VERSION,
   OPEN_EQUIPMENT_LEVELS,
 } from '@daoyou/game-domain/equipment';
-import { DAO_EQUIPMENT_TEMPLATES_V1 } from '@daoyou/game-content/equipment/base';
+import { getRealmStageLevel } from '@daoyou/game-domain/progression';
+import { generateStarterBeast } from '../beasts/generator.js';
+import { allocateBeast, gainBeastExp } from '../beasts/progression.js';
 import { generateDaoEquipmentV1 } from '../equipment/generator.js';
 import { equipmentRealm } from '../equipment/realm.js';
+import {
+  getRealmStageNaturalAttributeValue,
+  getRealmStageUnallocatedAttributeBudget,
+} from '../progression/attributes.js';
 
 // Frozen progression samples; never inferred from the challenger at runtime.
 const trainingByRealm: Partial<
@@ -76,17 +79,20 @@ export function towerReferenceBuild(
   // 固定参考个体的原有技能，避免出生候选顺序改变后重掷塔层定标样本。
   beast.skills = ['beast.defense', 'beast.strength'];
   beast.skillSlotCapacity = beast.skills.length;
-  const pet = allocateBeast(
-    beast,
-    {
-      constitution: level,
-      strength: level * 3,
-      magic: 0,
-      endurance: Math.floor(level / 2),
-      agility: level - Math.floor(level / 2),
-    },
-    level,
-  );
+  const pet =
+    beast.level <= level
+      ? allocateBeast(
+          beast,
+          {
+            constitution: level,
+            strength: level * 3,
+            magic: 0,
+            endurance: Math.floor(level / 2),
+            agility: level - Math.floor(level / 2),
+          },
+          level,
+        )
+      : undefined;
   return {
     cultivator: {
       id: owner,
@@ -162,9 +168,15 @@ export function towerReferenceBuild(
       }),
     ),
     manuals: { version: 1, revision: 0, learned: [], build: { slots: [] } },
-    beasts: {
-      beasts: [pet],
-      lineup: { carriedBeastIds: [pet.id], leadBeastId: pet.id, revision: 0 },
-    },
+    beasts: pet
+      ? {
+          beasts: [pet],
+          lineup: {
+            carriedBeastIds: [pet.id],
+            leadBeastId: pet.id,
+            revision: 0,
+          },
+        }
+      : undefined,
   };
 }

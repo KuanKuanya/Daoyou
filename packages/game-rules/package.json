@@ -23,6 +23,7 @@
     "./combat/appearance": "./dist/combat/unit-appearance.js",
     "./combat/arena": "./dist/combat/arena.js",
     "./combat/auto": "./dist/public/combat/auto.js",
+    "./combat/balance": "./dist/public/combat/balance.js",
     "./combat/breakthrough/host": "./dist/combat/breakthrough/host.js",
     "./combat/dungeon/host": "./dist/combat/dungeon/host.js",
     "./combat/encounter/host": "./dist/combat/encounter/host.js",

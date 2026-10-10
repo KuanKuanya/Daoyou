@@ -1,6 +1,262 @@
 @import 'tailwindcss';
 @source '../src/components/ui/GameIcon.tsx';
 @source '../src/components/ui/GameImage.tsx';
+.balance-overview {
+  padding: 24px 28px;
+  min-width: 0;
+}
+.balance-setup {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.balance-setup > legend {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.balance-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+.balance-fields label,
+.balance-build label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+}
+.balance-fields input {
+  width: 130px;
+}
+.balance-builds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.balance-build {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 0;
+  border-top: 1px solid #dde1e4;
+  padding: 12px 0 0;
+  margin: 0;
+  min-width: 0;
+}
+.balance-build legend {
+  padding-right: 10px;
+  font-weight: 600;
+}
+.balance-build .balance-check,
+.balance-check {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.balance-check input {
+  width: 16px;
+  height: 16px;
+}
+.balance-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+.balance-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.balance-actions label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.balance-actions select {
+  max-width: 100%;
+}
+.balance-overview progress {
+  width: 100%;
+  height: 8px;
+  accent-color: #287957;
+}
+.balance-report-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0 16px;
+}
+.balance-report-heading h2,
+.balance-report-heading h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.balance-scope {
+  margin: 14px 0 24px;
+  border-bottom: 1px solid #dde1e4;
+  padding-bottom: 14px;
+  line-height: 1.7;
+}
+.balance-scope summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.balance-scope pre {
+  max-height: 260px;
+  overflow: auto;
+  font-size: 12px;
+}
+.balance-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.balance-results {
+  min-width: 1180px;
+}
+.balance-overview td,
+.balance-overview th {
+  padding: 10px 12px;
+}
+.balance-overview td small {
+  display: block;
+  color: #778187;
+  font-size: 11px;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.balance-results td:first-child {
+  min-width: 200px;
+  max-width: 270px;
+}
+.balance-results td:first-child button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+}
+.balance-results tr.selected {
+  background: #e7f2eb;
+}
+.balance-flags {
+  color: #955b16;
+  min-width: 160px;
+}
+.balance-matrix {
+  min-width: 620px;
+  margin-bottom: 24px;
+}
+.balance-matrix caption {
+  text-align: left;
+  font-size: 12px;
+  color: #778187;
+  padding: 12px 0;
+}
+.balance-matrix button {
+  width: 100%;
+  font-family: var(--font-mono);
+}
+.balance-matrix .balance-high {
+  background: #dceee3;
+  color: #205c3d;
+}
+.balance-matrix .balance-low {
+  background: #f9e2e3;
+  color: #993b41;
+}
+.balance-inspector {
+  padding-top: 16px;
+  margin-top: 24px;
+  border-top: 1px solid #dde1e4;
+}
+.balance-inspector h2 {
+  font-size: 17px;
+}
+.balance-inspector h3 {
+  font-size: 14px;
+}
+.balance-inspector table {
+  min-width: 640px;
+}
+.balance-group {
+  display: inline-block;
+  margin-right: 8px;
+  font-weight: 600;
+  color: #287957;
+}
+.balance-group.b {
+  color: #a54150;
+}
+.balance-events {
+  max-height: 450px;
+  overflow: auto;
+  border-top: 1px solid #dde1e4;
+}
+.balance-events > div {
+  display: grid;
+  grid-template-columns: 38px 130px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e4e7e9;
+  font-size: 12px;
+}
+.balance-events b {
+  font-weight: 500;
+  color: #55747e;
+  overflow-wrap: anywhere;
+}
+.balance-events span {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.balance-empty {
+  padding: 32px 0;
+  border-top: 1px solid #dde1e4;
+}
+.balance-empty h2 {
+  font-size: 17px;
+}
+@media (max-width: 1100px) {
+  .balance-builds {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .balance-overview {
+    padding: 18px 14px;
+  }
+  .balance-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .balance-fields input,
+  .balance-fields select {
+    width: 100%;
+  }
+  .balance-overview .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 0;
+  }
+  .balance-overview .summary-strip strong {
+    font-size: 24px;
+  }
+  .balance-events > div {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+  .balance-events span {
+    grid-column: 2;
+  }
+}
 .atlas-editor {
   background: #fff;
   padding: 18px 26px;
@@ -1009,4 +1265,21 @@ audio {
   .summary-strip span {
     font-size: 11px;
   }
+}
+.audio-field {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+.audio-field input,
+.audio-field select {
+  width: 100%;
+  min-width: 0;
+}
+.audio-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
 }
