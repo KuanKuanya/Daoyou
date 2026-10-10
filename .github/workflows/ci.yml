@@ -48,7 +48,8 @@ jobs:
       # Typecheck also builds library exports needed by the API linter.
       - run: pnpm run typecheck
       - run: pnpm run lint
-      - run: pnpm run test
+      # The seeded tower simulations need a CPU without competing test workers.
+      - run: pnpm run test --maxWorkers=1
       - name: Build API and game SPA
         env:
           NODE_ENV: production
