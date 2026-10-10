@@ -1,0 +1,17 @@
+{
+  "tracks": [
+    {
+      "id": "wendao-xukong",
+      "name": "问道虚空",
+      "src": "/assets/audio/bgm/wendao-xukong-v1.mp3",
+      "gain": 1,
+      "source": "项目作者提供",
+      "license": "待确认发行授权"
+    }
+  ],
+  "profiles": {
+    "cultivation": "wendao-xukong",
+    "exploration": "wendao-xukong",
+    "combat": "wendao-xukong"
+  }
+}

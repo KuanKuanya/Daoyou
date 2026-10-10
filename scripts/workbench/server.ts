@@ -10,6 +10,7 @@ import {
   replaceAtlasImage,
   replaceAtlasPoints,
 } from './atlas.ts';
+import { audioFile, parseAudioManifest, readAudio } from './audio.ts';
 import {
   buildCatalog,
   digest,
@@ -71,6 +72,7 @@ export function workbenchMiddleware(root: string) {
         send(200, {
           ...catalog,
           atlas,
+          audio: await readAudio(root),
           undoAvailable: history.length > 0,
         });
         return;
@@ -103,6 +105,25 @@ export function workbenchMiddleware(root: string) {
         return;
       }
       const catalog = await buildCatalog(root);
+      if (req.url === '/__workbench/audio') {
+        const before = await readFile(path.join(root, audioFile), 'utf8');
+        if (input.revision !== digest(before))
+          throw new Error('音乐配置已变化，请刷新后重新编辑');
+        const manifest = parseAudioManifest(input.manifest);
+        for (const track of manifest.tracks) {
+          if (!catalog.assets.some((asset) => asset.url === track.src))
+            throw new Error(`音频素材不存在：${track.name}`);
+        }
+        const after = `${JSON.stringify(manifest, null, 2)}\n`;
+        if (
+          digest(await readFile(path.join(root, audioFile))) !== digest(before)
+        )
+          throw new Error('音乐配置已被外部修改，请刷新');
+        await atomicWrite(audioFile, after);
+        history.push({ file: audioFile, before, after });
+        send(200, { saved: audioFile });
+        return;
+      }
       if (
         req.url === '/__workbench/atlas' ||
         req.url === '/__workbench/atlas-image'

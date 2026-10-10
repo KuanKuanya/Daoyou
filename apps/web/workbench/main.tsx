@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AtlasIndex } from '../../../scripts/workbench/atlas';
+import type { readAudio } from '../../../scripts/workbench/audio';
 import type { Entry, Reference } from '../../../scripts/workbench/catalog';
 import { GameIcon } from '../src/components/ui/GameIcon';
+import AudioOverview from './AudioOverview';
+import { AudioPreview } from './AudioPreview';
 import MapOverview from './MapOverview';
 import './style.css';
 
@@ -22,6 +25,7 @@ type Catalog = {
   registryRevision: string;
   undoAvailable: boolean;
   atlas: AtlasIndex;
+  audio: Awaited<ReturnType<typeof readAudio>>;
 };
 const categories = [
   '灵兽',
@@ -43,6 +47,7 @@ const sections = [
   '资产资源',
   '地图世界',
   '宗门体系',
+  '背景音乐',
   '检查报告',
 ];
 const imagePattern = /\.(png|webp|svg|jpe?g|gif)$/i;
@@ -227,7 +232,7 @@ export default function Workbench() {
           (assetFilter === '已注册图标' && a.names.length > 0) ||
           (assetFilter === '未发现引用' && a.references.length === 0) ||
           (assetFilter === '地图' && a.path.includes('/maps/')) ||
-          (assetFilter === '音频' && /\.(mp3|ogg|wav)$/i.test(a.path))),
+          (assetFilter === '音频' && /\.(mp3|ogg|wav|m4a)$/i.test(a.path))),
     ) ?? [];
   const iconValue =
     typeof patch.icon === 'string' ? patch.icon : selected?.icon;
@@ -491,6 +496,22 @@ export default function Workbench() {
               </section>
             </div>
           </main>
+        ) : section === '背景音乐' ? (
+          <AudioOverview
+            key={catalog.audio.revision}
+            audio={catalog.audio}
+            assets={catalog.assets}
+            onDirty={setDirty}
+            save={async (manifest) => {
+              await request('audio', {
+                revision: catalog.audio.revision,
+                manifest,
+              });
+              setDirty(false);
+              await refresh();
+              setNotice('背景音乐配置已保存，可撤销');
+            }}
+          />
         ) : section === '检查报告' ? (
           <main className="overview">
             <h2>引用与文件检查 · {catalog.issues.length} 项</h2>
@@ -514,6 +535,16 @@ export default function Workbench() {
               ))
             ) : (
               <p className="success">节点归属、锚点覆盖与坐标范围检查通过。</p>
+            )}
+            <h2>背景音乐检查 · {catalog.audio.issues.length} 项</h2>
+            {catalog.audio.issues.length ? (
+              catalog.audio.issues.map((issue) => (
+                <p className="issue" key={issue}>
+                  {issue}
+                </p>
+              ))
+            ) : (
+              <p className="success">音乐配置检查通过。</p>
             )}
             <h2>
               未发现静态引用 ·{' '}
@@ -759,8 +790,8 @@ export default function Workbench() {
                       <div className="image-stage">
                         <img src={asset.url} alt={asset.path} />
                       </div>
-                    ) : /\.(mp3|wav|ogg)$/i.test(asset.url) ? (
-                      <audio controls src={asset.url} />
+                    ) : /\.(mp3|wav|ogg|m4a)$/i.test(asset.url) ? (
+                      <AudioPreview key={asset.url} src={asset.url} />
                     ) : (
                       <p>字体资源</p>
                     )}

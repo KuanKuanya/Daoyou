@@ -1,3 +1,4 @@
+import { useBgm } from '@app/components/providers/bgmContext';
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { updateGameSettings, useGameSettings } from '@app/lib/game-setting';
 import type { ArenaSessionView } from '@daoyou/contracts/combat/arena';
@@ -73,6 +74,8 @@ export function CombatV6Battle({
   back,
   backLabel,
 }: Props) {
+  const { enterCombat } = useBgm();
+  useEffect(enterCombat, [enterCombat]);
   const { keepCombatAuto, combatAutoHeld } = useGameSettings();
   const rememberedAuto = keepCombatAuto && combatAutoHeld;
   const [autoChoice, setAutoChoice] = useState({

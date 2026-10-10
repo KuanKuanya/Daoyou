@@ -138,6 +138,14 @@ registerRoute(
 );
 
 registerRoute(
+  ({ request, url }) =>
+    isSameOrigin(url) &&
+    (request.destination === 'audio' ||
+      url.pathname.startsWith('/assets/audio/')),
+  new NetworkOnly(),
+);
+
+registerRoute(
   ({ request, url }) => request.method === 'GET' && isHashedBuildAsset(url),
   new CacheFirst({
     cacheName: BUILD_ASSET_CACHE,

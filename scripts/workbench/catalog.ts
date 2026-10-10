@@ -234,7 +234,7 @@ export async function buildCatalog(root: string) {
   const assets = await Promise.all(
     (await files(root, publicDirectory))
       .filter((f) =>
-        /\.(webp|png|svg|jpe?g|gif|mp3|ogg|wav|woff2?|ttf)$/i.test(f),
+        /\.(webp|png|svg|jpe?g|gif|mp3|ogg|wav|m4a|woff2?|ttf)$/i.test(f),
       )
       .map(async (file) => {
         const url = `/${file.slice(publicDirectory.length + 1)}`;

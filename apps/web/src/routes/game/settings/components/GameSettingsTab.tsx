@@ -1,4 +1,5 @@
 import { usePwaInstall } from '@app/components/providers/PwaInstallProvider';
+import { useBgm } from '@app/components/providers/bgmContext';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkSwitch } from '@app/components/ui/InkSwitch';
 import { updateGameSettings, useGameSettings } from '@app/lib/game-setting';
@@ -13,7 +14,9 @@ import {
 import { formatDateTime } from './utils';
 
 export function GameSettingsTab() {
-  const { mapMode, imageOpacity, keepCombatAuto } = useGameSettings();
+  const { mapMode, imageOpacity, keepCombatAuto, musicEnabled, musicVolume } =
+    useGameSettings();
+  const bgm = useBgm();
   const cultivator = useCultivatorIdentity().data?.cultivator;
   const pwa = usePwaInstall();
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
@@ -57,6 +60,51 @@ export function GameSettingsTab() {
 
   return (
     <div className="space-y-6">
+      <SettingsSection>
+        <label className="flex items-center justify-between gap-3">
+          <span className={settingsLabelClass}>背景音乐</span>
+          <InkSwitch
+            checked={musicEnabled}
+            onCheckedChange={bgm.setEnabled}
+            aria-label="背景音乐"
+          />
+        </label>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <label htmlFor="game-music-volume" className={settingsLabelClass}>
+            音量
+            <output htmlFor="game-music-volume" className="ml-3 font-mono">
+              {Math.round(musicVolume * 100)}%
+            </output>
+          </label>
+          <span className="text-ink-secondary text-xs">
+            {musicEnabled ? bgm.trackName : '已关闭'}
+          </span>
+        </div>
+        <input
+          id="game-music-volume"
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={Math.round(musicVolume * 100)}
+          aria-valuetext={`${Math.round(musicVolume * 100)}%`}
+          className="accent-crimson focus-visible:outline-crimson mt-2 h-11 w-full cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+          onChange={(event) =>
+            updateGameSettings({
+              musicVolume: event.currentTarget.valueAsNumber / 100,
+            })
+          }
+        />
+        {musicEnabled &&
+        (bgm.status === 'blocked' || bgm.status === 'error') ? (
+          <InkButton variant="secondary" onClick={bgm.retry}>
+            {bgm.status === 'blocked' ? '播放音乐' : '重新播放'}
+          </InkButton>
+        ) : null}
+        {musicEnabled && bgm.status === 'error' ? (
+          <SettingsMessage>音乐暂时无法播放</SettingsMessage>
+        ) : null}
+      </SettingsSection>
       <SettingsSection>
         <label className="flex items-center justify-between gap-3">
           <span className="min-w-0">

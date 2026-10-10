@@ -7,6 +7,7 @@ import { GameLoadingState } from '@app/components/game-shell/GameLoadingState';
 import { GameTopHud } from '@app/components/game-shell/GameTopHud';
 import { RealtimeConnectionToasts } from '@app/components/game-shell/RealtimeConnectionToasts';
 import { useGameHudModel } from '@app/components/game-shell/useGameHudModel';
+import { BgmProvider } from '@app/components/providers/BgmProvider';
 import { InkButton } from '@app/components/ui/InkButton';
 import { PlayerProvider } from '@app/lib/player/PlayerProvider';
 import { usePlayerSession } from '@app/lib/resources/player';
@@ -581,9 +582,11 @@ export default function GameLayout() {
   const { userId } = useLoaderData() as UserLoaderData;
   return (
     <PlayerProvider accountId={userId}>
-      <div className="bg-paper min-h-screen">
-        <Outlet />
-      </div>
+      <BgmProvider>
+        <div className="bg-paper min-h-screen">
+          <Outlet />
+        </div>
+      </BgmProvider>
     </PlayerProvider>
   );
 }

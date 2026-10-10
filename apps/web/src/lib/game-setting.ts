@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react';
 
 /** Browser-local preferences. Never store credentials or battle progress here. */
 export interface GameSettings {
+  musicEnabled: boolean;
+  musicVolume: number;
   mapMode: 'atlas' | 'text';
   imageOpacity: number;
   /** Remember the in-battle auto toggle for later battles in this browser. */
@@ -12,6 +14,8 @@ export interface GameSettings {
 
 export const GAME_SETTING_STORAGE_KEY = 'game-setting';
 const defaults: Readonly<GameSettings> = {
+  musicEnabled: false,
+  musicVolume: 0.25,
   mapMode: 'atlas',
   imageOpacity: 1,
   keepCombatAuto: false,
@@ -28,6 +32,12 @@ function normalizeImageOpacity(value: unknown): number {
     : defaults.imageOpacity;
 }
 
+function normalizeMusicVolume(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(1, value))
+    : defaults.musicVolume;
+}
+
 function readSettings(): GameSettings {
   try {
     const stored = JSON.parse(
@@ -36,6 +46,8 @@ function readSettings(): GameSettings {
     if (stored?.version === 1) {
       const keepCombatAuto = stored.keepCombatAuto === true;
       return {
+        musicEnabled: stored.musicEnabled === true,
+        musicVolume: normalizeMusicVolume(stored.musicVolume),
         mapMode: ['atlas', 'text'].includes(stored.mapMode)
           ? stored.mapMode
           : defaults.mapMode,
@@ -52,6 +64,8 @@ function readSettings(): GameSettings {
 
 function sameSettings(left: GameSettings, right: GameSettings) {
   return (
+    left.musicEnabled === right.musicEnabled &&
+    left.musicVolume === right.musicVolume &&
     left.mapMode === right.mapMode &&
     left.imageOpacity === right.imageOpacity &&
     left.keepCombatAuto === right.keepCombatAuto &&
@@ -94,6 +108,8 @@ function subscribe(listener: () => void) {
 
 export function updateGameSettings(patch: Partial<GameSettings>) {
   const next = { ...getSnapshot(), ...patch };
+  next.musicEnabled = next.musicEnabled === true;
+  next.musicVolume = normalizeMusicVolume(next.musicVolume);
   next.imageOpacity = normalizeImageOpacity(next.imageOpacity);
   next.keepCombatAuto = next.keepCombatAuto === true;
   // The held choice is meaningless until the player asks to keep it.
