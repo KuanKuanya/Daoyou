@@ -352,7 +352,7 @@ export function ForgingRoom() {
                 <section>
                   <h3 className="mb-2 font-medium">开炉成器</h3>
                   <p className="text-ink-secondary">
-                    铸造可直接使用储物袋或储藏室中的图纸与灵材，旧材料需先从洞府宝库取出。确认开炉时消耗图纸、材料、灵石与天地灵气，成品优先入包，满时存入储藏室。炉前放入、移出不扣除物品。
+                    铸造可直接使用储物袋或储藏室中的图纸与灵材。确认开炉时消耗图纸、材料、灵石与天地灵气，成品优先入包，满时存入储藏室。炉前放入、移出不扣除物品。
                   </p>
                 </section>
               </div>

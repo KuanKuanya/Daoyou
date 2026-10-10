@@ -16,18 +16,6 @@ export const dailyRoutes = [
     )}
   />,
   <Route
-    path="cave/storage"
-    lazy={lazyRoute(() => import('@app/routes/game/inventory/route'))}
-    handle={scene(
-      {
-        id: 'legacy-storage',
-        presentation: 'service',
-        summary: '收藏洞府旧物，取出灵材与丹药放入储物袋。',
-      },
-      '洞府宝库',
-    )}
-  />,
-  <Route
     path="cave/storage/new"
     lazy={lazyRoute(() => import('@app/routes/game/inventory/InventoryV6'))}
     handle={scene(

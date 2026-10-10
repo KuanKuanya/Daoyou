@@ -71,6 +71,4 @@
 
 `/game/inscriptions` 归属 `GameViewportLayout`，洞府与展开导航提供入口。`InscriptionRoom` 持有绘制／强化／烙印三个页签、四格堆叠材料、背包选择、双孔操作和费用确认；桌面左右布局，手机使用物品抽屉。共享物品格与预览沿用原组件，绘制台使用独立透明水墨素材。规则见 [阵纹室](inscription-room.md)。
 
-临时旧功法传承页 `/game/manual-migration` 属于 `GameViewportLayout`，使用 `manual-migration` scene 与 workflow 正文；洞府“洞府内”快捷区固定显示入口，无待兑换资产时在页面内展示空状态。自选与一次性兑换领取在该页面完成，工具删除边界见 `docs/manual-migration.md`。
-
-临时旧法宝焕新页 `/game/artifact-migration` 属于 `GameViewportLayout`，使用 `artifact-migration` scene 与 workflow 正文；洞府“洞府内”快捷区固定显示入口，无待兑换资产时在页面内展示空状态。选部位、确认兑换和奖励预览在该页面完成，删除边界见 `docs/artifact-migration.md`。
+新项目不展示旧系统迁移入口。旧藏宝库 `/game/cave/storage`、旧功法传承 `/game/manual-migration`、旧法宝焕新 `/game/artifact-migration` 已取消前端路由挂载和 scene metadata；当前储物袋使用 `/game/inventory`，洞府储藏室使用 `/game/cave/storage/new?location=storage`。修炼室和改天换地的返回链接也指向当前储物袋；灵田物品选择不再提供旧宝库取出按钮，炼器说明不再引导处理旧材料。旧页面源码与服务端迁移实现保留在仓库中，不属于现行玩家界面。

@@ -4,30 +4,6 @@ import { scene } from '../handles';
 
 export const cultivationRoutes = [
   <Route
-    path="artifact-migration"
-    lazy={lazyRoute(() => import('@app/routes/game/artifact-migration/route'))}
-    handle={scene(
-      {
-        id: 'artifact-migration',
-        presentation: 'workflow',
-        summary: '将旧法宝转为当前可用的道装。',
-      },
-      '旧法宝焕新',
-    )}
-  />,
-  <Route
-    path="manual-migration"
-    lazy={lazyRoute(() => import('@app/routes/game/manual-migration/route'))}
-    handle={scene(
-      {
-        id: 'manual-migration',
-        presentation: 'workflow',
-        summary: '将旧功法转为当前可用的传承。',
-      },
-      '旧功法传承',
-    )}
-  />,
-  <Route
     path="craft/refine"
     lazy={lazyRoute(() => import('@app/routes/game/craft/refine/route'))}
     handle={scene(

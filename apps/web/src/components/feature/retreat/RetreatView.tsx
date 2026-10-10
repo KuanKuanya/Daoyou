@@ -174,7 +174,7 @@ function RetreatBuffTags({
           <span>{emptyHint}</span>
           {showShortcuts ? (
             <>
-              <InkButton href="/game/cave/storage" variant="ghost">
+              <InkButton href="/game/inventory" variant="ghost">
                 背包
               </InkButton>
               <InkButton href="/game/craft/alchemy" variant="ghost">

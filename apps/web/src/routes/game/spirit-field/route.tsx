@@ -1,5 +1,4 @@
 import { apiFetch } from '@app/lib/api/fetch';
-import { VaultWithdrawal } from '@app/components/feature/forging/VaultWithdrawal';
 import { CraftInventoryPanel } from '@app/components/feature/items/CraftInventoryPanel';
 import { InventoryItems } from '@app/components/feature/items/InventoryItems';
 import { ItemSlot } from '@app/components/feature/items/ItemSlot';
@@ -408,7 +407,6 @@ export default function SpiritFieldPage() {
             : undefined,
         })}
       />
-      <VaultWithdrawal onChanged={() => void refresh()} />
     </CraftInventoryPanel>
   );
   return (

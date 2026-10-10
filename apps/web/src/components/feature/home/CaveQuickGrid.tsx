@@ -53,26 +53,6 @@ const CAVE_AREA_GROUPS: CaveQuickGroup[] = [
     ],
   },
   {
-    title: '旧入口',
-    areas: [
-      {
-        label: '旧藏宝库',
-        icon: 'icon:ui-treasure-chest',
-        href: '/game/cave/storage',
-      },
-      {
-        label: '旧功法传承',
-        icon: 'icon:ui-scroll',
-        href: '/game/manual-migration',
-      },
-      {
-        label: '旧法宝焕新',
-        icon: 'icon:beast-skill-mountain-breaker',
-        href: '/game/artifact-migration',
-      },
-    ],
-  },
-  {
     title: '出洞府',
     areas: [
       { label: '外出云游', icon: 'icon:map-landmark', href: '/game/dungeon' },

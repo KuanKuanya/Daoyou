@@ -262,7 +262,7 @@ export default function IdentityReshapePage() {
       if (!response.ok || !result.success) {
         throw new Error(result.error ?? '暂时无法放弃本次改命，请稍后重试。');
       }
-      navigate('/game/cave/storage', { replace: true });
+      navigate('/game/inventory', { replace: true });
     } catch (error) {
       pushToast({
         message: error instanceof Error ? error.message : '暂时无法放弃本次改命，请稍后重试。',
@@ -275,13 +275,13 @@ export default function IdentityReshapePage() {
 
   const temporarilyLeave = async () => {
     if (!session) {
-      navigate('/game/cave/storage');
+      navigate('/game/inventory');
       return;
     }
     if (!session.candidate) {
       if (!(await saveDraft(answers, description))) return;
     }
-    navigate('/game/cave/storage');
+    navigate('/game/inventory');
   };
 
   if (loading) {
@@ -320,8 +320,8 @@ export default function IdentityReshapePage() {
             >
               启封问命
             </InkButton>
-            <InkButton href="/game/cave/storage" className="text-[#d9cfba]">
-              返回洞府宝库
+            <InkButton href="/game/inventory" className="text-[#d9cfba]">
+              返回储物袋
             </InkButton>
           </div>
         </div>
