@@ -76,7 +76,9 @@ export interface SectRoomThemeOverride {
   actors?: Readonly<
     Record<
       string,
-      Partial<Pick<SectRoomActorDefinition, 'id' | 'name' | 'greeting'>>
+      Partial<
+        Pick<SectRoomActorDefinition, 'id' | 'name' | 'greeting' | 'sigil'>
+      >
     >
   >;
 }

@@ -624,17 +624,11 @@ class StandardSectBenefitPolicy implements SectBenefitPolicy {
         },
         herb_garden: {
           renderer: 'sect.benefit.herbs',
-          summary: `每周产出 ${herbGardenLevel} 份基础灵草`,
+          summary: '药田产出未开放',
           metrics: [
             {
               key: 'level',
               label: `${this.facilityName('herb_garden', '药田')}等级`,
-              value: herbGardenLevel,
-              format: 'number' as const,
-            },
-            {
-              key: 'weekly_herbs',
-              label: '每周基础灵草',
               value: herbGardenLevel,
               format: 'number' as const,
             },

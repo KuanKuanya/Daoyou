@@ -368,7 +368,7 @@ export function SectMap({
                             type="button"
                             disabled={!state.selectable}
                             aria-pressed={selected}
-                            aria-label={`${spot.label}${state.locked ? '，未开放' : ''}`}
+                            aria-label={`${spot.label}${state.restrictionLabel ? `，${state.restrictionLabel}` : ''}`}
                             onClick={() => {
                               if (state.selectable) {
                                 setSelectedId(spot.id);
@@ -501,7 +501,9 @@ export function SectMap({
         }
       >
         {selectedState?.locked ? (
-          <p className="text-crimson text-sm">该设施当前尚未开放。</p>
+          <p className="text-crimson text-sm">
+            {selectedState.restrictionLabel}
+          </p>
         ) : (
           <p className="text-ink-secondary text-sm leading-7">
             选择下方操作继续前往该设施。
@@ -540,7 +542,9 @@ export function SectMap({
                   <span className="flex flex-wrap items-baseline gap-x-2">
                     <strong className="text-sm">{spot.label}</strong>
                     {state.locked ? (
-                      <span className="text-crimson/75 text-xs">未开放</span>
+                      <span className="text-crimson/75 text-xs">
+                        {state.restrictionLabel}
+                      </span>
                     ) : null}
                   </span>
                   <span className="text-ink-secondary mt-0.5 block truncate text-xs">

@@ -136,7 +136,7 @@ const STANDARD_HOTSPOTS: readonly SectMapHotspot[] = [
     permission: 'sect.herb_garden.view',
     left: '0',
     top: '0',
-    note: '草木长势 · 产出待开放',
+    note: '草木长势 · 产出未开放',
   },
   {
     id: 'gate',
@@ -213,7 +213,7 @@ const STANDARD_SCENES: Record<SectSceneKey, SectScenePresentation> = {
   ),
   herbGarden: scene(
     '药田',
-    '查看药田设施提供的周期产出。',
+    '查看设施等级与草木长势；药田产出未开放。',
     '药田记录正在读取……',
   ),
   gate: scene('山门', '查看宗门近期动态与公共事务。', '山门记录正在读取……'),
@@ -257,7 +257,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'daily',
-          '执',
+          'icon:npc-sect-daily-steward',
           '值日执事',
           '值日执事',
           '负责日常委托。',
@@ -268,7 +268,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'weekly',
-          '簿',
+          'icon:npc-sect-weekly-steward',
           '功簿执事',
           '功簿执事',
           '负责周常委托。',
@@ -279,7 +279,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'promotion',
-          '传',
+          'icon:npc-sect-promotion-elder',
           '传功长老',
           '传功长老',
           '负责晋升试炼。',
@@ -296,7 +296,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'registry',
-          '掌',
+          'icon:npc-sect-registry-steward',
           '掌籍执事',
           '掌籍执事',
           '负责弟子身份与同门名录。',
@@ -305,7 +305,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'stipend',
-          '俸',
+          'icon:npc-sect-stipend-steward',
           '俸禄执事',
           '俸禄执事',
           '负责核算和发放宗门周俸。',
@@ -320,7 +320,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '库',
+          'icon:npc-sect-treasury-keeper',
           '司库执事',
           '司库执事',
           '负责宝库库存与贡献兑换。',
@@ -335,7 +335,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'construction',
-          '造',
+          'icon:npc-sect-construction-steward',
           '营造执事',
           '营造执事',
           '负责各处设施等级与建设进度。',
@@ -344,7 +344,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'donation',
-          '石',
+          'icon:npc-sect-donation-steward',
           '建设执事',
           '建设执事',
           '负责灵石捐献与建设登记。',
@@ -359,7 +359,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '阁',
+          'icon:npc-sect-archive-elder',
           '守阁长老',
           '守阁长老',
           '负责心法经卷与研习。',
@@ -374,7 +374,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'guide',
-          '引',
+          'icon:npc-sect-path-elder',
           '引道长老',
           '引道长老',
           '负责流派选择与参悟引导。',
@@ -390,7 +390,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'instructor',
-          '武',
+          'icon:npc-sect-instructor',
           '演武教习',
           '演武教习',
           '负责神通配置与自动战术。',
@@ -399,7 +399,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'marshal',
-          '场',
+          'icon:npc-sect-marshal',
           '值场执事',
           '值场执事',
           '负责演武场秩序与入场引导。',
@@ -408,7 +408,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'ring',
-          'icon:ui-sword',
+          'icon:facility-sect-arena',
           '宗门擂台',
           '宗门设施',
           '开启宗门小比战局。',
@@ -426,7 +426,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '阵',
+          'icon:npc-sect-cultivation-keeper',
           '守阵执事',
           '守阵执事',
           '负责聚灵阵与闭关安排。',
@@ -441,7 +441,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '丹',
+          'icon:npc-sect-alchemy-keeper',
           '丹房执事',
           '丹房执事',
           '负责丹房状态与炼丹安排。',
@@ -457,7 +457,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'furnace',
-          '鼎',
+          'icon:xuanfire-furnace',
           '宗门丹炉',
           '炼丹设施',
           '纳药、引火、聚蕴、凝丹。',
@@ -481,7 +481,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '器',
+          'icon:npc-sect-forge-keeper',
           '器坊执事',
           '器坊执事',
           '负责器坊状态与炼器安排。',
@@ -503,7 +503,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '脉',
+          'icon:npc-sect-mine-keeper',
           '守脉执事',
           '守脉执事',
           '负责矿场巡视交接。',
@@ -515,7 +515,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'facility',
-          'icon:beast-skill-mountain-breaker',
+          'icon:facility-spirit-vein',
           '宗门灵脉',
           '宗门设施',
           '查看设施等级、灵石收益并进行灵矿采掘。',
@@ -537,15 +537,15 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '药',
+          'icon:npc-sect-herb-keeper',
           '药园执事',
           '药园执事',
-          '负责草木长势与周期产出。',
+          '查验草木长势，整理田间值录；产出未开放。',
           '今日草木长势平稳，田间近况都已记在值录中。',
           'sect.herb-garden.caretaker',
           {
             facilityKey: 'herb_garden',
-            detail: '药田产出玩法后续开放。',
+            detail: '目前可查阅长势值录，药田产出未开放。',
             stages: [
               '新畦初醒',
               '灵苗成行',
@@ -557,16 +557,15 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'facility',
-          'icon:ui-spirit-herb',
+          'icon:facility-herb-garden',
           '宗门药田',
           '宗门设施',
-          '查看设施等级与药田近况。',
+          '查看设施等级与药田近况；产出未开放。',
           '灵泉润过畦垄，草木依照时序生长。',
           'sect.herb-garden.status',
           {
             facilityKey: 'herb_garden',
             effectKey: 'herb_garden',
-            detail: '药田产出玩法后续开放。',
           },
           'herb-garden-facility',
           'facility',
@@ -579,7 +578,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'keeper',
-          '门',
+          'icon:npc-sect-gate-keeper',
           '守山执事',
           '守山执事',
           '负责山门动态与来往记录。',
@@ -588,7 +587,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
         ),
         roomActor(
           'facility',
-          'icon:map-landmark',
+          'icon:facility-sect-gate',
           '宗门山门',
           '宗门设施',
           '进入山门步道完成清扫。',
@@ -606,7 +605,7 @@ const STANDARD_ROOMS: Readonly<Record<string, SectRoomDefinition>> =
       actors: [
         roomActor(
           'warden',
-          '护',
+          'icon:npc-sect-formation-elder',
           '护阵长老',
           '护阵长老',
           '负责护宗阵法管理。',

@@ -108,7 +108,11 @@ export default function SectPage() {
               >
                 <strong>{spot.label}</strong>
                 <p className="text-ink-secondary mt-2 text-sm">
-                  {access?.granted === false ? access.reason : spot.note}
+                  {spot.locked || !spot.route
+                    ? (spot.note ?? '该设施当前尚未开放。')
+                    : access?.granted === false
+                      ? access.reason
+                      : spot.note}
                 </p>
               </button>
             );

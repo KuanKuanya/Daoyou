@@ -209,7 +209,7 @@ export const TIANYAN_SECT_PRESENTATION: SectPresentationTheme = {
         '15%',
         '/game/sect/herb-garden',
         'sect.herb_garden.view',
-        '草木长势 · 产出待开放',
+        '草木长势 · 产出未开放',
         'herb_garden',
       ),
       hotspot(
@@ -241,7 +241,7 @@ export const TIANYAN_SECT_PRESENTATION: SectPresentationTheme = {
         left: '50%',
         top: '53%',
         permission: 'sect.formation.view',
-        note: '宗门战后续开放',
+        note: '宗门战未开放',
         facility: 'formation',
         locked: true,
         visitor: {
@@ -315,7 +315,7 @@ export const TIANYAN_SECT_PRESENTATION: SectPresentationTheme = {
     herbGarden: {
       title: '长生圃',
       description:
-        '灵草依水位与日照分层种植。圃中没有永远固定的田垄，每一季都会按照观象记录重新调整。',
+        '灵草依水位与日照分层种植。圃中没有永远固定的田垄，每一季都会按照观象记录重新调整；药田产出未开放。',
     },
     gate: {
       title: '观象门',

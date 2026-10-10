@@ -62,7 +62,7 @@ describe('production sect affairs presentations', () => {
           (actor) => actor.roleKey === 'ring',
         ),
       ).toMatchObject({
-        sigil: 'icon:ui-sword',
+        sigil: 'icon:facility-sect-arena',
         name: '宗门擂台',
         identity: '宗门设施',
         appearance: 'facility',
@@ -94,7 +94,6 @@ describe('production sect affairs presentations', () => {
         ].actors.find((candidate) => candidate.roleKey === roleKey);
         expect(actor).toBeDefined();
         expect(actor).toMatchObject({
-          sigil: standardActor?.sigil,
           identity: standardActor?.identity,
           responsibility: standardActor?.responsibility,
           conversation: standardActor?.conversation,

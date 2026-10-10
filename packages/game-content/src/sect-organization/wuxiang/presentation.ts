@@ -204,7 +204,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         '39%',
         '/game/sect/herb-garden',
         'sect.herb_garden.view',
-        '草木长势 · 产出待开放',
+        '草木长势 · 产出未开放',
         'herb_garden',
       ),
       hotspot(
@@ -235,7 +235,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         left: '80%',
         top: '13%',
         permission: 'sect.formation.view',
-        note: '宗门战后续开放',
+        note: '宗门战未开放',
         facility: 'formation',
         locked: true,
         visitor: {
@@ -306,7 +306,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
     },
     herbGarden: {
       title: '血莲池',
-      description: '暗红池水并无腥气，莲叶托着晨露；药田产出玩法后续开放。',
+      description: '暗红池水并无腥气，莲叶托着晨露；药田产出未开放。',
     },
     gate: {
       title: '不二门',
@@ -326,16 +326,19 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         daily: {
           id: 'wuxiang-mingchen',
           name: '法明',
+          sigil: 'icon:npc-monk-steward',
           greeting: '白榜上的日务都在这里，肯做哪一件便说。',
         },
         weekly: {
           id: 'wuxiang-zhaoye',
           name: '慧觉',
+          sigil: 'icon:npc-monk-steward',
           greeting: '功簿只记所行，不替人评说，你可自行查问。',
         },
         promotion: {
           id: 'wuxiang-due',
           name: '空慈方丈',
+          sigil: 'icon:npc-monk-elder',
           greeting: '要过此关，先要肯照见自己带来的业。',
         },
       },
@@ -345,11 +348,13 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         registry: {
           id: 'wuxiang-huiming',
           name: '慧澄',
+          sigil: 'icon:npc-monk-steward',
           greeting: '玉牒与僧录皆在案前，想查哪一项便问。',
         },
         stipend: {
           id: 'wuxiang-mingji',
           name: '明济',
+          sigil: 'icon:npc-monk-steward',
           greeting: '本周供养已经分定，领取之前也可先核对。',
         },
       },
@@ -359,6 +364,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-kongzang',
           name: '寂照禅师',
+          sigil: 'icon:npc-monk-elder',
           greeting: '诸物各待其用，你想看哪一件？',
         },
       },
@@ -368,11 +374,13 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         construction: {
           id: 'wuxiang-mingzhu',
           name: '行深',
+          sigil: 'icon:npc-monk-steward',
           greeting: '一砖一木皆有来处，各处建设可逐项说与你听。',
         },
         donation: {
           id: 'wuxiang-xingcang',
           name: '明简',
+          sigil: 'icon:npc-monk-steward',
           greeting: '今日可择一处设施布施灵石，再记入册中。',
         },
       },
@@ -382,6 +390,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-kongdu',
           name: '空渡禅师',
+          sigil: 'icon:npc-monk-elder',
           greeting: '贝叶六匣都在这里，你想先读哪一卷？',
         },
       },
@@ -391,6 +400,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         guide: {
           id: 'wuxiang-huizhao',
           name: '慧照',
+          sigil: 'icon:npc-monk-elder',
           greeting: '壁有明暗两面，你想先照见哪一条道途？',
         },
       },
@@ -400,11 +410,13 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         instructor: {
           id: 'wuxiang-jiefeng',
           name: '法忍禅师',
+          sigil: 'icon:npc-monk-instructor',
           greeting: '神通发于身心，若要调整，先看你当下如何运用。',
         },
         marshal: {
           id: 'wuxiang-huiwu',
           name: '行觉',
+          sigil: 'icon:npc-monk-steward',
           greeting: '木人已经归位，有小比在身便可入场。',
         },
       },
@@ -414,6 +426,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-zhiguan',
           name: '寂然禅师',
+          sigil: 'icon:npc-monk-elder',
           greeting: '一席一灯都已备好，想先问灵效，还是就此入静？',
         },
       },
@@ -423,6 +436,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-faming-yaoshi',
           name: '明恕',
+          sigil: 'icon:npc-monk-alchemy',
           greeting: '药性无分净秽，炉火正稳，要问灵效还是开炉？',
         },
       },
@@ -432,6 +446,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-huoyuan',
           name: '法圆',
+          sigil: 'icon:npc-monk-forge',
           greeting: '火候已足，材料也可查验，要问灵效还是炼器？',
         },
       },
@@ -441,6 +456,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-shouyu',
           name: '慧海',
+          sigil: 'icon:npc-monk-mine',
           greeting: '窟中今日平稳，巡视封签已经放在案前。',
         },
         facility: {
@@ -455,6 +471,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-huilian',
           name: '行愿',
+          sigil: 'icon:npc-monk-herb',
           greeting: '池水无波，草木各循时生长，今日长势已经记下。',
         },
         facility: {
@@ -469,6 +486,7 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
         keeper: {
           id: 'wuxiang-mingmen',
           name: '道安禅师',
+          sigil: 'icon:npc-monk-elder',
           greeting: '钟声已过，今日来往与山门近况都可在此问。',
         },
         facility: {
@@ -476,6 +494,11 @@ export const WUXIANG_SECT_PRESENTATION: SectPresentationTheme = {
           name: '不二门',
           greeting: '未合的圆环立在雾中，门前石阶散着新落的叶片。',
         },
+      },
+    },
+    formation: {
+      actors: {
+        warden: { sigil: 'icon:npc-monk-elder' },
       },
     },
   },

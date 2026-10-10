@@ -219,7 +219,7 @@ export const JIUJIE_SECT_PRESENTATION: SectPresentationTheme = {
         '80%',
         '/game/sect/herb-garden',
         'sect.herb_garden.view',
-        '草木长势 · 产出待开放',
+        '草木长势 · 产出未开放',
         'herb_garden',
       ),
       h(
@@ -249,7 +249,7 @@ export const JIUJIE_SECT_PRESENTATION: SectPresentationTheme = {
         left: '61%',
         top: '23%',
         permission: 'sect.formation.view',
-        note: '宗门战后续开放',
+        note: '宗门战未开放',
         facility: 'formation',
         locked: true,
         visitor: {

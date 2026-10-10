@@ -205,7 +205,7 @@ export const YOUDU_SECT_PRESENTATION: SectPresentationTheme = {
         '37%',
         '/game/sect/herb-garden',
         'sect.herb_garden.view',
-        '草木长势 · 产出待开放',
+        '草木长势 · 产出未开放',
         'herb_garden',
       ),
       hotspot(
@@ -237,7 +237,7 @@ export const YOUDU_SECT_PRESENTATION: SectPresentationTheme = {
         left: '79%',
         top: '14%',
         permission: 'sect.formation.view',
-        note: '宗门战后续开放',
+        note: '宗门战未开放',
         facility: 'formation',
         locked: true,
         visitor: {
@@ -302,7 +302,7 @@ export const YOUDU_SECT_PRESENTATION: SectPresentationTheme = {
     },
     herbGarden: {
       title: '彼岸圃',
-      description: '深色花叶沿黑水两岸生长；药田产出玩法后续开放。',
+      description: '深色花叶沿黑水两岸生长；药田产出未开放。',
     },
     gate: {
       title: '无日关',
@@ -330,6 +330,7 @@ export const YOUDU_SECT_PRESENTATION: SectPresentationTheme = {
         promotion: {
           id: 'youdu-chu-yingui',
           name: '归魂婆婆',
+          sigil: 'icon:npc-youdu-promotion-grandmother',
           greeting: '晋升这一关，先要记得自己为何而来。',
         },
       },
@@ -344,6 +345,7 @@ export const YOUDU_SECT_PRESENTATION: SectPresentationTheme = {
         stipend: {
           id: 'youdu-fafeng',
           name: '温婆婆',
+          sigil: 'icon:npc-youdu-stipend-grandmother',
           greeting: '本周该给你的已经备齐，要先核对也不妨。',
         },
       },

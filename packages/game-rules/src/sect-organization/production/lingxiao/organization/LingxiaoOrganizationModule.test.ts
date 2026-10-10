@@ -91,6 +91,20 @@ describe('LingxiaoOrganizationModule', () => {
     expect(LINGXIAO_ORGANIZATION.benefits.stipendMultiplier(levels)).toBe(1.25);
   });
 
+  it('keeps herb garden levels visible without promising an unimplemented yield', () => {
+    for (const level of [1, 3, 5]) {
+      const effect = LINGXIAO_ORGANIZATION.benefits.snapshot(
+        new Map([['herb_garden', level]]),
+        'registered',
+      ).facilityEffects.herb_garden;
+
+      expect(effect?.summary).toBe('药田产出未开放');
+      expect(effect?.metrics).toEqual([
+        { key: 'level', label: '药田等级', value: level, format: 'number' },
+      ]);
+    }
+  });
+
   it('declares independent battle and material bounties', () => {
     const battle = LINGXIAO_ORGANIZATION.tasks.get('weekly_bounty_battle');
     const material = LINGXIAO_ORGANIZATION.tasks.get('weekly_bounty_material');

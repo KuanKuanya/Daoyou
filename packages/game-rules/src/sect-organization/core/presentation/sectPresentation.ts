@@ -1,10 +1,10 @@
 import { STANDARD_SECT_PRESENTATION } from '@daoyou/game-content/sect-organization/standard/presentation';
 import type {
+  ResolvedSectPresentation,
+  SectPresentationTheme,
+  SectRoomDefinition,
   SectSceneKey,
   SectScenePresentation,
-  SectRoomDefinition,
-  SectPresentationTheme,
-  ResolvedSectPresentation,
 } from '@daoyou/game-domain/sects';
 
 function assertNonBlank(label: string, value: string): void {
@@ -42,6 +42,7 @@ export function resolveSectPresentation(
           return {
             ...standardActor,
             id: override?.id ?? standardActor.id,
+            sigil: override?.sigil ?? standardActor.sigil,
             name: override?.name ?? standardActor.name,
             greeting: override?.greeting ?? standardActor.greeting,
           };
