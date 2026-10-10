@@ -2,6 +2,11 @@
 # Run once in the existing root SSH session; never prints private keys.
 set -Eeuo pipefail
 
+KEY_MODE="${1:-existing-key}"
+[[ "$#" -le 1 && ( "$KEY_MODE" == existing-key || "$KEY_MODE" == --generate-key ) ]] || {
+  echo "Usage: $0 [existing-key|--generate-key]" >&2
+  exit 1
+}
 [[ "$EUID" -eq 0 ]] || { echo "Run this setup as root" >&2; exit 1; }
 DEPLOY_ROOT=/opt/daoyou
 SITE_CONF=/etc/nginx/conf.d/daoyou-ip.conf
@@ -40,18 +45,23 @@ if ! nginx -t || ! nginx -s reload; then
   exit 1
 fi
 
-if [[ ! -f "$KEY_FILE" ]]; then
-  ssh-keygen -t ed25519 -N '' -C daoyou-github-actions -f "$KEY_FILE"
+if [[ "$KEY_MODE" == --generate-key ]]; then
+  if [[ ! -e "$KEY_FILE" && ! -e "$KEY_FILE.pub" ]]; then
+    ssh-keygen -t ed25519 -N '' -C daoyou-github-actions -f "$KEY_FILE"
+  fi
+  test -f "$KEY_FILE"
+  test -f "$KEY_FILE.pub"
+  touch "$AUTHORIZED_KEYS"
+  public_key="restrict $(cat "$KEY_FILE.pub")"
+  grep -Fxq "$public_key" "$AUTHORIZED_KEYS" || printf '\n%s\n' "$public_key" >> "$AUTHORIZED_KEYS"
+  chmod 600 "$KEY_FILE" "$AUTHORIZED_KEYS"
+  echo "PRODUCTION_SSH_KEY: contents of /root/.ssh/daoyou_actions (private key)"
+else
+  echo "PRODUCTION_SSH_KEY: use your existing cloud SSH private key; verify root login first."
 fi
-test -f "$KEY_FILE.pub"
-touch "$AUTHORIZED_KEYS"
-public_key="restrict $(cat "$KEY_FILE.pub")"
-grep -Fxq "$public_key" "$AUTHORIZED_KEYS" || printf '\n%s\n' "$public_key" >> "$AUTHORIZED_KEYS"
-chmod 600 "$KEY_FILE" "$AUTHORIZED_KEYS"
 
 cat <<'MESSAGE'
 Server setup complete. Add these GitHub repository Secrets:
-  PRODUCTION_SSH_KEY: contents of /root/.ssh/daoyou_actions (private key)
   PRODUCTION_SSH_KNOWN_HOSTS: output of:
     { printf '120.48.9.69 '; cat /etc/ssh/ssh_host_ed25519_key.pub; }
 Paste the private key directly into GitHub, never into chat or a commit.

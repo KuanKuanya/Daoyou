@@ -24,7 +24,7 @@
 | --- | --- |
 | `DOCKERHUB_USERNAME` | `kuankuan` |
 | `DOCKERHUB_TOKEN` | Docker Hub 的 Repo Read & Write 令牌 |
-| `PRODUCTION_SSH_KEY` | 部署专用 SSH 私钥，直接填 GitHub |
+| `PRODUCTION_SSH_KEY` | 已验证可登录 root 的云平台 SSH 私钥或部署专用私钥，直接填 GitHub |
 | `PRODUCTION_SSH_KNOWN_HOSTS` | 从已登录服务器取得的主机公钥行 |
 
 Docker Hub 仓库使用 `kuankuan/daoyou-app`。服务器需能拉取该镜像；私有仓库应在服务器单独使用 Read-only 令牌登录。GitHub 的推送令牌不会下发到服务器。
@@ -35,16 +35,18 @@ Docker Hub 仓库使用 `kuankuan/daoyou-app`。服务器需能拉取该镜像�
 
 ## 服务器一次性准备
 
-保留现有服务器源码和配置，先将本次提交合入/拉取到 `/opt/daoyou`，不要运行用于首次装机的 `deploy-ip.sh`：
+保留现有服务器源码和配置，先将本次版本的 `scripts/setup-actions-server.sh` 传到 `/opt/daoyou/scripts/`。服务器若由 ZIP 解压安装，无需改成 Git checkout；不要运行用于首次装机的 `deploy-ip.sh`：
 
 ```bash
 cd /opt/daoyou
 bash scripts/setup-actions-server.sh
 ```
 
-该脚本为现有 IP nginx 配置增加维护状态检查，校验并 reload；保留旧配置备份。它创建专用的 `/root/.ssh/daoyou_actions` 密钥并以 `restrict` 选项加入 `authorized_keys`，禁止该密钥的端口转发、代理转发与交互终端。root 的已有密码登录与其他密钥保持原样。SSH 服务仍需允许 root 公钥登录。
+该脚本为现有 IP nginx 配置增加维护状态检查，校验并 reload；保留旧配置备份。默认复用已有云平台密钥，不生成新密钥，也不修改 `authorized_keys`。云平台创建密钥对不代表实例已接受该密钥；先验证它可登录本实例的 root，必要时将对应公钥追加到 `/root/.ssh/authorized_keys`，不要覆盖已有内容。SSH 服务需允许 root 公钥登录。
 
-在你自己的终端查看私钥并直接粘贴到 GitHub 的 `PRODUCTION_SSH_KEY`，完整保留 BEGIN/END 行及换行：
+将下载的云平台私钥直接填入 GitHub 的 `PRODUCTION_SSH_KEY`，完整保留 BEGIN/END 行及换行。私钥不上传到仓库，也不放在服务器源码目录。
+
+没有已有密钥时，可显式运行 `bash scripts/setup-actions-server.sh --generate-key`，创建专用的 `/root/.ssh/daoyou_actions` 并以 `restrict` 选项追加公钥，禁止端口转发、代理转发与交互终端。然后在自己的服务器终端查看该私钥并直接粘贴到 GitHub：
 
 ```bash
 cat /root/.ssh/daoyou_actions
