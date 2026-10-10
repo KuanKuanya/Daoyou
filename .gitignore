@@ -220,3 +220,12 @@ sponsorkit/sponsors.json
 # Local IDE and tool directories
 .idea
 道友
+
+# Local deployment details and authorization artifacts; keep out of the public repo.
+/.trae/
+/authorize-actions-key.sh
+/daoyou-deploy.zip
+/docs/petpal-deployment.md
+/scripts/deploy-ip.sh
+/scripts/nginx/ip.conf.example
+/scripts/nginx/petpal.conf.example

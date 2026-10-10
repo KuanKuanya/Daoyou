@@ -30,6 +30,7 @@ jobs:
     outputs:
       image: ${{ steps.release.outputs.image }}
       artifact: ${{ steps.release.outputs.artifact }}
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,7 +85,11 @@ jobs:
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: |
-          git archive --format=tar.gz HEAD -o "$RUNNER_TEMP/release/source.tar.gz"
+          git archive --format=tar.gz -o "$RUNNER_TEMP/release/source.tar.gz" HEAD \
+            package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json \
+            tsconfig.base.json tsconfig.json tsconfig.node.json \
+            drizzle.config.ts drizzle.auth.config.ts \
+            apps/api apps/web/package.json packages drizzle drizzle-auth scripts
           python3 - <<'PY'
           import json, os
           from pathlib import Path
@@ -105,6 +110,7 @@ jobs:
           echo "artifact=release-$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
+        id: upload
         with:
           name: ${{ steps.release.outputs.artifact }}
           path: ${{ runner.temp }}/daoyou-release.tgz
@@ -123,25 +129,29 @@ jobs:
 
   deploy:
     name: Deploy production server
+    env:
+      PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
     needs: publish
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: production
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.publish.outputs.artifact }}
-          path: ${{ runner.temp }}/release
 
       - name: Configure deployment SSH
         env:
           SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
         run: |
+          [[ "$PRODUCTION_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]] || {
+            echo "::error::Configure PRODUCTION_HOST as a hostname or IPv4 address"
+            exit 1
+          }
           test -n "$SSH_KEY" && test -n "$SSH_KNOWN_HOSTS" || {
             echo "::error::Configure PRODUCTION_SSH_KEY and PRODUCTION_SSH_KNOWN_HOSTS"
             exit 1
@@ -151,9 +161,12 @@ jobs:
           printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/deploy-ssh/key"
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-ssh/known_hosts"
           ssh-keygen -y -P '' -f "$RUNNER_TEMP/deploy-ssh/key" > /dev/null
-          ssh-keygen -F 120.48.9.69 -f "$RUNNER_TEMP/deploy-ssh/known_hosts" > /dev/null
+          ssh-keygen -F "$PRODUCTION_HOST" -f "$RUNNER_TEMP/deploy-ssh/known_hosts" > /dev/null
 
-      - name: Upload and deploy matching release
+      - name: Download and deploy matching release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.publish.outputs.artifact_id }}
         run: |
           ssh_options=(
             -i "$RUNNER_TEMP/deploy-ssh/key"
@@ -165,12 +178,34 @@ jobs:
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=4
           )
-          target=root@120.48.9.69
+          target="root@$PRODUCTION_HOST"
           bundle="/opt/daoyou/incoming/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.tgz"
           ssh "${ssh_options[@]}" "$target" 'mkdir -p /opt/daoyou/incoming'
-          scp "${ssh_options[@]}" "$RUNNER_TEMP/release/daoyou-release.tgz" "$target:$bundle"
+          [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            --output /dev/null \
+            --dump-header "$RUNNER_TEMP/deploy-ssh/artifact-headers" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from urllib.parse import urlsplit
+          root = Path(os.environ["RUNNER_TEMP"]) / "deploy-ssh"
+          headers = (root / "artifact-headers").read_text().splitlines()
+          urls = [line.split(":", 1)[1].strip() for line in headers if line.lower().startswith("location:")]
+          assert len(urls) == 1 and urlsplit(urls[0]).scheme == "https", "Missing secure artifact redirect"
+          (root / "artifact-url").write_text(urls[0] + "\n")
+          PY
+          helper="/opt/daoyou/incoming/download-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.py"
+          ssh "${ssh_options[@]}" "$target" "cat > '$helper'" < scripts/download-release.py
+          ssh "${ssh_options[@]}" "$target" "python3 '$helper' '$bundle'" \
+            < "$RUNNER_TEMP/deploy-ssh/artifact-url"
+          ssh "${ssh_options[@]}" "$target" "rm -f '$helper'"
           ssh "${ssh_options[@]}" "$target" \
-            "bash -s -- '$bundle' '$GITHUB_SHA' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'" \
+            "bash -s -- '$bundle' '$GITHUB_SHA' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT' '$PRODUCTION_HOST'" \
             < scripts/deploy-release.sh
 
       - name: Record deployment

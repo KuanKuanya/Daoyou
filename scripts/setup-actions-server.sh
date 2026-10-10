@@ -62,8 +62,9 @@ fi
 
 cat <<'MESSAGE'
 Server setup complete. Add these GitHub repository Secrets:
+  PRODUCTION_HOST: the server hostname or IPv4 address (also set locally for the command below)
   PRODUCTION_SSH_KNOWN_HOSTS: output of:
-    { printf '120.48.9.69 '; cat /etc/ssh/ssh_host_ed25519_key.pub; }
+    { printf '%s ' "$PRODUCTION_HOST"; cat /etc/ssh/ssh_host_ed25519_key.pub; }
 Paste the private key directly into GitHub, never into chat or a commit.
 Keep /opt/daoyou/.env.production and the existing dependency configuration.
 MESSAGE

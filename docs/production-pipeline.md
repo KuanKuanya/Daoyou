@@ -1,6 +1,6 @@
 # 二次开发仓库的生产流水线
 
-本方案只作用于 `KuanKuanya/Daoyou`，部署到 `root@120.48.9.69:22` 的 `/opt/daoyou`。上游 `ChurchTao/Daoyou` 的更新先进入开发流程，不直接进入生产。
+本方案只作用于 `KuanKuanya/Daoyou`，部署到 `root@<PRODUCTION_HOST>:22` 的 `/opt/daoyou`。上游 `ChurchTao/Daoyou` 的更新先进入开发流程，不直接进入生产。
 
 ## 分支与触发
 
@@ -24,6 +24,7 @@
 | --- | --- |
 | `DOCKERHUB_USERNAME` | `kuankuan` |
 | `DOCKERHUB_TOKEN` | Docker Hub 的 Repo Read & Write 令牌 |
+| `PRODUCTION_HOST` | 生产服务器主机名或 IPv4 地址，仅保存到 Secret，不写入源码 |
 | `PRODUCTION_SSH_KEY` | 已验证可登录 root 的云平台 SSH 私钥或部署专用私钥，直接填 GitHub |
 | `PRODUCTION_SSH_KNOWN_HOSTS` | 从已登录服务器取得的主机公钥行 |
 
@@ -52,10 +53,11 @@ bash scripts/setup-actions-server.sh
 cat /root/.ssh/daoyou_actions
 ```
 
-在同一服务器终端生成 `PRODUCTION_SSH_KNOWN_HOSTS` 的值：
+在同一服务器终端将 `PRODUCTION_HOST` 设为实际地址（与 GitHub Secret 一致），再生成 `PRODUCTION_SSH_KNOWN_HOSTS` 的值。下面使用保留的文档示例地址：
 
 ```bash
-{ printf '120.48.9.69 '; cat /etc/ssh/ssh_host_ed25519_key.pub; }
+export PRODUCTION_HOST=203.0.113.10
+{ printf '%s ' "$PRODUCTION_HOST"; cat /etc/ssh/ssh_host_ed25519_key.pub; }
 ```
 
 工作流强制校验此主机公钥，不使用关闭主机校验或无验证的 ssh-keyscan。创建 Secrets 后，从开发分支向 `production` 合入准备发布的提交。
@@ -66,17 +68,18 @@ cat /root/.ssh/daoyou_actions
 - 游戏静态根目录 `/srv/jiuxiaodaoji/game`；API 蓝/绿实例为 `daoyou-app-blue` / `daoyou-app-green`，回环端口 3000 / 3001。
 - Docker Compose，以及已启动的 PostgreSQL 17、Redis、NATS和外部网络 `daoyou-runtime`。
 - `/opt/daoyou/.env.production`，其 DATABASE_URL 在 Docker 网络内可用；现有依赖的环境文件继续保留。
+- 当前同源 HTTP 入口的验收地址由工作流通过第四个参数传入发布脚本，主机地址来自 `PRODUCTION_HOST` Secret，不在源码内保存。
 - `python3`、`curl`、`flock`、`tar` 和服务器到 Docker Hub/pnpm 包仓库的网络连接。
 
 ## 每次发布
 
-工作流按同一提交打包三份事实：API 镜像 digest、游戏 SPA、用于迁移的完整源码，并写入 `release.json`。前端原有 `version.json` 的 buildId 使用该提交 SHA。
+工作流按同一提交打包三份事实：API 镜像 digest、游戏 SPA、迁移所需的 API/共享库源码、工作区清单及 SQL，并写入 `release.json`。迁移包省去文档图片和已包含在 SPA 中的前端素材。前端原有 `version.json` 的 buildId 使用该提交 SHA。
 
 API 镜像同时发布 `sha-<完整提交 SHA>` 和兼容查询用的 `latest`；服务器始终使用 `kuankuan/daoyou-app@sha256:...`。GitHub 发布包保留30天，包含迁移源码；前端中间产物保留14天。
 
 服务器发布顺序：
 
-1. 上传至 `/opt/daoyou/incoming/<run-id>-<attempt>.tgz`，获取发布锁，核对提交、运行 ID、镜像 namespace/digest 和前端 buildId。
+1. Runner 用 `actions: read` 获取本次不可变 artifact ID 的短期签名下载链接，通过 SSH stdin 交给服务器。服务器用八个 HTTPS Range 连接下载，核对每段长度和响应区间，再通过 ZIP CRC 校验解出 `/opt/daoyou/incoming/<run-id>-<attempt>.tgz`。签名链接不写入服务器文件、不输出日志，GitHub 令牌留在 Runner。随后获取发布锁，核对提交、运行 ID、镜像 namespace/digest 和前端 buildId。
 2. 解压至 `releases/<SHA>/<run-id>-<attempt>/`，拉取镜像并安装该版本的迁移工具。此时仍提供旧版服务。
 3. 创建 `/opt/daoyou/maintenance`，nginx 对新 HTTP/WS 请求返回503；停止两色API实例并等待最多75秒排空，关闭 cron/消息写入。
 4. 备份完整 PostgreSQL 至 `backups/<SHA>-<run-id>-<attempt>.dump`，检查备份非空及 pg_restore 可读取其目录。
