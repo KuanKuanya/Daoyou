@@ -34,8 +34,25 @@ export function GameActivityLaunchGate({
 }: GameActivityLaunchGateProps) {
   const [retrying, setRetrying] = useState(false);
   const pwa = usePwaInstall();
-  const fullscreenFailed = failedToEnterFullscreen(attempt);
+  const embeddedBrowser = /MicroMessenger|QQ\//i.test(navigator.userAgent);
+  const fullscreenFailed =
+    failedToEnterFullscreen(attempt) ||
+    (!viewport.fullscreenSupported &&
+      !viewport.fullscreenActive &&
+      !viewport.standalone);
+  const manualRotationRequired =
+    !viewport.landscape &&
+    (embeddedBrowser ||
+      attempt?.orientation === 'unsupported' ||
+      attempt?.orientation === 'rejected');
+  const canRetryFullscreen =
+    viewport.fullscreenSupported &&
+    !viewport.fullscreenActive &&
+    !viewport.standalone;
+  const showRetry =
+    canRetryFullscreen || (!manualRotationRequired && !fullscreenFailed);
   const showInstall =
+    !embeddedBrowser &&
     fullscreenFailed &&
     pwa.status !== 'installed' &&
     pwa.status !== 'unavailable';
@@ -56,23 +73,35 @@ export function GameActivityLaunchGate({
         {viewport.landscape ? '进入沉浸模式' : '请将设备旋转为横屏'}
       </p>
       <div className="mt-2 text-sm leading-7 text-stone-300">
-        {fullscreenFailed ? (
+        {manualRotationRequired ? (
+          <p role="status">
+            {embeddedBrowser
+              ? '微信、QQ 内可能无法自动横屏。请关闭手机的方向锁定后手动横转；若仍保持竖屏，请从右上角菜单选择「在浏览器中打开」。'
+              : '当前浏览器无法自动切换横屏。请关闭手机的方向锁定，再将手机横过来。'}
+          </p>
+        ) : fullscreenFailed ? (
           <p>
-            当前浏览器未能进入全屏。横屏后仍可继续；添加到主屏幕可隐藏地址栏。
+            {embeddedBrowser
+              ? '当前应用内页面未能进入全屏，仍可继续当前模式；需要全屏时，请从右上角菜单选择「在浏览器中打开」。'
+              : '当前浏览器未能进入全屏。横屏后仍可继续；添加到主屏幕可隐藏地址栏。'}
           </p>
         ) : (
           instructions
         )}
       </div>
       <div className="mt-5 flex flex-wrap justify-center gap-3">
-        {attempt?.fullscreen !== 'unsupported' ? (
+        {showRetry ? (
           <InkButton
             variant="primary"
             pending={retrying}
             pendingLabel="正在切换……"
             onClick={() => void retry()}
           >
-            {viewport.landscape ? '进入全屏并开始' : '进入横屏全屏'}
+            {viewport.landscape
+              ? '进入全屏并开始'
+              : manualRotationRequired
+                ? '进入全屏'
+                : '进入横屏全屏'}
           </InkButton>
         ) : null}
         {fullscreenFailed && viewport.landscape ? (

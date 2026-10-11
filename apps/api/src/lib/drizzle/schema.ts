@@ -2009,6 +2009,136 @@ export const feedbacks = pgTable(
   ],
 );
 
+// 管理端反馈工作流扩展：保留玩家反馈原表，将负责人、并发版本和处理结果独立持久化。
+export const adminFeedbackCases = pgTable(
+  'wanjiedaoyou_admin_feedback_cases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    feedbackId: uuid('feedback_id')
+      .references(() => feedbacks.id, { onDelete: 'cascade' })
+      .notNull(),
+    assigneeId: uuid('assignee_id'),
+    priority: varchar('priority', { length: 16 }).notNull().default('normal'),
+    revision: integer('revision').notNull().default(1),
+    resolutionReason: text('resolution_reason'),
+    lastResult: jsonb('last_result')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    updatedBy: uuid('updated_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('admin_feedback_cases_feedback_uidx').on(table.feedbackId),
+    index('admin_feedback_cases_assignee_priority_idx').on(
+      table.assigneeId,
+      table.priority,
+      table.updatedAt,
+    ),
+    index('admin_feedback_cases_updated_idx').on(table.updatedAt),
+    check(
+      'admin_feedback_cases_revision_positive_ck',
+      sql`${table.revision} >= 1`,
+    ),
+  ],
+);
+
+export type AdminFeedbackNoteKind = 'internal' | 'player_reply';
+
+// 管理端反馈的内部记录和玩家回复；每条记录不可变，仅允许追加。
+export const adminFeedbackNotes = pgTable(
+  'wanjiedaoyou_admin_feedback_notes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    feedbackId: uuid('feedback_id')
+      .references(() => feedbacks.id, { onDelete: 'cascade' })
+      .notNull(),
+    kind: varchar('kind', { length: 20 })
+      .$type<AdminFeedbackNoteKind>()
+      .notNull(),
+    actorId: uuid('actor_id').notNull(),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('admin_feedback_notes_feedback_created_idx').on(
+      table.feedbackId,
+      table.createdAt,
+      table.id,
+    ),
+    index('admin_feedback_notes_feedback_kind_created_idx').on(
+      table.feedbackId,
+      table.kind,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type AdminOperationStatus =
+  | 'pending'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'partial'
+  | 'conflict';
+
+// 管理端所有有副作用的操作记录：requestKey 提供幂等入口，result 保存可审计结果。
+export const adminOperations = pgTable(
+  'wanjiedaoyou_admin_operations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestKey: varchar('request_key', { length: 160 }).notNull(),
+    actorId: uuid('actor_id').notNull(),
+    action: varchar('action', { length: 64 }).notNull(),
+    target: jsonb('target')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    expectedRevision: integer('expected_revision'),
+    status: varchar('status', { length: 24 })
+      .$type<AdminOperationStatus>()
+      .notNull()
+      .default('pending'),
+    reason: text('reason'),
+    result: jsonb('result')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('admin_operations_request_key_uidx').on(table.requestKey),
+    index('admin_operations_created_id_idx').on(table.createdAt, table.id),
+    index('admin_operations_actor_created_idx').on(
+      table.actorId,
+      table.createdAt,
+    ),
+    index('admin_operations_status_updated_idx').on(
+      table.status,
+      table.updatedAt,
+    ),
+    index('admin_operations_action_created_idx').on(
+      table.action,
+      table.createdAt,
+    ),
+    index('admin_operations_target_gin_idx').using('gin', table.target),
+    check(
+      'admin_operations_expected_revision_nonnegative_ck',
+      sql`${table.expectedRevision} IS NULL OR ${table.expectedRevision} >= 0`,
+    ),
+  ],
+);
+
 /** @deprecated 旧造物存档；仅供旧藏宝库及法宝、功法兑换。当前道装和功法使用独立 V6 模型。保留表结构。 */
 export const creationProducts = pgTable(
   'wanjiedaoyou_creation_products',
