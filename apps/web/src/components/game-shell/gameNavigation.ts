@@ -36,6 +36,11 @@ export interface GameDockGroupLinks {
 
 const coreDockSceneOrder = ['cultivator', 'inventory', 'cave', 'mail'] as const;
 
+const expandedMenuColumns = [
+  ['cultivation', 'sect', 'adventure', 'combat'],
+  ['trade', 'message', 'service'],
+] as const satisfies readonly (readonly GameSceneGroup[])[];
+
 export const gameDockGroups: GameNavGroup[] = [
   {
     key: 'cultivation',
@@ -79,10 +84,10 @@ export const gameDockGroups: GameNavGroup[] = [
       },
       {
         id: 'divination',
+        icon: 'icon:ui-divination',
         sceneLabel: '每日占卜',
         href: '/game/divination',
         expandedDockLabel: '每日占卜',
-        icon: 'icon:ui-divination',
       },
       {
         id: 'inn',
@@ -92,44 +97,96 @@ export const gameDockGroups: GameNavGroup[] = [
       },
       {
         id: 'spirit-field',
+        icon: 'icon:ui-spirit-herb',
         sceneLabel: '洞府灵田',
         href: '/game/spirit-field',
         expandedDockLabel: '洞府灵田',
-        icon: 'icon:ui-spirit-herb',
       },
       {
         id: 'enlightenment',
+        icon: 'icon:ui-lotus',
         sceneLabel: '悟道室',
         href: '/game/enlightenment',
         expandedDockLabel: '悟道室',
-        icon: 'icon:ui-lotus',
       },
       {
         id: 'inscriptions',
+        icon: 'icon:item-formation-inscription',
         sceneLabel: '阵纹室',
         href: '/game/inscriptions',
         expandedDockLabel: '阵纹室',
-        icon: 'icon:item-formation-inscription',
+      },
+      { id: 'story', sceneLabel: '入世' },
+      { id: 'story-preview', sceneLabel: '看演出' },
+      { id: 'identity-reshape', sceneLabel: '改天换地' },
+      {
+        id: 'training-room',
+        icon: 'icon:beast-skill-strength',
+        sceneLabel: '练功房',
+        href: '/game/training-room',
       },
       {
-        id: 'sect-abilities',
-        sceneLabel: '宗门演武',
-        href: '/game/sect/arena?workspace=loadout&npc=instructor',
-        expandedDockLabel: '宗门神通',
-        icon: 'icon:item-manual-jade',
+        id: 'task-challenge',
+        sceneLabel: '破境试炼',
       },
+      {
+        id: 'beast-room',
+        icon: 'icon:facility-beast-bag',
+        sceneLabel: '育兽室',
+        href: '/game/beast-room',
+      },
+      {
+        id: 'beasts',
+        icon: 'icon:facility-beast-bag',
+        sceneLabel: '灵兽袋',
+        href: '/game/beasts',
+        expandedDockLabel: '灵兽袋',
+      },
+      {
+        id: 'fate-reshape',
+        icon: 'icon:nav-fate-reshape',
+        sceneLabel: '重塑命格',
+        href: '/game/fate-reshape',
+        expandedDockLabel: '重塑命格',
+      },
+      {
+        id: 'beast-fusion',
+        sceneLabel: '灵兽融合',
+        href: '/game/beasts/fusion',
+      },
+      { id: 'beast-codex', sceneLabel: '灵兽图鉴', href: '/game/beasts/codex' },
+      {
+        id: 'inventory',
+        sceneLabel: '储物袋',
+        href: '/game/inventory',
+        coreDockLabel: '储物袋',
+      },
+      {
+        id: 'gongfa-enlightenment',
+        sceneLabel: '功法参悟',
+      },
+    ],
+  },
+  {
+    key: 'sect',
+    title: '宗门',
+    scenes: [
       {
         id: 'sect',
+        icon: 'icon:map-sect',
         sceneLabel: '宗门',
         href: '/game/sect',
         expandedDockLabel: '宗门',
-        icon: 'icon:map-sect',
+      },
+      {
+        id: 'sect-abilities',
+        icon: 'icon:item-manual-jade',
+        sceneLabel: '宗门演武',
+        href: '/game/sect/arena?workspace=loadout&npc=instructor',
+        expandedDockLabel: '宗门神通',
       },
       { id: 'sect-onboarding', sceneLabel: '诸宗山门' },
-      { id: 'story', sceneLabel: '入世' },
-      { id: 'story-preview', sceneLabel: '看演出' },
       { id: 'sect-transfer', sceneLabel: '欺天台 · 转宗' },
-      { id: 'identity-reshape', sceneLabel: '改天换地' },
       { id: 'sect-visit', sceneLabel: '访宗舆图' },
       { id: 'sect-foreign-gate', sceneLabel: '外宗山门' },
       { id: 'sect-hall', sceneLabel: '宗门大殿' },
@@ -148,62 +205,59 @@ export const gameDockGroups: GameNavGroup[] = [
       { id: 'sect-gate-sweep', sceneLabel: '清扫山门' },
       { id: 'sect-spirit-vein-mining', sceneLabel: '灵矿采掘' },
       { id: 'sect-task-battle', sceneLabel: '宗门战局' },
+    ],
+  },
+  {
+    key: 'adventure',
+    title: '历练',
+    scenes: [
       {
-        id: 'training-room',
-        icon: 'icon:beast-skill-strength',
-        sceneLabel: '练功房',
-        href: '/game/training-room',
+        id: 'map',
+        icon: 'icon:nav-world-map',
+        sceneLabel: '山河舆图',
+        href: '/game/map-v2',
+        expandedDockLabel: '修仙界地图',
+      },
+      {
+        id: 'dungeon',
+        icon: 'icon:map-dungeon',
+        sceneLabel: '云游探秘',
+        href: '/game/dungeon',
+        expandedDockLabel: '云游探秘',
+      },
+      {
+        id: 'tower',
+        icon: 'icon:ui-mirror',
+        sceneLabel: '蜃楼幻境',
+        href: '/game/tower',
+        expandedDockLabel: '蜃楼幻境',
+      },
+      {
+        id: 'tasks',
+        icon: 'icon:ui-scroll',
+        sceneLabel: '任务中心',
+        href: '/game/tasks',
+        expandedDockLabel: '任务中心',
+      },
+      {
+        id: 'inquiry',
+        sceneLabel: '秘境探查',
+        href: '/game/inquiry',
       },
       { id: 'wild', sceneLabel: '野外寻觅', href: '/game/map-v2' },
       {
-        id: 'beast-room',
-        icon: 'icon:facility-beast-bag',
-        sceneLabel: '育兽室',
-        href: '/game/beast-room',
+        id: 'hunt',
+        sceneLabel: '结伴讨伐',
       },
       {
-        id: 'beasts',
-        sceneLabel: '灵兽袋',
-        href: '/game/beasts',
-        expandedDockLabel: '灵兽袋',
-        icon: 'icon:facility-beast-bag',
-      },
-      {
-        id: 'beast-fusion',
-        sceneLabel: '灵兽融合',
-        href: '/game/beasts/fusion',
-      },
-      { id: 'beast-codex', sceneLabel: '灵兽图鉴', href: '/game/beasts/codex' },
-      {
-        id: 'inventory',
-        sceneLabel: '储物袋',
-        href: '/game/inventory',
-        coreDockLabel: '储物袋',
-      },
-      {
-        id: 'battle-history',
-        sceneLabel: '全部战绩',
-        href: '/game/battle/history',
-        expandedDockLabel: '全部战绩',
+        id: 'hunt-team',
         icon: 'icon:ui-sword',
+        sceneLabel: '组队讨伐',
+        href: '/game/hunt-team',
       },
       {
-        id: 'journal',
-        sceneLabel: '修仙日志',
-        href: '/game/journal',
-        expandedDockLabel: '修仙日志',
-        icon: 'icon:ui-manual',
-      },
-      {
-        id: 'dungeon-history',
-        sceneLabel: '探险札记',
-        href: '/game/dungeon/history',
-        expandedDockLabel: '探险札记',
-        icon: 'icon:nav-travel-notes',
-      },
-      {
-        id: 'gongfa-enlightenment',
-        sceneLabel: '功法参悟',
+        id: 'tower-battle',
+        sceneLabel: '蜃楼战局',
       },
     ],
   },
@@ -211,34 +265,6 @@ export const gameDockGroups: GameNavGroup[] = [
     key: 'craft',
     title: '造化',
     scenes: [
-      {
-        id: 'dungeon',
-        sceneLabel: '云游探秘',
-        href: '/game/dungeon',
-        expandedDockLabel: '云游探秘',
-        icon: 'icon:map-dungeon',
-      },
-      {
-        id: 'tower',
-        sceneLabel: '蜃楼幻境',
-        href: '/game/tower',
-        expandedDockLabel: '蜃楼幻境',
-        icon: 'icon:ui-mirror',
-      },
-      {
-        id: 'fate-reshape',
-        sceneLabel: '重塑命格',
-        href: '/game/fate-reshape',
-        expandedDockLabel: '重塑命格',
-        icon: 'icon:nav-fate-reshape',
-      },
-      {
-        id: 'tasks',
-        sceneLabel: '任务中心',
-        href: '/game/tasks',
-        expandedDockLabel: '任务中心',
-        icon: 'icon:ui-scroll',
-      },
       {
         id: 'alchemy',
         icon: 'icon:ui-elixir',
@@ -249,13 +275,6 @@ export const gameDockGroups: GameNavGroup[] = [
         icon: 'icon:earthfire-furnace',
         sceneLabel: '炼器室',
       },
-      {
-        id: 'map',
-        sceneLabel: '山河舆图',
-        href: '/game/map-v2',
-        expandedDockLabel: '修仙界地图',
-        icon: 'icon:nav-world-map',
-      },
     ],
   },
   {
@@ -264,10 +283,10 @@ export const gameDockGroups: GameNavGroup[] = [
     scenes: [
       {
         id: 'market',
+        icon: 'icon:map-market',
         sceneLabel: '修仙坊市',
         href: '/game/map-v2?intent=market',
         expandedDockLabel: '修仙坊市',
-        icon: 'icon:map-market',
       },
       {
         id: 'black-market',
@@ -275,24 +294,24 @@ export const gameDockGroups: GameNavGroup[] = [
       },
       {
         id: 'market-recycle',
+        icon: 'icon:nav-appraisal',
         sceneLabel: '鉴宝回收',
         href: '/game/market/recycle',
         expandedDockLabel: '鉴宝回收',
-        icon: 'icon:nav-appraisal',
       },
       {
         id: 'tianjiao-vault',
+        icon: 'icon:ui-spirit-stones',
         sceneLabel: '万界商行',
         href: '/game/tianjiao-vault',
         expandedDockLabel: '万界商行',
-        icon: 'icon:ui-spirit-stones',
       },
       {
         id: 'auction',
+        icon: 'icon:nav-auction',
         sceneLabel: '拍卖行',
         href: '/game/auction',
         expandedDockLabel: '拍卖行',
-        icon: 'icon:nav-auction',
       },
     ],
   },
@@ -308,10 +327,24 @@ export const gameDockGroups: GameNavGroup[] = [
       },
       {
         id: 'world-chat',
+        icon: 'icon:ui-letter',
         sceneLabel: '世界传音',
         href: '/game/world-chat',
         expandedDockLabel: '世界传音',
-        icon: 'icon:ui-letter',
+      },
+      {
+        id: 'journal',
+        icon: 'icon:ui-manual',
+        sceneLabel: '修仙日志',
+        href: '/game/journal',
+        expandedDockLabel: '修仙日志',
+      },
+      {
+        id: 'dungeon-history',
+        icon: 'icon:nav-travel-notes',
+        sceneLabel: '探险札记',
+        href: '/game/dungeon/history',
+        expandedDockLabel: '探险札记',
       },
     ],
   },
@@ -321,27 +354,24 @@ export const gameDockGroups: GameNavGroup[] = [
     scenes: [
       {
         id: 'rankings',
+        icon: 'icon:nav-rankings',
         sceneLabel: '天骄榜',
         href: '/game/rankings',
         expandedDockLabel: '天骄榜',
-        icon: 'icon:nav-rankings',
-      },
-      {
-        id: 'hunt',
-        sceneLabel: '结伴讨伐',
-      },
-      {
-        id: 'hunt-team',
-        icon: 'icon:ui-sword',
-        sceneLabel: '组队讨伐',
-        href: '/game/hunt-team',
       },
       {
         id: 'arena-sparring',
+        icon: 'icon:facility-sect-arena',
         sceneLabel: '擂台切磋',
         href: '/game/arena',
         expandedDockLabel: '擂台切磋',
-        icon: 'icon:facility-sect-arena',
+      },
+      {
+        id: 'battle-history',
+        icon: 'icon:ui-sword',
+        sceneLabel: '全部战绩',
+        href: '/game/battle/history',
+        expandedDockLabel: '全部战绩',
       },
       {
         id: 'battle-challenge',
@@ -351,14 +381,6 @@ export const gameDockGroups: GameNavGroup[] = [
         id: 'battle-replay',
         sceneLabel: '战斗回放',
       },
-      {
-        id: 'tower-battle',
-        sceneLabel: '蜃楼战局',
-      },
-      {
-        id: 'task-challenge',
-        sceneLabel: '破境试炼',
-      },
     ],
   },
   {
@@ -366,39 +388,46 @@ export const gameDockGroups: GameNavGroup[] = [
     title: '玩家服务',
     scenes: [
       {
+        id: 'download',
+        sceneLabel: '下载游戏',
+        href: '/game/download',
+        expandedDockLabel: '下载游戏',
+        icon: '📲',
+      },
+      {
         id: 'redeem',
+        icon: 'icon:ui-treasure-chest',
         sceneLabel: '兑换码',
         href: '/game/redeem',
         expandedDockLabel: '兑换码',
-        icon: 'icon:ui-treasure-chest',
       },
       {
         id: 'merit-ledger',
+        icon: 'icon:ui-merit-medal',
         sceneLabel: '功德簿',
         href: '/game/merit-ledger',
         expandedDockLabel: '功德簿',
-        icon: 'icon:ui-merit-medal',
       },
       {
         id: 'community',
+        icon: 'icon:nav-community',
         sceneLabel: '玩家交流群',
         href: '/game/community',
         expandedDockLabel: '玩家交流群',
-        icon: 'icon:nav-community',
       },
       {
         id: 'feedback',
+        icon: 'icon:ui-brush',
         sceneLabel: '意见反馈',
         href: '/game/settings/feedback',
         expandedDockLabel: '意见反馈',
-        icon: 'icon:ui-brush',
       },
       {
         id: 'settings',
+        icon: 'icon:ui-mechanism',
         sceneLabel: '系统设置',
         href: '/game/settings',
         expandedDockLabel: '系统设置',
-        icon: 'icon:ui-mechanism',
       },
     ],
   },
@@ -491,4 +520,29 @@ export function getExpandedDockGroups(): GameDockGroupLinks[] {
       }),
     }))
     .filter((group) => group.actions.length > 0);
+}
+
+export function getExpandedDockColumns(): GameDockGroupLinks[][] {
+  const groups = getExpandedDockGroups();
+  const byKey = new Map(groups.map((group) => [group.key, group]));
+  const used = new Set<GameSceneGroup>();
+  const columns = expandedMenuColumns.map((keys) =>
+    keys.flatMap((key) => {
+      const group = byKey.get(key);
+
+      if (!group) {
+        return [];
+      }
+
+      used.add(key);
+      return [group];
+    }),
+  );
+  const rest = groups.filter((group) => !used.has(group.key));
+
+  if (rest.length > 0) {
+    columns[0]?.push(...rest);
+  }
+
+  return columns;
 }
