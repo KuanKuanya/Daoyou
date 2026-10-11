@@ -134,7 +134,6 @@ export function HuntTeamChat({
     () =>
       realtimeClient.subscribe('hunt-team.chat', (event) => {
         if (event.payload.teamId !== teamId) return;
-        stickRef.current = true;
         setMessages((current) => mergeMessages(current, [event.payload]));
         if (openRef.current) setSeenId(event.payload.id);
       }),
