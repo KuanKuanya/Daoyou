@@ -14,7 +14,7 @@ import { Access, CurrentUser } from '../auth/access.js';
 import { FirstQuery } from '../http/first-query.js';
 import { JsonBody } from '../http/json-body.js';
 import { ZodPipe } from '../http/zod.pipe.js';
-import { AdminErrors } from './admin-errors.js';
+import { SystemMailErrors } from './system-mails-errors.js';
 import {
   CreateSchema,
   ListSchema,
@@ -24,7 +24,7 @@ import {
 import { AdminSystemMailsService } from './system-mails.service.js';
 @Controller('api/admin/system-mails')
 @Access('admin')
-@UseFilters(AdminErrors)
+@UseFilters(SystemMailErrors)
 export class AdminSystemMailsController {
   constructor(
     @Inject(AdminSystemMailsService)
@@ -32,7 +32,7 @@ export class AdminSystemMailsController {
   ) {}
   @Get()
   list(
-    @FirstQuery(new ZodPipe(ListSchema, 'legacy-unhandled'))
+    @FirstQuery(new ZodPipe(ListSchema))
     query: z.infer<typeof ListSchema>,
   ) {
     return this.service.list(query);
@@ -45,10 +45,7 @@ export class AdminSystemMailsController {
   @HttpCode(200)
   create(
     @CurrentUser() user: AuthUser,
-    @JsonBody(
-      { fallback: undefined },
-      new ZodPipe(CreateSchema, 'legacy-unhandled'),
-    )
+    @JsonBody({ fallback: undefined }, new ZodPipe(CreateSchema))
     input: z.infer<typeof CreateSchema>,
   ) {
     return this.service.create(user.id, input);
@@ -56,10 +53,7 @@ export class AdminSystemMailsController {
   @Put(':id')
   update(
     @Param('id') id: string,
-    @JsonBody(
-      { fallback: undefined },
-      new ZodPipe(UpdateSchema, 'legacy-unhandled'),
-    )
+    @JsonBody({ fallback: undefined }, new ZodPipe(UpdateSchema))
     input: z.infer<typeof UpdateSchema>,
   ) {
     return this.service.update(id, input);
@@ -68,10 +62,7 @@ export class AdminSystemMailsController {
   @HttpCode(200)
   publish(
     @Param('id') id: string,
-    @JsonBody(
-      { fallback: undefined },
-      new ZodPipe(RevisionSchema, 'legacy-unhandled'),
-    )
+    @JsonBody({ fallback: undefined }, new ZodPipe(RevisionSchema))
     input: z.infer<typeof RevisionSchema>,
   ) {
     return this.service.publish(id, input);
@@ -80,10 +71,7 @@ export class AdminSystemMailsController {
   @HttpCode(200)
   stop(
     @Param('id') id: string,
-    @JsonBody(
-      { fallback: undefined },
-      new ZodPipe(RevisionSchema, 'legacy-unhandled'),
-    )
+    @JsonBody({ fallback: undefined }, new ZodPipe(RevisionSchema))
     input: z.infer<typeof RevisionSchema>,
   ) {
     return this.service.stop(id, input);

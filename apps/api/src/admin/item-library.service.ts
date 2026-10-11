@@ -5,6 +5,7 @@ import {
 } from '@server/lib/repositories/appSettingsRepository.js';
 import {
   archiveItemLibraryEntry,
+  countPublishedMaterialLibrary,
   createItemLibraryEntry,
   findItemLibraryById,
   listItemLibrary,
@@ -17,6 +18,9 @@ import {
 } from '@server/admin/application/MaterialLibraryService.js';
 import { ItemLibraryDailyMaterialGenerationSettingsSchema } from '@daoyou/contracts/application-settings';
 import { CreateItemLibraryEntrySchema, ItemLibraryListQuerySchema, ItemLibraryMaterialGenerateSchema, ItemLibrarySpiritSeedGenerateSchema, UpdateItemLibraryEntrySchema } from '@daoyou/contracts/items/library';
+import type { ItemLibraryCoverage } from '@daoyou/contracts/items/library';
+import { MATERIAL_TYPE_VALUES } from '@daoyou/game-domain/inventory';
+import { QUALITY_VALUES } from '@daoyou/constants/qualities';
 
 function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -27,6 +31,20 @@ function isUniqueViolation(error: unknown): boolean {
 }
 @Injectable()
 export class AdminItemLibraryService {
+  async coverage(): Promise<ItemLibraryCoverage> {
+    const counts = await countPublishedMaterialLibrary();
+    return {
+      cells: MATERIAL_TYPE_VALUES.flatMap((materialType) =>
+        QUALITY_VALUES.map((quality) => ({
+          materialType,
+          quality,
+          publishedCount: counts.find(
+            (row) => row.materialType === materialType && row.quality === quality,
+          )?.publishedCount ?? 0,
+        })),
+      ),
+    };
+  }
   async list(query: Record<string, string | undefined>) {
     const parsed = ItemLibraryListQuerySchema.safeParse({
       status: query['status'] || undefined,
