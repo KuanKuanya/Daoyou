@@ -2118,6 +2118,7 @@ export const adminOperations = pgTable(
   },
   (table) => [
     uniqueIndex('admin_operations_request_key_uidx').on(table.requestKey),
+    index('admin_operations_created_id_idx').on(table.createdAt, table.id),
     index('admin_operations_actor_created_idx').on(
       table.actorId,
       table.createdAt,

@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import { Access } from '../auth/access.js';
 import { FirstQuery } from '../http/first-query.js';
 import { ZodPipe } from '../http/zod.pipe.js';
-import { AdminErrors } from './admin-errors.js';
+import { AdminOperationsErrors } from './admin-errors.js';
 import {
   AdminOperationsDiagnosticsQuerySchema,
   AdminOperationsAuditQuerySchema,
@@ -13,7 +13,7 @@ import { AdminOperationsService } from './admin-operations.service.js';
 
 @Controller('api/admin/operations')
 @Access('admin')
-@UseFilters(AdminErrors)
+@UseFilters(AdminOperationsErrors)
 export class AdminOperationsController {
   constructor(
     @Inject(AdminOperationsService)

@@ -144,53 +144,82 @@ export default function AdminOperationsDiagnosticsPage() {
   const [loading, setLoading] = useState(false);
   const [audit, setAudit] = useState<AuditResponse['data'] | null>(null);
   const [auditStatus, setAuditStatus] = useState<AuditStatus | 'all'>('all');
+  const [auditPage, setAuditPage] = useState(1);
   const [auditLoading, setAuditLoading] = useState(false);
+  const diagnosticsRequestRef = useRef<AbortController | null>(null);
+  const auditRequestRef = useRef<AbortController | null>(null);
 
   const loadAudit = useCallback(async () => {
+    auditRequestRef.current?.abort();
+    const controller = new AbortController();
+    auditRequestRef.current = controller;
     setAuditLoading(true);
     try {
-      const query = new URLSearchParams({ page: '1', limit: '8' });
+      const query = new URLSearchParams({
+        page: String(auditPage),
+        limit: '8',
+      });
       if (auditStatus !== 'all') query.set('status', auditStatus);
       const response = await apiFetch(
         `/api/admin/operations/audit?${query.toString()}`,
-        { cache: 'no-store' },
+        { cache: 'no-store', signal: controller.signal },
       );
       const payload = (await response.json()) as AuditResponse;
       if (!response.ok || !payload.success || !payload.data) {
         throw new Error(payload.error ?? '加载操作审计失败');
       }
+      if (controller.signal.aborted) return;
       setAudit(payload.data);
     } catch (error) {
+      if (controller.signal.aborted) return;
+      setAudit(null);
       pushToast({
         message: error instanceof Error ? error.message : '加载操作审计失败',
         tone: 'danger',
       });
     } finally {
-      setAuditLoading(false);
+      if (!controller.signal.aborted && auditRequestRef.current === controller) {
+        setAuditLoading(false);
+      }
     }
-  }, [auditStatus, pushToast]);
+  }, [auditPage, auditStatus, pushToast]);
 
   const load = useCallback(async () => {
+    diagnosticsRequestRef.current?.abort();
+    const controller = new AbortController();
+    diagnosticsRequestRef.current = controller;
     setLoading(true);
     try {
       const response = await apiFetch(
         `/api/admin/operations/diagnostics?windowHours=${windowHours}`,
-        { cache: 'no-store' },
+        { cache: 'no-store', signal: controller.signal },
       );
       const payload = (await response.json()) as DiagnosticsResponse;
       if (!response.ok || !payload.success || !payload.data) {
         throw new Error(payload.error ?? '加载运营诊断失败');
       }
+      if (controller.signal.aborted) return;
       setData(payload.data);
     } catch (error) {
+      if (controller.signal.aborted) return;
+      setData(null);
       pushToast({
         message: error instanceof Error ? error.message : '加载运营诊断失败',
         tone: 'danger',
       });
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted && diagnosticsRequestRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, [pushToast, windowHours]);
+
+  useEffect(() => {
+    return () => {
+      diagnosticsRequestRef.current?.abort();
+      auditRequestRef.current?.abort();
+    };
+  }, []);
 
   const loadRef = useRef(load);
   const loadAuditRef = useRef(loadAudit);
@@ -208,7 +237,7 @@ export default function AdminOperationsDiagnosticsPage() {
 
   useEffect(() => {
     void loadAuditRef.current();
-  }, [auditStatus]);
+  }, [auditPage, auditStatus]);
 
   const feedbackTotal = data ? sum(data.feedbacks.totalsByStatus) : 0;
   const recentFeedbackTotal = data ? sum(data.feedbacks.recentByStatus) : 0;
@@ -303,9 +332,10 @@ export default function AdminOperationsDiagnosticsPage() {
             <InkSelect
               size="sm"
               value={auditStatus}
-              onChange={(value) =>
-                setAuditStatus(value as AuditStatus | 'all')
-              }
+              onChange={(value) => {
+                setAuditPage(1);
+                setAuditStatus(value as AuditStatus | 'all');
+              }}
             >
               {Object.entries(AUDIT_STATUS_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -385,10 +415,38 @@ export default function AdminOperationsDiagnosticsPage() {
             {auditLoading ? '正在读取操作审计...' : '暂无匹配的操作记录。'}
           </p>
         )}
-        {audit && audit.pagination.total > audit.items.length ? (
-          <p className="text-ink-secondary text-xs">
-            当前显示最近 {audit.items.length} 条，共 {audit.pagination.total} 条；表格区域可独立滚动。
-          </p>
+        {audit ? (
+          <div className="text-ink-secondary flex flex-wrap items-center justify-between gap-3 text-sm">
+            <span>
+              共 {audit.pagination.total} 条，第 {audit.pagination.page} /{' '}
+              {Math.max(audit.pagination.totalPages, 1)} 页；表格区域可独立滚动。
+            </span>
+            {audit.pagination.totalPages > 1 ? (
+              <div className="flex gap-2">
+                <InkButton
+                  disabled={auditLoading || audit.pagination.page <= 1}
+                  onClick={() => setAuditPage((value) => Math.max(1, value - 1))}
+                  variant="secondary"
+                >
+                  上一页
+                </InkButton>
+                <InkButton
+                  disabled={
+                    auditLoading ||
+                    audit.pagination.page >= audit.pagination.totalPages
+                  }
+                  onClick={() =>
+                    setAuditPage((value) =>
+                      Math.min(audit.pagination.totalPages, value + 1),
+                    )
+                  }
+                  variant="secondary"
+                >
+                  下一页
+                </InkButton>
+              </div>
+            ) : null}
+          </div>
         ) : null}
       </section>
 

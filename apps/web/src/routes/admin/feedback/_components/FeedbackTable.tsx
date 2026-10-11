@@ -45,6 +45,42 @@ const TYPE_LABELS: Record<FeedbackType, string> = {
   other: '其他意见',
 };
 
+function FeedbackPagination(props: {
+  page: number;
+  total: number;
+  totalPages: number;
+  loading: boolean;
+  onPageChange: (page: number) => void;
+}) {
+  if (props.totalPages <= 1) return null;
+
+  return (
+    <div className="text-ink-secondary flex flex-wrap items-center justify-between gap-3 text-sm">
+      <span>
+        共 {props.total} 条，第 {props.page} / {props.totalPages} 页
+      </span>
+      <div className="flex gap-2">
+        <InkButton
+          disabled={props.loading || props.page <= 1}
+          onClick={() => props.onPageChange(Math.max(1, props.page - 1))}
+          variant="secondary"
+        >
+          上一页
+        </InkButton>
+        <InkButton
+          disabled={props.loading || props.page >= props.totalPages}
+          onClick={() =>
+            props.onPageChange(Math.min(props.totalPages, props.page + 1))
+          }
+          variant="secondary"
+        >
+          下一页
+        </InkButton>
+      </div>
+    </div>
+  );
+}
+
 export function FeedbackTable() {
   const { pushToast } = useInkUI();
   const [loading, setLoading] = useState(true);
@@ -239,6 +275,14 @@ export function FeedbackTable() {
         </InkButton>
       </div>
 
+      <FeedbackPagination
+        page={page}
+        total={total}
+        totalPages={totalPages}
+        loading={loading}
+        onPageChange={setPage}
+      />
+
       {/* 表格 */}
       <div className="border-ink/15 bg-bgpaper/80 overflow-x-auto border border-dashed">
         <table className="w-full min-w-[800px] text-sm">
@@ -370,30 +414,13 @@ export function FeedbackTable() {
         </table>
       </div>
 
-      {/* 分页 */}
-      {totalPages > 1 && (
-        <div className="text-ink-secondary flex items-center justify-between text-sm">
-          <span>
-            共 {total} 条，第 {page} / {totalPages} 页
-          </span>
-          <div className="flex gap-2">
-            <InkButton
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              variant="secondary"
-            >
-              上一页
-            </InkButton>
-            <InkButton
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              variant="secondary"
-            >
-              下一页
-            </InkButton>
-          </div>
-        </div>
-      )}
+      <FeedbackPagination
+        page={page}
+        total={total}
+        totalPages={totalPages}
+        loading={loading}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
