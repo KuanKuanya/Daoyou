@@ -17,6 +17,11 @@ interface FeedbackItem {
   cultivatorName: string | null;
   cultivatorRealm: string | null;
   createdAt: string;
+  adminCase: {
+    revision: number;
+    priority: string;
+    resolutionReason: string | null;
+  } | null;
 }
 
 const STATUS_LABELS: Record<FeedbackStatus, string> = {
@@ -124,6 +129,9 @@ export function FeedbackTable() {
     fetchFeedbacks();
   };
 
+  const itemRevision = (id: string) =>
+    items.find((item) => item.id === id)?.adminCase?.revision ?? 1;
+
   const updateStatus = async (id: string, newStatus: FeedbackStatus) => {
     try {
       setUpdatingId(id);
@@ -134,6 +142,7 @@ export function FeedbackTable() {
         body: JSON.stringify({
           status: newStatus,
           adminMessage: adminMessage || undefined,
+          expectedRevision: itemRevision(id),
         }),
       });
       const data = await res.json();

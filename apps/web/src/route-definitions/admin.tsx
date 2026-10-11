@@ -76,6 +76,13 @@ export const adminRoutes = (
       handle={title('在线人数')}
     />
     <Route
+      path="operations-diagnostics"
+      lazy={lazyRoute(
+        () => import('@app/routes/admin/operations-diagnostics/route'),
+      )}
+      handle={title('运营诊断')}
+    />
+    <Route
       path="tower-enemy-sets"
       lazy={lazyRoute(() => import('@app/routes/admin/tower-enemy-sets/route'))}
       handle={title('蜃楼敌人')}

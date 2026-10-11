@@ -74,9 +74,10 @@ export class AdminController {
 
   @Patch('feedback/:id/status')
   updateFeedback(
+    @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @JsonBody({ fallback: null }) input: unknown,
   ) {
-    return this.feedback.update(id, input);
+    return this.feedback.update(id, input, user.id);
   }
 }

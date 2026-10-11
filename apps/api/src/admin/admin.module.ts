@@ -4,6 +4,8 @@ import { AccountsController } from './accounts.controller.js';
 import { AccountsService } from './accounts.service.js';
 import { AdminController } from './admin.controller.js';
 import { AdminFeedbackService } from './feedback.service.js';
+import { AdminOperationsController } from './admin-operations.controller.js';
+import { AdminOperationsService } from './admin-operations.service.js';
 import { AdminItemLibraryController } from './item-library.controller.js';
 import { AdminItemLibraryService } from './item-library.service.js';
 import { MonitoringService } from './monitoring.service.js';
@@ -36,6 +38,7 @@ import { AdminTowerService } from './tower.service.js';
     AdminSectShopController,
     AdminRewardItemsController,
     AdminTowerController,
+    AdminOperationsController,
   ],
   providers: [
     AdminSystemMailsService,
@@ -50,6 +53,7 @@ import { AdminTowerService } from './tower.service.js';
     AdminSectShopService,
     AdminRewardItemsService,
     AdminTowerService,
+    AdminOperationsService,
   ],
 })
 export class AdminModule {}
