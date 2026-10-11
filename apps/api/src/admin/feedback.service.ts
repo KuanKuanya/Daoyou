@@ -76,10 +76,16 @@ class FeedbackRevisionConflict extends Error {
   }
 }
 
-class FeedbackOperationBusy extends Error {
+class FeedbackOperationBusy extends HttpException {
   constructor() {
-    super('相同操作正在处理中，请稍后查询操作结果');
-    this.name = 'FeedbackOperationBusy';
+    super(
+      {
+        success: false,
+        error: '相同操作正在处理中，请稍后查询操作结果',
+        code: 'OPERATION_IN_PROGRESS',
+      },
+      409,
+    );
   }
 }
 
@@ -129,7 +135,22 @@ function canonicalTarget(input: {
 }
 
 function targetFingerprint(target: Record<string, unknown>): string {
-  return JSON.stringify(target);
+  const canonicalize = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(canonicalize);
+    }
+    if (value !== null && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      return Object.fromEntries(
+        Object.keys(record)
+          .sort()
+          .map((key) => [key, canonicalize(record[key])]),
+      );
+    }
+    return value;
+  };
+
+  return JSON.stringify(canonicalize(target));
 }
 
 function deriveRequestKey(target: Record<string, unknown>): string {
@@ -267,6 +288,7 @@ export class AdminFeedbackService {
       actorId,
       requestKey,
       target,
+      expectedRevision,
     });
     if (operation.replayed) {
       const current = await findFeedbackById(id);
@@ -311,7 +333,17 @@ export class AdminFeedbackService {
 
         await tx
           .insert(adminFeedbackCases)
-          .values({ feedbackId: id, updatedBy: actorId })
+          .values({
+            feedbackId: id,
+            updatedBy: actorId,
+            lastResult:
+              lockedFeedback.status === 'resolved'
+                ? {
+                    feedbackRewardGranted: true,
+                    historicalResolution: true,
+                  }
+                : {},
+          })
           .onConflictDoNothing({ target: adminFeedbackCases.feedbackId });
         const [currentCase] = await tx
           .select()
@@ -323,11 +355,27 @@ export class AdminFeedbackService {
           throw new FeedbackRevisionConflict(expectedRevision, currentCase.revision);
         }
 
+        const rawPreviousResult = currentCase.lastResult ?? {};
+        // Cases created after this workflow was introduced carry an explicit
+        // reward marker. A legacy feedback already in `resolved` state has no
+        // reliable reward history, so conservatively treat it as processed to
+        // prevent an accidental second grant on the first admin action.
+        const historicalResolved =
+          lockedFeedback.status === 'resolved' &&
+          Object.keys(rawPreviousResult).length === 0;
+        const previousResult = historicalResolved
+          ? {
+              ...rawPreviousResult,
+              feedbackRewardGranted: true,
+              historicalResolution: true,
+            }
+          : rawPreviousResult;
+        const rewardPreviouslyGranted =
+          previousResult.feedbackRewardGranted === true;
+
         const hasStatusChanged = lockedFeedback.status !== parsed.data.status;
         const message = parsed.data.adminMessage?.trim();
         const resolutionReason = parsed.data.resolutionReason?.trim();
-        const previousResult = currentCase.lastResult ?? {};
-        const rewardPreviouslyGranted = previousResult.feedbackRewardGranted === true;
         const shouldNotify = hasStatusChanged || Boolean(message);
         const recipientCultivatorId = await this.findRecipientCultivator(
           tx,
@@ -492,6 +540,7 @@ export class AdminFeedbackService {
     actorId: string;
     requestKey: string;
     target: Record<string, unknown>;
+    expectedRevision: number;
   }): Promise<{ replayed: boolean; result: Record<string, unknown> }> {
     return this.database.transaction(async (tx) => {
       await tx
@@ -501,6 +550,7 @@ export class AdminFeedbackService {
           actorId: args.actorId,
           action: OPERATION_ACTION,
           target: args.target,
+          expectedRevision: args.expectedRevision,
           status: 'pending',
         })
         .onConflictDoNothing({ target: adminOperations.requestKey });
