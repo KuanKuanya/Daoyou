@@ -193,17 +193,22 @@ export default function AdminOperationsDiagnosticsPage() {
   }, [pushToast, windowHours]);
 
   const loadRef = useRef(load);
+  const loadAuditRef = useRef(loadAudit);
   useEffect(() => {
     loadRef.current = load;
   }, [load]);
+
+  useEffect(() => {
+    loadAuditRef.current = loadAudit;
+  }, [loadAudit]);
 
   useEffect(() => {
     void loadRef.current();
   }, [windowHours]);
 
   useEffect(() => {
-    void loadAudit();
-  }, [loadAudit]);
+    void loadAuditRef.current();
+  }, [auditStatus]);
 
   const feedbackTotal = data ? sum(data.feedbacks.totalsByStatus) : 0;
   const recentFeedbackTotal = data ? sum(data.feedbacks.recentByStatus) : 0;
