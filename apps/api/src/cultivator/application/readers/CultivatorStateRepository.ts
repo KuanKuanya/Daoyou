@@ -23,6 +23,7 @@ type DbExecutor,
 type DbTransaction
 } from '@server/lib/drizzle/db.js';
 import * as schema from '@server/lib/drizzle/schema.js';
+import { RESOURCE_SAFETY } from '@daoyou/game-domain/resources';
 
 
 export async function updateCultivator(
@@ -175,25 +176,6 @@ export async function deleteCultivator(
 
 // ===== 单独获取数据的接口 =====
 
-
-const RESOURCE_SAFETY = {
-  spirit_stones: {
-    maxDelta: 10_000_000, // 单次最多变动 1000 万灵石
-    ceiling: 1_000_000_000, // 灵石绝对上限 10 亿
-  },
-  reputation: {
-    maxDelta: 9999, // 单次最多变动 9999 声望
-    ceiling: 1_000_000, // 声望绝对上限 100 万
-  },
-  lifespan: {
-    maxDelta: 100_000, // 单次最多变动 10 万年寿元
-    ceiling: 10_000_000, // 寿元绝对上限 1000 万年
-  },
-  cultivation_exp: {
-    maxDelta: 10_000_000, // 单次最多变动 1000 万修为
-    ceiling: 1_000_000_000, // 修为绝对上限 10 亿
-  },
-} as const;
 
 /**
  * 校验并夹紧资源变化量，返回安全的 delta 值

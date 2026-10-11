@@ -1,29 +1,45 @@
 import { z } from 'zod';
+import { RESOURCE_SAFETY } from '../resources/limits.js';
 import type { createRewardSchemas } from '../rewards/selection.js';
 import { InstantSchema, SystemMailConditionsSchema } from './audience.js';
 
-
-export function createSystemMailInputSchema(RewardSelectionsSchema: ReturnType<typeof createRewardSchemas>['RewardSelectionsSchema']) {
-const SystemMailInputSchema = z
-  .object({
-    title: z.string().trim().min(1, '请填写邮件标题').max(200),
-    content: z.string().trim().min(1, '请填写邮件正文').max(10000),
-    rewardSelections: RewardSelectionsSchema,
-    conditions: SystemMailConditionsSchema,
-    startsAt: InstantSchema,
-    endsAt: InstantSchema,
-  })
-  .strict()
-  .refine(
-    (v) => Date.parse(v.startsAt) < Date.parse(v.endsAt),
-    '投递开始时间必须早于结束时间',
-  );
-return SystemMailInputSchema;
+export function createSystemMailInputSchema(
+  RewardSelectionsSchema: ReturnType<
+    typeof createRewardSchemas
+  >['RewardSelectionsSchema'],
+) {
+  const SystemMailInputSchema = z
+    .object({
+      title: z.string().trim().min(1, '请填写邮件标题').max(200),
+      content: z.string().trim().min(1, '请填写邮件正文').max(10000),
+      rewardSelections: RewardSelectionsSchema.superRefine((rewards, ctx) => {
+        rewards.forEach((reward, index) => {
+          if (reward.type === 'inventory_v1') return;
+          const max = RESOURCE_SAFETY[reward.type].maxDelta;
+          if (reward.quantity > max) {
+            ctx.addIssue({
+              code: 'custom',
+              path: [index, 'quantity'],
+              message: `${reward.type === 'reputation' ? '声望' : '灵石'}单项奖励最多 ${max}`,
+            });
+          }
+        });
+      }),
+      conditions: SystemMailConditionsSchema,
+      startsAt: InstantSchema,
+      endsAt: InstantSchema,
+    })
+    .strict()
+    .refine(
+      (v) => Date.parse(v.startsAt) < Date.parse(v.endsAt),
+      '投递开始时间必须早于结束时间',
+    );
+  return SystemMailInputSchema;
 }
 
-
-export type SystemMailInput = z.infer<ReturnType<typeof createSystemMailInputSchema>>;
-
+export type SystemMailInput = z.infer<
+  ReturnType<typeof createSystemMailInputSchema>
+>;
 
 export type SystemMailCampaign = SystemMailInput & {
   id: string;
@@ -33,7 +49,6 @@ export type SystemMailCampaign = SystemMailInput & {
   publishedAt: string | null;
   deliveredCount: number;
 };
-
 
 export type SystemMailListItem = Omit<
   SystemMailCampaign,

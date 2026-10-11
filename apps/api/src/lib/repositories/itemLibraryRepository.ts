@@ -128,6 +128,19 @@ export async function listItemLibrary(
   };
 }
 
+/** Global published counts, independent of pagination and admin filters. */
+export async function countPublishedMaterialLibrary() {
+  return getExecutor()
+    .select({
+      materialType: itemLibrary.category,
+      quality: itemLibrary.quality,
+      publishedCount: count(),
+    })
+    .from(itemLibrary)
+    .where(and(eq(itemLibrary.type, 'material'), eq(itemLibrary.status, 'published')))
+    .groupBy(itemLibrary.category, itemLibrary.quality);
+}
+
 export function normalizeItemLibraryFilters(
   query: ItemLibraryListQuery,
 ): ItemLibraryListFilters {

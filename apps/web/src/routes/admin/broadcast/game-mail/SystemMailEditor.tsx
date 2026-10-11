@@ -1,12 +1,21 @@
 import { InkButton, InkInput, InkSelect } from '@app/components/ui';
+import { REALM_STAGE_VALUES, REALM_VALUES } from '@daoyou/constants/realms';
 import {
   type MailRealm,
   type SystemMailCampaign,
   type SystemMailInput,
 } from '@daoyou/game-domain/mail';
-import { SystemMailInputSchema, formatMailTime, systemMailConditionSummary } from '@daoyou/game-rules/mail';
-import { SPONSORSHIP_TIER_IDS, SPONSORSHIP_TIER_META, type SponsorshipTierId } from '@daoyou/game-domain/sponsorship';
-import { REALM_STAGE_VALUES, REALM_VALUES } from '@daoyou/constants/realms';
+import { RESOURCE_SAFETY } from '@daoyou/game-domain/resources';
+import {
+  SPONSORSHIP_TIER_IDS,
+  SPONSORSHIP_TIER_META,
+  type SponsorshipTierId,
+} from '@daoyou/game-domain/sponsorship';
+import {
+  SystemMailInputSchema,
+  formatMailTime,
+  systemMailConditionSummary,
+} from '@daoyou/game-rules/mail';
 import { useRef, useState } from 'react';
 import { AdminDialog } from '../../_components/AdminDialog';
 import { AdminSteps } from '../../_components/AdminPage';
@@ -253,6 +262,11 @@ export function SystemMailEditor({
               />
               <section className="border-ink/10 space-y-3 border-t pt-4">
                 <h4 className="font-semibold">附件奖励</h4>
+                <p className="text-ink-secondary text-sm">
+                  每项声望最多 {RESOURCE_SAFETY.reputation.maxDelta}，灵石最多{' '}
+                  {RESOURCE_SAFETY.spirit_stones.maxDelta}
+                  ；领取后仍受角色总量上限约束。
+                </p>
                 <RewardSelectionEditor
                   value={rewards}
                   onChange={setRewards}

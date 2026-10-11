@@ -1,6 +1,13 @@
+import {
+  SystemMailConditionsSchema,
+  type SystemMailAudienceSnapshot,
+} from '@daoyou/game-domain/mail';
 import { describe, expect, it } from 'vitest';
-import { SystemMailConditionsSchema, type SystemMailAudienceSnapshot } from '@daoyou/game-domain/mail';
-import { isSystemMailInWindow, matchesSystemMailConditions, SystemMailInputSchema } from './campaign.js';
+import {
+  isSystemMailInWindow,
+  matchesSystemMailConditions,
+  SystemMailInputSchema,
+} from './campaign.js';
 
 const publishedAt = '2026-09-23T00:00:00Z';
 const facts: SystemMailAudienceSnapshot = {
@@ -168,5 +175,24 @@ describe('system mail delivery window', () => {
     expect(
       SystemMailInputSchema.safeParse({ ...input, dryRun: true }).success,
     ).toBe(false);
+  });
+  it('rejects rewards that cannot be granted by the resource engine', () => {
+    const input = {
+      title: '补偿',
+      content: '维护奖励',
+      conditions: {},
+      startsAt: campaign.startsAt,
+      endsAt: campaign.endsAt,
+    };
+    const accepts = (type: 'reputation' | 'spirit_stones', quantity: number) =>
+      SystemMailInputSchema.safeParse({
+        ...input,
+        rewardSelections: [{ type, quantity }],
+      }).success;
+    expect(accepts('reputation', 9999)).toBe(true);
+    expect(accepts('reputation', 10000)).toBe(false);
+    expect(accepts('reputation', 1_000_000)).toBe(false);
+    expect(accepts('spirit_stones', 10_000_000)).toBe(true);
+    expect(accepts('spirit_stones', 10_000_001)).toBe(false);
   });
 });

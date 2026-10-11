@@ -1,19 +1,27 @@
-import { z } from 'zod';
-import {
-  ItemLibraryItemIdSchema,
-  ItemLibraryStatusSchema,
-  ItemLibraryTypeSchema,
-  ItemLibraryMaterialPayloadSchema,
-  ArtifactEditorConfigSchema,
-} from '@daoyou/game-domain/items/catalog';
 import { ELEMENT_VALUES } from '@daoyou/constants/elements';
 import { QUALITY_VALUES } from '@daoyou/constants/qualities';
 import {
+  INVENTORY_MATERIAL_TYPES,
   MATERIAL_TYPE_VALUES,
   MaterialFactsSchema,
-  INVENTORY_MATERIAL_TYPES,
   seedFactsOf,
 } from '@daoyou/game-domain/inventory';
+import {
+  ArtifactEditorConfigSchema,
+  ItemLibraryItemIdSchema,
+  ItemLibraryMaterialPayloadSchema,
+  ItemLibraryStatusSchema,
+  ItemLibraryTypeSchema,
+} from '@daoyou/game-domain/items/catalog';
+import { z } from 'zod';
+
+export interface ItemLibraryCoverage {
+  cells: Array<{
+    materialType: (typeof MATERIAL_TYPE_VALUES)[number];
+    quality: (typeof QUALITY_VALUES)[number];
+    publishedCount: number;
+  }>;
+}
 
 export const ArtifactPreviewRequestSchema = ArtifactEditorConfigSchema.extend({
   name: z.string().trim().min(1).max(100),

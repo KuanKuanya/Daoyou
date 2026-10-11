@@ -1,24 +1,30 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import {
   InventoryGrid,
   ItemSlot,
 } from '@app/components/feature/items/ItemSlot';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton, InkInput, InkNotice, InkSelect } from '@app/components/ui';
+import { apiFetch } from '@app/lib/api/fetch';
+import { ELEMENT_VALUES } from '@daoyou/constants/elements';
+import { QUALITY_VALUES } from '@daoyou/constants/qualities';
 import {
-  rewardDisplayItem,
-  libraryMaterialGrant,
-} from '@daoyou/game-rules/rewards/materials';
+  DEFAULT_ITEM_LIBRARY_DAILY_MATERIAL_GENERATION_SETTINGS,
+  type ItemLibraryDailyMaterialGenerationSettings,
+} from '@daoyou/contracts/application-settings';
+import type {
+  CreateItemLibraryEntry,
+  ItemLibraryCoverage,
+} from '@daoyou/contracts/items/library';
 import {
   INVENTORY_MATERIAL_TYPES,
   MATERIAL_TYPE_NAMES,
   MATERIAL_TYPE_VALUES,
 } from '@daoyou/game-domain/inventory';
-import { DEFAULT_ITEM_LIBRARY_DAILY_MATERIAL_GENERATION_SETTINGS, type ItemLibraryDailyMaterialGenerationSettings } from '@daoyou/contracts/application-settings';
-import type { CreateItemLibraryEntry } from '@daoyou/contracts/items/library';
 import type { ItemLibraryEntry } from '@daoyou/game-domain/items/catalog';
-import { ELEMENT_VALUES } from '@daoyou/constants/elements';
-import { QUALITY_VALUES } from '@daoyou/constants/qualities';
+import {
+  libraryMaterialGrant,
+  rewardDisplayItem,
+} from '@daoyou/game-rules/rewards/materials';
 import { useCallback, useEffect, useState } from 'react';
 import { AdminDialog } from '../_components/AdminDialog';
 import { AdminPageHeader } from '../_components/AdminPage';
@@ -42,6 +48,7 @@ interface DailyMaterialGenerationSettingsResponse {
 export default function ItemLibraryAdminPage() {
   const { pushToast } = useInkUI();
   const [items, setItems] = useState<ItemLibraryEntry[]>([]);
+  const [coverage, setCoverage] = useState<ItemLibraryCoverage | null>(null);
   const [draft, setDraft] = useState<ItemLibraryDraft>(() =>
     createEmptyDraft(),
   );
@@ -100,6 +107,17 @@ export default function ItemLibraryAdminPage() {
       if (signal?.aborted) return;
       setItems(data.items ?? []);
       setTotalPages(data.totalPages ?? 1);
+      const coverageResponse = await apiFetch(
+        '/api/admin/item-library/materials/coverage',
+        { signal },
+      );
+      if (!coverageResponse.ok) {
+        setCoverage(null);
+        throw new Error('加载材料覆盖检查失败');
+      }
+      const coverageData =
+        (await coverageResponse.json()) as ItemLibraryCoverage;
+      if (!signal?.aborted) setCoverage(coverageData);
     },
     [page, query, statusFilter, materialFilter],
   );
@@ -288,16 +306,19 @@ export default function ItemLibraryAdminPage() {
     setDialogError('');
     setSaving(true);
     try {
-      const response = await apiFetch('/api/admin/item-library/seeds/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          count,
-          quality: seedGenerateQuality,
-          element: seedGenerateElement || undefined,
-          status: 'published',
-        }),
-      });
+      const response = await apiFetch(
+        '/api/admin/item-library/seeds/generate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            count,
+            quality: seedGenerateQuality,
+            element: seedGenerateElement || undefined,
+            status: 'published',
+          }),
+        },
+      );
       const data = (await response.json()) as ItemLibraryResponse;
       if (!response.ok) {
         throw new Error(data.error ?? '批量生成灵种失败');
@@ -388,6 +409,57 @@ export default function ItemLibraryAdminPage() {
           </>
         }
       />
+      {coverage && (
+        <details className="border-ink/10 rounded border p-4">
+          <summary className="cursor-pointer font-semibold">
+            已发布覆盖：
+            {coverage.cells.filter((cell) => cell.publishedCount > 0).length}/
+            {coverage.cells.length} 个分类与品质组合
+          </summary>
+          <p className="text-ink-secondary my-3 text-sm">
+            全库统计，不受下面筛选影响。0
+            表示缺少已发布条目，请按分类和品质补生成。
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm whitespace-nowrap">
+              <thead>
+                <tr>
+                  <th className="p-2 text-left">分类</th>
+                  {QUALITY_VALUES.map((quality) => (
+                    <th key={quality} className="p-2">
+                      {quality}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MATERIAL_TYPE_VALUES.map((materialType) => (
+                  <tr key={materialType}>
+                    <th className="p-2 text-left">
+                      {materialType === 'seed'
+                        ? '灵种'
+                        : MATERIAL_TYPE_NAMES[materialType]}
+                    </th>
+                    {QUALITY_VALUES.map((quality) => {
+                      const count =
+                        coverage.cells.find(
+                          (cell) =>
+                            cell.materialType === materialType &&
+                            cell.quality === quality,
+                        )?.publishedCount ?? 0;
+                      return (
+                        <td key={quality} className="p-2 text-center font-mono">
+                          {count || '0（缺失）'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
       <div className="flex flex-wrap items-end gap-4">
         <InkInput
           label="搜索材料"

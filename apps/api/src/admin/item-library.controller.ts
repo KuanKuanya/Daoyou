@@ -35,6 +35,10 @@ export class AdminItemLibraryController {
   ) {
     return this.service.generateMaterials(user.id, body);
   }
+  @Get('materials/coverage')
+  coverage() {
+    return this.service.coverage();
+  }
   @Post('seeds/generate')
   @HttpCode(200)
   generateSeeds(
