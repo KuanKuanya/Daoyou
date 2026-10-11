@@ -51,6 +51,7 @@ export function FeedbackTable() {
   const [status, setStatus] = useState<FeedbackStatus | 'all'>('all');
   const [type, setType] = useState<FeedbackType | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminMessages, setAdminMessages] = useState<Record<string, string>>(
@@ -69,7 +70,7 @@ export function FeedbackTable() {
       query.set('limit', String(limit));
       if (status !== 'all') query.set('status', status);
       if (type !== 'all') query.set('type', type);
-      if (search.trim()) query.set('search', search.trim());
+      if (appliedSearch) query.set('search', appliedSearch);
 
       const res = await apiFetch(`/api/admin/feedback?${query.toString()}`);
       const data = await res.json();
@@ -96,7 +97,7 @@ export function FeedbackTable() {
         query.set('limit', String(limit));
         if (status !== 'all') query.set('status', status);
         if (type !== 'all') query.set('type', type);
-        if (search.trim()) query.set('search', search.trim());
+        if (appliedSearch) query.set('search', appliedSearch);
 
         const res = await apiFetch(`/api/admin/feedback?${query.toString()}`);
         const data = await res.json();
@@ -122,11 +123,11 @@ export function FeedbackTable() {
     return () => {
       cancelled = true;
     };
-  }, [limit, page, pushToast, search, status, type]);
+  }, [appliedSearch, limit, page, pushToast, status, type]);
 
   const handleSearch = () => {
     setPage(1);
-    fetchFeedbacks();
+    setAppliedSearch(search.trim());
   };
 
   const itemRevision = (id: string) =>
@@ -148,12 +149,18 @@ export function FeedbackTable() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '更新状态失败');
       let message: string;
-      if (data.rewardGranted) {
+      if (data.rewardGranted && data.notifiedUser) {
         message = '状态已更新并通知用户，已发放 8000 灵石奖励';
+      } else if (data.rewardGranted) {
+        message = '状态已更新，已发放 8000 灵石奖励，但未找到用户角色，站内信未发送';
+      } else if (data.statusChanged && data.notifiedUser) {
+        message = '状态已更新并通知用户';
       } else if (data.statusChanged && !data.notifiedUser) {
         message = '状态已更新，但未找到用户角色，站内信未发送';
+      } else if (data.notifiedUser) {
+        message = '管理员留言已发送，状态未变化，未重复发放奖励';
       } else {
-        message = '状态已更新并通知用户';
+        message = '操作已记录，状态未变化，未重复发放奖励，未发送新通知';
       }
       pushToast({ message, tone: 'success' });
       await fetchFeedbacks();

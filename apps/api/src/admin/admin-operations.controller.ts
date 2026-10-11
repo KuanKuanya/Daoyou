@@ -6,6 +6,7 @@ import { ZodPipe } from '../http/zod.pipe.js';
 import { AdminErrors } from './admin-errors.js';
 import {
   AdminOperationsDiagnosticsQuerySchema,
+  AdminOperationsAuditQuerySchema,
   AdminOperationsFeedbackQuerySchema,
 } from './admin-operations-input.js';
 import { AdminOperationsService } from './admin-operations.service.js';
@@ -33,5 +34,13 @@ export class AdminOperationsController {
     query: z.infer<typeof AdminOperationsDiagnosticsQuerySchema>,
   ) {
     return this.operations.diagnostics(query);
+  }
+
+  @Get('audit')
+  audit(
+    @FirstQuery(new ZodPipe(AdminOperationsAuditQuerySchema))
+    query: z.infer<typeof AdminOperationsAuditQuerySchema>,
+  ) {
+    return this.operations.audit(query);
   }
 }

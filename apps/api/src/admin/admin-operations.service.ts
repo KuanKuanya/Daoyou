@@ -3,6 +3,7 @@ import { DRIZZLE_DATABASE } from '@server/database/database.service.js';
 import type { DbClient } from '@server/lib/drizzle/db.js';
 import {
   adminFeedbackCases,
+  adminOperations,
   cultivators,
   feedbacks,
   mails,
@@ -21,11 +22,13 @@ import {
 import type { z } from 'zod';
 import {
   AdminOperationsDiagnosticsQuerySchema,
+  AdminOperationsAuditQuerySchema,
   AdminOperationsFeedbackQuerySchema,
 } from './admin-operations-input.js';
 
 type FeedbackQuery = z.infer<typeof AdminOperationsFeedbackQuerySchema>;
 type DiagnosticsQuery = z.infer<typeof AdminOperationsDiagnosticsQuerySchema>;
+type AuditQuery = z.infer<typeof AdminOperationsAuditQuerySchema>;
 
 type CountRow = { key: string | null; count: number };
 
@@ -217,6 +220,64 @@ export class AdminOperationsService {
         sponsorshipOrders: {
           totalsByVerificationStatus: toCountMap(sponsorshipVerification),
           totalsByFulfillmentStatus: toCountMap(sponsorshipFulfillment),
+        },
+      },
+    };
+  }
+
+  async audit(query: AuditQuery) {
+    const conditions: SQL<unknown>[] = [];
+    if (query.status) conditions.push(eq(adminOperations.status, query.status));
+    if (query.action) conditions.push(eq(adminOperations.action, query.action));
+    if (query.requestKey) {
+      conditions.push(eq(adminOperations.requestKey, query.requestKey));
+    }
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const offset = (query.page - 1) * query.limit;
+
+    const [rows, countRows] = await Promise.all([
+      this.database
+        .select({
+          id: adminOperations.id,
+          requestKey: adminOperations.requestKey,
+          actorId: adminOperations.actorId,
+          action: adminOperations.action,
+          target: adminOperations.target,
+          expectedRevision: adminOperations.expectedRevision,
+          status: adminOperations.status,
+          reason: adminOperations.reason,
+          result: adminOperations.result,
+          createdAt: adminOperations.createdAt,
+          startedAt: adminOperations.startedAt,
+          completedAt: adminOperations.completedAt,
+          updatedAt: adminOperations.updatedAt,
+        })
+        .from(adminOperations)
+        .where(where)
+        .orderBy(desc(adminOperations.createdAt), desc(adminOperations.id))
+        .limit(query.limit)
+        .offset(offset),
+      this.database
+        .select({ count: sql<number>`count(*)::int` })
+        .from(adminOperations)
+        .where(where),
+    ]);
+
+    const total = Number(countRows[0]?.count ?? 0);
+    return {
+      success: true,
+      data: {
+        items: rows,
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total,
+          totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+        },
+        filters: {
+          status: query.status ?? null,
+          action: query.action ?? null,
+          requestKey: query.requestKey ?? null,
         },
       },
     };
