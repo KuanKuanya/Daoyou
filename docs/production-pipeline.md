@@ -20,6 +20,109 @@
 
 CI 共享逻辑测试使用单个 Vitest worker，避免多种子战斗模拟在 Runner 上因 CPU 竞争触发既有超时；不放宽测试超时、不跳过测试。
 
+## 日常操作：提交、合并、部署与验收
+
+统一路径是：本地验证 → 提交并推送开发分支 → PR 合入 `local-dev`（若从功能分支开发）→ `local-dev` 到 `production` 的发布 PR → 检查通过后合并 → 跟踪合并提交对应的 Production release → 验收。生产分支只通过 PR 更新，不在本地制造 production 合并提交，也不直接推送或强推生产分支。
+
+### 1. 确认改动范围并验证
+
+在仓库根目录检查当前分支和全部改动。下面的提交示例假设当前在 `local-dev`；若在 `codex/*` 功能分支，先通过 PR 将该分支合入 `local-dev`，再创建发布 PR。切换分支前保留未提交修改，不用 reset/clean 清空工作区。
+
+```bash
+git status --short --branch
+git diff
+git diff --cached
+git remote -v
+git fetch origin local-dev production
+pnpm install --frozen-lockfile
+pnpm run typecheck
+pnpm run lint
+pnpm run test --maxWorkers=1
+pnpm run build
+```
+
+每条命令成功后再继续。使用仓库固定的 Node/pnpm 版本，不新建其他包管理器锁文件。按 [测试规范](testing.md) 验证本次改动的本地用户流程；数据库变更同时检查 SQL、journal、snapshot 和兼容性。仅文档或发布辅助脚本变更可按 AGENTS.md 缩减应用检查，但在 PR 写明运行与跳过的检查。
+
+### 2. 提交和推送开发代码
+
+逐项暂存本次需要发布的文件。下面路径和提交说明是占位示例，替换后执行；避免把其他任务的修改一并提交。
+
+```bash
+test "$(git branch --show-current)" = local-dev
+git add -- path/to/changed-file path/to/another-file
+git diff --cached --stat
+git diff --cached --check
+git diff --cached
+git commit -m "fix: describe the actual change"
+git push origin HEAD:local-dev
+```
+
+如果推送被拒绝，先 fetch 并审查远端新增提交，在保留本地改动的前提下处理冲突、重新验证，不强推。若本机 HTTPS 凭据失效而 SSH 已配置，可使用下面命令，无需改仓库远端配置。显式 refspec 更新 `origin/*`，避免只更新 FETCH_HEAD 却继续读取过期的跟踪分支。
+
+```bash
+git fetch git@github.com:KuanKuanya/Daoyou.git \
+  refs/heads/local-dev:refs/remotes/origin/local-dev \
+  refs/heads/production:refs/remotes/origin/production
+git push git@github.com:KuanKuanya/Daoyou.git HEAD:local-dev
+```
+
+### 3. 创建并合并发布 PR
+
+浏览器打开本 fork 的 Pull requests，先检查是否已经存在 `local-dev → production` 的 PR；存在时沿用，避免并行创建重复发布。新建时 base 为 `production`、compare 为 `local-dev`。核对 Files changed、迁移文件和验证记录，等待 `Quality checks` 成功。新增提交会使旧检查证据失效，应等待最新提交的检查。
+
+使用 GitHub 的 **Create a merge commit** 合并，保留开发与生产的共同历史。合并前确认 PR 的 head 没有变化；合并后复制 GitHub 记录的完整 merge commit SHA。它是本次发布身份，可能与开发提交不同。
+
+可选使用 GitHub CLI：先安装 `gh`，执行 `gh auth login --hostname github.com` 并确认 `gh auth status --hostname github.com` 成功。将 PR 描述写入仓库外的文本文件（例如 `/tmp/daoyou-release-pr.md`），说明问题、最终行为、验证结果和迁移影响；保留真实换行。
+
+```bash
+gh pr list --repo KuanKuanya/Daoyou --base production --head local-dev --state open
+gh pr create --repo KuanKuanya/Daoyou --base production --head local-dev \
+  --title "release: describe this release" --body-file /tmp/daoyou-release-pr.md
+```
+
+将下面 `123` 替换为实际 PR 号，逐步执行。`--match-head-commit` 防止检查期间有新提交却仍合并旧审核结果；有冲突或检查失败时先解决问题，不使用 `--admin` 绕过保护。
+
+```bash
+release_pr=123
+release_head=$(gh pr view "$release_pr" --repo KuanKuanya/Daoyou --json headRefOid --jq '.headRefOid')
+gh pr checks "$release_pr" --repo KuanKuanya/Daoyou --watch --fail-fast
+gh pr merge "$release_pr" --repo KuanKuanya/Daoyou --merge --match-head-commit "$release_head"
+release_sha=$(gh pr view "$release_pr" --repo KuanKuanya/Daoyou --json mergeCommit --jq '.mergeCommit.oid')
+```
+
+若 GitHub 返回等待审核或排队合并，先等 PR 实际变为 merged；未取得完整 merge SHA 前不要开始验收。不要删除长期使用的 `local-dev` 分支。
+
+### 4. 跟踪本次生产提交
+
+在 Actions → Production release 打开 **head SHA 与本次 merge SHA 一致** 的运行。必须确认以下三个 Job 全部成功：`checks / Quality checks`、`Publish production artifacts`、`Deploy production server`。只看到检查成功、镜像已发布或 PR 已合并，都不能算上线完成。
+
+本地只读辅助脚本依赖已登录的 `gh`，无需生产 SSH 密钥或生产配置。它固定查询本 fork 的 `deploy.yml`、`production` 和指定完整 SHA，不会推送、合并或触发部署：
+
+```bash
+bash scripts/release-status.sh status "$release_sha"
+bash scripts/release-status.sh watch "$release_sha"
+```
+
+`status` 用于一次查询（也可查看历史提交）；`watch` 等待对应运行，且在开始和成功结束时检查远端 production head 仍是该 SHA。有更新版本时会停止认可旧提交为当前生产。退出码 0 的 `status` 也可能表示仍在排队／运行，以打印状态为准；`watch` 只有确认工作流成功且提交未被更新时才返回成功。若 GitHub 暂时还没有创建对应运行，`watch` 等待最多约一分钟后提示重试。
+
+Actions 发布串行执行。发现新的 production 提交已经排队或部署时，不再重跑旧提交；旧版本的迟到重跑可能在新版后把服务器切回旧版。生产当前版本以服务器 `/version.json` 和 `/opt/daoyou/current/release.json` 为准，不能只看本地 `production`、`origin/production` 或 Docker `latest`。
+
+### 5. 验收并记录
+
+`Deploy production server` 成功表示发布脚本已完成数据库备份、认证／业务迁移、API 启动和静态切换，并通过公网 `/api/health-check`、`/version.json` 的 SHA 校验。仍需在真实 HTTPS 玩家入口刷新页面，确认本次修改的功能可用；生产使用真实运营账号，不使用本地测试账号或本地发放入口。
+
+额外人工查询可以使用实际 HTTPS origin（下面为示例）：
+
+```bash
+release_origin=https://game.example.com
+curl --fail --silent --show-error --max-time 30 "$release_origin/api/health-check"
+curl --fail --silent --show-error --max-time 30 "$release_origin/version.json"
+```
+
+核对 `buildId` 与本次完整 merge SHA 相等。每次交付至少记录 PR 链接、完整 SHA、Actions 运行链接／attempt、三个 Job 结果、本次功能验收和未验证项；发生失败还要记录具体步骤及恢复动作。PR 合并成功而部署失败时，明确标记为“代码已合并，生产未完成更新”。
+
+本地需要同步分支时，在工作区干净后 fetch，再在对应分支执行 `git merge --ff-only origin/local-dev` 或 `git merge --ff-only origin/production`。如 fast-forward 被拒绝，先保留并检查本地分叉提交；不通过强推把临时生产合并写回远端。
+
 ## GitHub 配置
 
 在本 fork 的 Settings → Secrets and variables → Actions 添加：
@@ -105,8 +208,7 @@ export PRODUCTION_HOST=203.0.113.10
 
 历练奖励会优先从已发布材料库抽取并把完整事实冻结到 `yield.claimed` 事件。当前 API 在某个类型／品质暂时没有材料时使用内置合法材料事实继续结算，避免玩家因漏初始化得到 500；这只是运行兜底，仍应补齐材料库，以保证生产内容和市场内容一致。初始化或补齐后不需要改角色数据，下一次历练领取会自动使用新材料。
 
-若需要通过服务器维护任务补生成，可调用受 `CRON_SECRET` 保护的
-`GET /internal/cron/material-library-daily-generation`；生产环境不得省略该密钥。不要直接清空 `wanjiedaoyou_item_library`，清理材料会同时影响历练、坊市和其他奖励来源。
+若需要通过服务器维护任务补生成，可调用受 `CRON_SECRET` 保护的 `GET /internal/cron/material-library-daily-generation`；生产环境不得省略该密钥。不要直接清空 `wanjiedaoyou_item_library`，清理材料会同时影响历练、坊市和其他奖励来源。
 
 ## 每次发布
 
@@ -132,16 +234,40 @@ API 镜像同时发布 `sha-<完整提交 SHA>` 和兼容查询用的 `latest`�
 
 准备阶段失败不停止旧 API。维护开始后的失败会保留维护标记、发布目录、数据库备份和旧镜像/静态入口信息，GitHub 作业报告失败。此时禁止不经检查直接重试或自动恢复旧应用：数据库可能已经迁移。
 
+### 定位失败与重跑条件
+
+先打开失败运行的 Job 日志，找到实际错误及此前最后成功的阶段，不能仅凭红色图标判断为迁移失败。可用 `gh run view <run-id> --repo KuanKuanya/Daoyou --log-failed` 读取失败日志；签名下载链接、GitHub 令牌、生产配置和私钥不得复制进 PR 或仓库。
+
+| 失败阶段 | 后续处理 |
+| --- | --- |
+| Quality checks | 修复开发代码，重新验证并通过 PR 发布；不跳过检查 |
+| Publish production artifacts | 查看镜像／构建／上传日志；瞬时错误可重跑失败 Job，代码问题修复后重新发布 |
+| SSH、artifact 下载、拉取镜像或安装工具，尚未创建维护标记 | 确认旧服务正常且没有更晚 production 提交，瞬时网络错误可重跑失败 Job |
+| 备份、迁移、API 启动、静态切换或公网验收，维护已开始 | 先在服务器检查维护标记、发布目录、备份、迁移和当前容器；按下面恢复流程处理，再决定后续发布 |
+
+例如 `Release download failed: URLError, HTTP status=None` 是产物下载链路错误。只有确认部署脚本尚未开始，才能按准备阶段处理；这条错误本身不能证明生产机当前服务状态。
+
+满足重跑条件后，在 **同一个 Actions 运行** 中选择 **Re-run failed jobs**。CLI 等价操作如下，将 `123456789` 换成已核对 SHA 的实际 run ID；该命令会重新尝试生产部署：
+
+```bash
+release_run=123456789
+gh run view "$release_run" --repo KuanKuanya/Daoyou
+gh run rerun "$release_run" --repo KuanKuanya/Daoyou --failed
+bash scripts/release-status.sh watch "$release_sha"
+```
+
+原运行和新运行的 ID 不同，原运行内重跑的 attempt 则递增；记录时保留两者。不要用重新 dispatch 全部工作流替代失败 Job 重跑，除非明确需要重新构建。直接使用 REST 时，失败重跑接口是 `POST /repos/KuanKuanya/Daoyou/actions/runs/<run-id>/rerun-failed-jobs`，不是 `actions/jobs/<job-id>/rerun-failed-jobs`。如果复用产物已过期，则重新构建当前 production 的发布，不能伪造或手动混配其他提交产物。
+
 发布目录记录：
 
-| 文件 | 用途 |
-| --- | --- |
-| `release.json` | 本次镜像、提交与构建运行 |
-| `previous-image` | 旧容器的本地镜像 ID，避免 latest 漂移 |
-| `previous-web` | 旧游戏静态目录 |
-| `previous-upstream.conf` | 旧 nginx upstream |
-| `database-backup` | 迁移前的 PostgreSQL 备份路径 |
-| `previous-release` | 上一次 Actions 发布目录，首次可能不存在 |
+| 文件                     | 用途                                    |
+| ------------------------ | --------------------------------------- |
+| `release.json`           | 本次镜像、提交与构建运行                |
+| `previous-image`         | 旧容器的本地镜像 ID，避免 latest 漂移   |
+| `previous-web`           | 旧游戏静态目录                          |
+| `previous-upstream.conf` | 旧 nginx upstream                       |
+| `database-backup`        | 迁移前的 PostgreSQL 备份路径            |
+| `previous-release`       | 上一次 Actions 发布目录，首次可能不存在 |
 
 恢复前审查已执行迁移是否兼容旧版本。兼容时可在维护状态下用蓝绿脚本启动 previous-image（本地镜像使用 `PULL_IMAGE=0`），将游戏软链接恢复到 previous-web；核对 API/前端后删除维护标记。数据库无自动 down migration。不兼容时保持维护并决定修复或恢复方案；恢复 PostgreSQL 时还需考虑 Redis/NATS 中尚未消费的状态，不能孤立回滚一份数据库。
 

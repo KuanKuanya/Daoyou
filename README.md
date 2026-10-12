@@ -102,6 +102,8 @@
 
 首次将 `env/local.example.env` 复制为 `env/local.env`（已有文件保留），安装依赖后执行 `pnpm run services up -d --wait` → `pnpm run db:migrate` → `pnpm run dev`，访问 `http://127.0.0.1:5174`。预发布调试使用 `pnpm run prd`，读取被 Git 忽略的 `env/staging.env`；两组均可独立启动 `:api`／`:web`。详见 [本地开发指南](docs/local-development.md) 与 [测试规范](docs/testing.md)。
 
+本 fork 的提交、PR 合并、生产发布、结果查询和失败恢复统一见 [生产发布操作手册](docs/production-pipeline.md)。按完整生产提交查询进度：`bash scripts/release-status.sh status <完整生产SHA>`。
+
 ## 贡献指南
 
 欢迎道友们共建这个修仙世界！
