@@ -711,6 +711,8 @@ export class ResourceStore {
 function getErrorMessage(value: unknown): string {
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
+    if (record.error === 'QI_INSUFFICIENT')
+      return '天地灵气不足，待自然恢复或使用恢复符箓后再试。';
     if (typeof record.error === 'string') return record.error;
     if (typeof record.message === 'string') return record.message;
   }
