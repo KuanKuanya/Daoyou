@@ -23,6 +23,7 @@ export const InventoryItemStructureSchema = z
     quantity: z.number().int().positive().max(2147483647),
     instanceData: z.unknown().nullable(),
     stackKey: z.string().nullable(),
+    isFavorite: z.boolean().default(false),
     revision: z.number().int().nonnegative(),
   })
   .strict();

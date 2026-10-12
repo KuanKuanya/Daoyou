@@ -1,5 +1,6 @@
 import { combatV6Request } from '@app/components/feature/combat-v6/request';
 import type { InventoryFilter } from '@app/components/feature/items/inventoryFilterModel';
+import { useInventoryInvalidation } from '@app/lib/resources/inventoryInvalidation';
 import { usePlayerSession } from '@app/lib/resources/player';
 import type { InventoryView } from '@daoyou/contracts/inventory';
 import { useCallback, useEffect, useState } from 'react';
@@ -63,6 +64,7 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
     setFailure(undefined);
     setRefresh((value) => value + 1);
   }, []);
+  useInventoryInvalidation(enabled ? owner : undefined, reload);
   return {
     view,
     error,

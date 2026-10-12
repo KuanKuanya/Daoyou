@@ -428,6 +428,27 @@
       "when": 1790763373538,
       "tag": "0060_player_journal",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791722047508,
+      "tag": "0061_organic_toad",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791731920103,
+      "tag": "0062_admin_operations_audit_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1791739108106,
+      "tag": "0063_beast-capacity-inventory-management",
+      "breakpoints": true
     }
   ]
 }

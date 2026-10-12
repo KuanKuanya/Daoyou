@@ -1,5 +1,5 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
+import { apiFetch } from '@app/lib/api/fetch';
 import { realtimeClient } from '@app/lib/realtime/realtimeClient';
 import { usePlayerSession } from '@app/lib/resources/player';
 import type {
@@ -23,6 +23,7 @@ import {
 } from './worldChatFeedContext';
 import {
   countNewWorldChatMessages,
+  MAX_CACHED_MESSAGES,
   mergeWorldChatMessages,
   PAGE_SIZE,
 } from './worldChatFeedHelpers';
@@ -55,6 +56,18 @@ function createFeeds(): Record<WorldChatChannel, ChannelFeed> {
   };
 }
 
+function withMessages(
+  feed: ChannelFeed,
+  messages: WorldChatMessageDTO[],
+): ChannelFeed {
+  return {
+    ...feed,
+    messages,
+    // Server history is bounded; reconnect refresh rebuilds any missed window.
+    hasMore: feed.hasMore && messages.length < MAX_CACHED_MESSAGES,
+  };
+}
+
 export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
   const { pushToast } = useInkUI();
   const location = useLocation();
@@ -83,6 +96,7 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
   const previousSectIdRef = useRef<string | null | undefined>(undefined);
   const currentSectIdRef = useRef(sectId);
   const reconnectRefreshPendingRef = useRef(false);
+  const needsFeedRefreshRef = useRef(false);
 
   useLayoutEffect(() => {
     currentSectIdRef.current = sectId;
@@ -96,7 +110,7 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
           ...current,
           sect: { ...createEmptyFeed(), loading: false },
         }));
-        return;
+        return true;
       }
       setFeeds((current) => ({
         ...current,
@@ -120,22 +134,25 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
           channel === 'sect' &&
           currentSectIdRef.current !== requestedSectId
         ) {
-          return;
+          return false;
         }
         const nextMessages = (payload.data || []) as WorldChatMessageDTO[];
         const wasInitialized = initializedRef.current[channel];
         initializedRef.current[channel] = true;
         setFeeds((current) => ({
           ...current,
-          [channel]: {
-            messages: append
+          [channel]: withMessages(
+            {
+              ...current[channel],
+              page: targetPage,
+              hasMore: Boolean(payload.pagination?.hasMore),
+              loading: false,
+              loadingMore: false,
+            },
+            append
               ? mergeWorldChatMessages(current[channel].messages, nextMessages)
-              : nextMessages,
-            page: targetPage,
-            hasMore: Boolean(payload.pagination?.hasMore),
-            loading: false,
-            loadingMore: false,
-          },
+              : mergeWorldChatMessages([], nextMessages),
+          ),
         }));
         if (!wasInitialized && nextMessages[0]) {
           setLastSeenIds((current) => ({
@@ -143,12 +160,13 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
             [channel]: nextMessages[0].id,
           }));
         }
+        return true;
       } catch (error) {
         if (
           channel === 'sect' &&
           currentSectIdRef.current !== requestedSectId
         ) {
-          return;
+          return false;
         }
         setFeeds((current) => ({
           ...current,
@@ -162,10 +180,19 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
           message: error instanceof Error ? error.message : '获取传音失败',
           tone: 'danger',
         });
+        return false;
       }
     },
     [pushToast, sectId],
   );
+
+  const refreshFeeds = useCallback(async () => {
+    const channels = CHANNELS.filter((channel) => channel !== 'sect' || sectId);
+    const results = await Promise.all(
+      channels.map((channel) => fetchPage(channel, 1, false)),
+    );
+    needsFeedRefreshRef.current = !results.every(Boolean);
+  }, [fetchPage, sectId]);
 
   const fetchLatestPreview = useCallback(async () => {
     try {
@@ -193,13 +220,17 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
     if (!isWorldChatRoute) {
       return;
     }
+    if (needsFeedRefreshRef.current) {
+      void refreshFeeds();
+      return;
+    }
     const channels = CHANNELS.filter((channel) => channel !== 'sect' || sectId);
     for (const channel of channels) {
       if (!initializedRef.current[channel]) {
         void fetchPage(channel, 1, false);
       }
     }
-  }, [fetchPage, isWorldChatRoute, sectId]);
+  }, [fetchPage, isWorldChatRoute, refreshFeeds, sectId]);
 
   useEffect(() => {
     if (isWorldChatRoute) {
@@ -254,13 +285,12 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
         }
         setFeeds((current) => ({
           ...current,
-          [message.channel]: {
-            ...current[message.channel],
-            messages: mergeWorldChatMessages(
-              current[message.channel].messages,
-              [message],
-            ),
-          },
+          [message.channel]: withMessages(
+            current[message.channel],
+            mergeWorldChatMessages(current[message.channel].messages, [
+              message,
+            ]),
+          ),
         }));
         if (message.channel !== 'sect') {
           setPreviewMessages((current) =>
@@ -338,24 +368,20 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
       if (wasOnline && !reconnectRefreshPendingRef.current) {
         reconnectRefreshPendingRef.current = true;
         if (!isWorldChatRoute) {
+          needsFeedRefreshRef.current = true;
           void fetchLatestPreview().finally(() => {
             reconnectRefreshPendingRef.current = false;
           });
           wasOnline = true;
           return;
         }
-        const channels = CHANNELS.filter(
-          (channel) => channel !== 'sect' || sectId,
-        );
-        void Promise.all(
-          channels.map((channel) => fetchPage(channel, 1, false)),
-        ).finally(() => {
+        void refreshFeeds().finally(() => {
           reconnectRefreshPendingRef.current = false;
         });
       }
       wasOnline = true;
     });
-  }, [fetchLatestPreview, fetchPage, isWorldChatRoute, sectId]);
+  }, [fetchLatestPreview, isWorldChatRoute, refreshFeeds]);
 
   const activeFeed = feeds[activeChannel];
   const unreadCounts = useMemo(
@@ -420,13 +446,12 @@ export function WorldChatFeedProvider({ children }: { children: ReactNode }) {
         const created = payload.data as WorldChatMessageDTO;
         setFeeds((current) => ({
           ...current,
-          [created.channel]: {
-            ...current[created.channel],
-            messages: mergeWorldChatMessages(
-              current[created.channel].messages,
-              [created],
-            ),
-          },
+          [created.channel]: withMessages(
+            current[created.channel],
+            mergeWorldChatMessages(current[created.channel].messages, [
+              created,
+            ]),
+          ),
         }));
         if (created.channel !== 'sect') {
           setPreviewMessages((current) =>

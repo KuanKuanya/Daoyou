@@ -1,19 +1,21 @@
-import type { DbTransaction } from '@server/lib/drizzle/db.js';
-import { cultivatorBeasts } from '@server/lib/drizzle/schema.js';
-import { beastIndividualData } from '@server/lib/repositories/combatV6BeastRepository.js';
+import type { MailAttachment } from '@daoyou/game-domain/mail';
 import {
   BeastTransferSchema,
   planBeastMailClaims,
   receiveTradedBeast,
 } from '@daoyou/game-rules/beasts/trade';
-import { BEAST_CAPACITY } from '@daoyou/game-rules/beasts/growth';
-import type { MailAttachment } from '@daoyou/game-domain/mail';
-import { count, eq } from 'drizzle-orm';
 import {
   assertBeastIdle,
   BeastError,
   beastMutationOccupied,
 } from '@server/combat/application/BeastMutationGuard.js';
+import type { DbTransaction } from '@server/lib/drizzle/db.js';
+import { cultivatorBeasts } from '@server/lib/drizzle/schema.js';
+import {
+  beastIndividualData,
+  readBeastCapacity,
+} from '@server/lib/repositories/combatV6BeastRepository.js';
+import { count, eq } from 'drizzle-orm';
 
 function beastTransfers(attachments: MailAttachment[]) {
   return attachments
@@ -28,7 +30,8 @@ async function freeSlots(owner: string, tx: DbTransaction) {
     .select({ count: count() })
     .from(cultivatorBeasts)
     .where(eq(cultivatorBeasts.cultivatorId, owner));
-  return Math.max(0, BEAST_CAPACITY - row.count);
+  const { capacity } = await readBeastCapacity(owner, tx);
+  return Math.max(0, capacity - row.count);
 }
 
 /** Called while the owning player command holds the character lock and transaction. */
@@ -39,7 +42,7 @@ export async function deliverMailBeasts(
 ) {
   const transfers = beastTransfers(attachments);
   if (!transfers.length) return [];
-  await assertBeastIdle(owner);
+  await assertBeastIdle(owner, tx);
   if (transfers.length > (await freeSlots(owner, tx)))
     throw new BeastError('灵兽袋已满，请腾出位置后再领取；附件仍会保留');
   for (const transfer of transfers) {
@@ -66,6 +69,6 @@ export async function selectClaimableBeastMails<
   return planBeastMailClaims(
     candidates,
     hasBeasts ? await freeSlots(owner, tx) : 0,
-    hasBeasts && (await beastMutationOccupied(owner)),
+    hasBeasts && (await beastMutationOccupied(owner, tx)),
   );
 }

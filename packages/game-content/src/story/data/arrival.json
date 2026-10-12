@@ -224,7 +224,7 @@
         }
       ],
       "scene": "beasts",
-      "prompt": "选择一位初始灵兽伙伴，确认携带出战与首发，看看它的本领。",
+      "prompt": "结缘一位初始伙伴，核对携带与首发；准备好后回教习处，听第一次寻兽的安排。",
       "href": "/game/beasts?guide=beast-pouch",
       "mode": "all"
     },
@@ -234,7 +234,7 @@
       "script": "arrival-tracks",
       "outcome": "tracks",
       "scene": "story",
-      "prompt": "教习请你去青溪坡查看雨后路况与生灵，回来报个平安。",
+      "prompt": "兵器、流派和伙伴都已备好。听教习讲第一次野外寻兽，回来报个平安。",
       "href": "/game/story"
     },
     {
@@ -247,7 +247,7 @@
         }
       ],
       "scene": "wild",
-      "prompt": "到青溪坡寻觅，留意遭遇的生灵；战斗、捕捉或退开后回来复命。",
+      "prompt": "到青溪坡野外寻觅，练习寻兽与伙伴配合；战斗、捕捉或退开后回来复命，不必捕捉成功。",
       "href": "/game/wild?nodeId=SAT_TN_08"
     },
     {
@@ -256,15 +256,15 @@
       "script": "arrival-remain",
       "outcome": "remained",
       "scene": "story",
-      "prompt": "把青溪坡的见闻告诉教习，再决定下一步怎样修行。",
+      "prompt": "把青溪坡的寻兽见闻告诉教习，再听听去哪探秘、积累人物修为与物资。",
       "href": "/game/story"
     },
     {
       "id": "entered",
       "kind": "life",
-      "scene": "sect-affairs",
+      "scene": "dungeon",
       "prompt": "",
-      "href": "/game/sect/affairs",
+      "href": "/game/dungeon?nodeId=SAT_TN_03",
       "when": {
         "fact": "breakthrough_available",
         "prompt": "境界已至圆满，可以去任务中心查看破境卷宗。",

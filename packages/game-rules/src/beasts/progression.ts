@@ -117,6 +117,7 @@ export function captureSkill(
   targets: Array<{ unitId: string; speciesId: string }>,
   ownerLevel: number,
   ownedCount: number,
+  capacity: number = BEAST_CAPACITY,
 ): SkillDef {
   const chance = BEAST_PROGRESSION.capture;
   return {
@@ -126,7 +127,7 @@ export function captureSkill(
     targeting: { side: TargetSide.Enemy, mode: TargetMode.Fill, count: 1 },
     effects: [],
     capture: {
-      capacity: Math.max(0, BEAST_CAPACITY - ownedCount),
+      capacity: Math.max(0, capacity - ownedCount),
       targetMpCosts: Object.fromEntries(
         targets.flatMap((target) => {
           const species = BEAST_SPECIES.find((s) => s.id === target.speciesId);

@@ -1,5 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
-import { pendingCommandRequest } from '@app/lib/pendingCommandRequest';
 import { FriendTargetModal } from '@app/components/feature/friends';
 import {
   GameLoadingState,
@@ -8,6 +6,7 @@ import {
 } from '@app/components/game-shell';
 import { InkModal } from '@app/components/layout';
 import { MailComposer } from '@app/components/mail/MailComposer';
+import { MailDestinationSelect } from '@app/components/mail/MailDestinationSelect';
 import { MailDetailModal } from '@app/components/mail/MailDetailModal';
 import { Mail, MailList } from '@app/components/mail/MailList';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
@@ -15,15 +14,22 @@ import { InkList, InkTabs } from '@app/components/ui';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkInput } from '@app/components/ui/InkInput';
 import { InkNotice } from '@app/components/ui/InkNotice';
+import { apiFetch } from '@app/lib/api/fetch';
+import { useInventoryManagementPreferences } from '@app/lib/inventory-management-preferences';
+import { pendingCommandRequestWithPayload } from '@app/lib/pendingCommandRequest';
 import { realtimeClient } from '@app/lib/realtime/realtimeClient';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import { usePlayerSession } from '@app/lib/resources/player';
-import { MAX_FRIENDS_PER_CULTIVATOR } from '@daoyou/game-content/social/config';
 import type {
   FriendCultivatorSummary,
   FriendSearchResponse,
   FriendSearchResult,
 } from '@daoyou/contracts/friends';
+import {
+  MailDestinationSchema,
+  type MailDestination,
+} from '@daoyou/contracts/mail';
+import { MAX_FRIENDS_PER_CULTIVATOR } from '@daoyou/game-content/social/config';
 import { mailLocationText } from '@daoyou/game-rules/mail';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -35,6 +41,8 @@ const MAIL_PAGE_TABS = [
 ];
 export default function MailPage() {
   const cultivator = usePlayerSession().data?.activeCultivator;
+  const { mailDestination } = useInventoryManagementPreferences(cultivator?.id);
+  const claimBusy = useRef(false);
   const mailRequest = useRef<AbortController | null>(null);
   const [mails, setMails] = useState<Mail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -277,23 +285,52 @@ export default function MailPage() {
   };
 
   const handleClaimAll = async () => {
-    if (!cultivator) return;
-    const pending = pendingCommandRequest(cultivator.id, 'mail-claim-all');
+    if (!cultivator || claimBusy.current) return;
+    claimBusy.current = true;
+    const pending = pendingCommandRequestWithPayload<{
+      destination: MailDestination;
+    }>(
+      cultivator.id,
+      'mail-claim-all',
+      { destination: mailDestination },
+      (value) => {
+        if (!value || typeof value !== 'object') return undefined;
+        const parsed = MailDestinationSchema.safeParse(
+          (value as { destination?: unknown }).destination,
+        );
+        return parsed.success ? { destination: parsed.data } : undefined;
+      },
+      { destination: 'bag' },
+    );
+    let definiteFailure = false;
     try {
       setBatchClaiming(true);
+      if (pending.payload.destination !== mailDestination)
+        pushToast({
+          message: `继续上次领取，物品仍领取到${pending.payload.destination === 'storage' ? '洞府储藏室' : '随身背包'}。`,
+          tone: 'default',
+        });
+      const response = await apiFetch('/api/cultivator/mail/claim-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId: pending.requestId,
+          ...pending.payload,
+        }),
+      });
+      definiteFailure =
+        response.status >= 400 &&
+        response.status < 500 &&
+        response.status !== 408 &&
+        response.status !== 429;
+      if (definiteFailure) pending.complete();
       const data = await mutate<{
         locations?: string[];
         skipped?: { id: string; reason: 'capacity' | 'occupied' }[];
         claimedCount: number;
         claimedMailIds: string[];
         unreadMailCount: number;
-      }>(
-        apiFetch('/api/cultivator/mail/claim-all', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requestId: pending.requestId }),
-        }),
-      );
+      }>(Promise.resolve(response));
 
       pending.complete();
       const claimedMailIds = data.claimedMailIds || [];
@@ -325,9 +362,13 @@ export default function MailPage() {
       });
     } catch (error) {
       console.error('Claim all failed', error);
-      pushToast({ message: '一键领取失败', tone: 'danger' });
+      pushToast({
+        message: `${error instanceof Error ? error.message : '一键领取失败'}${definiteFailure ? '' : '；再次领取将恢复本次请求。'}`,
+        tone: 'danger',
+      });
     } finally {
       setBatchClaiming(false);
+      claimBusy.current = false;
     }
   };
 
@@ -557,6 +598,10 @@ export default function MailPage() {
 
         {activeTab === 'mail' ? (
           <div className="space-y-4">
+            <MailDestinationSelect
+              owner={cultivator?.id}
+              disabled={batchClaiming}
+            />
             <div className="flex flex-wrap justify-end gap-2">
               <InkButton
                 variant="primary"
@@ -571,7 +616,9 @@ export default function MailPage() {
                 pending={batchClaiming}
                 pendingLabel="领取中……"
               >
-                一键领取
+                {mailDestination === 'storage'
+                  ? '一键领取到储藏室'
+                  : '一键领取到背包'}
               </InkButton>
               <InkButton
                 onClick={handleReadAll}
@@ -774,7 +821,7 @@ export default function MailPage() {
             readOnly
             value={manualShareLink ?? ''}
             onFocus={(event) => event.currentTarget.select()}
-            className="border-ink/20 bg-paper-2 text-ink w-full border border-dashed px-3 py-2 font-mono text-sm"
+            className="border-ink/20 bg-paper-2 text-ink w-full border border-dashed px-3 py-2.5 font-mono text-base"
             aria-label="好友邀请链接"
           />
           <div className="flex justify-end">

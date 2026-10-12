@@ -32,9 +32,13 @@ export function useHunts<T>(url: string, interval = 5000) {
   useEffect(() => {
     if (!actorId) return;
     let disposed = false;
-    const abort = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
+    let request: AbortController | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const run = async () => {
+      if (disposed || document.visibilityState !== 'visible' || request) return;
+      clearTimeout(timer);
+      const abort = new AbortController();
+      request = abort;
       try {
         const data = await huntRequest<T>(
           url,
@@ -42,9 +46,10 @@ export function useHunts<T>(url: string, interval = 5000) {
           undefined,
           abort.signal,
         );
-        if (!disposed) setResult({ data, actorId, url });
+        if (!disposed && !abort.signal.aborted && request === abort)
+          setResult({ data, actorId, url });
       } catch (cause) {
-        if (!disposed)
+        if (!disposed && !abort.signal.aborted && request === abort)
           setResult((previous) => ({
             ...(previous.actorId === actorId && previous.url === url
               ? previous
@@ -54,18 +59,30 @@ export function useHunts<T>(url: string, interval = 5000) {
             error: cause instanceof Error ? cause.message : '载入失败',
           }));
       } finally {
-        if (!disposed)
-          timer = setTimeout(() => {
-            if (document.visibilityState === 'visible') void run();
-            else timer = setTimeout(run, interval);
-          }, interval);
+        if (request === abort) {
+          request = undefined;
+          if (!disposed && document.visibilityState === 'visible')
+            timer = setTimeout(() => void run(), interval);
+        }
       }
     };
+    const onVisible = () => {
+      clearTimeout(timer);
+      if (document.visibilityState === 'visible') {
+        void run();
+      } else {
+        const pending = request;
+        request = undefined;
+        pending?.abort();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
     void run();
     return () => {
       disposed = true;
-      abort.abort();
+      request?.abort();
       clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [url, interval, actorId, revision]);
   return {

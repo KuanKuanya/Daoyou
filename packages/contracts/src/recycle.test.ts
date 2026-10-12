@@ -6,7 +6,7 @@ it('同一选择不能通过重复行超过单格数量', () => {
     RecycleRequestSchema.safeParse({ phase: 'preview', items: [item, item] })
       .success,
   ).toBe(false);
-  for (const quantity of [0, -1, 1.5, 100]) {
+  for (const quantity of [0, -1, 1.5, 1000]) {
     expect(
       RecycleRequestSchema.safeParse({
         phase: 'preview',
@@ -14,6 +14,13 @@ it('同一选择不能通过重复行超过单格数量', () => {
       }).success,
     ).toBe(false);
   }
+  for (const quantity of [100, 500, 999])
+    expect(
+      RecycleRequestSchema.safeParse({
+        phase: 'preview',
+        items: [{ ...item, quantity }],
+      }).success,
+    ).toBe(true);
 });
 
 it('允许同一物品事实的不同格位分别选量，不接受客户端价格', () => {

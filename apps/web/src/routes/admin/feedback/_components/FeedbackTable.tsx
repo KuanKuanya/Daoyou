@@ -17,6 +17,11 @@ interface FeedbackItem {
   cultivatorName: string | null;
   cultivatorRealm: string | null;
   createdAt: string;
+  adminCase: {
+    revision: number;
+    priority: string;
+    resolutionReason: string | null;
+  } | null;
 }
 
 const STATUS_LABELS: Record<FeedbackStatus, string> = {
@@ -40,12 +45,49 @@ const TYPE_LABELS: Record<FeedbackType, string> = {
   other: '其他意见',
 };
 
+function FeedbackPagination(props: {
+  page: number;
+  total: number;
+  totalPages: number;
+  loading: boolean;
+  onPageChange: (page: number) => void;
+}) {
+  if (props.totalPages <= 1) return null;
+
+  return (
+    <div className="text-ink-secondary flex flex-wrap items-center justify-between gap-3 text-sm">
+      <span>
+        共 {props.total} 条，第 {props.page} / {props.totalPages} 页
+      </span>
+      <div className="flex gap-2">
+        <InkButton
+          disabled={props.loading || props.page <= 1}
+          onClick={() => props.onPageChange(Math.max(1, props.page - 1))}
+          variant="secondary"
+        >
+          上一页
+        </InkButton>
+        <InkButton
+          disabled={props.loading || props.page >= props.totalPages}
+          onClick={() =>
+            props.onPageChange(Math.min(props.totalPages, props.page + 1))
+          }
+          variant="secondary"
+        >
+          下一页
+        </InkButton>
+      </div>
+    </div>
+  );
+}
+
 export function FeedbackTable() {
   const { pushToast } = useInkUI();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<FeedbackStatus | 'all'>('all');
   const [type, setType] = useState<FeedbackType | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adminMessages, setAdminMessages] = useState<Record<string, string>>(
@@ -64,7 +106,7 @@ export function FeedbackTable() {
       query.set('limit', String(limit));
       if (status !== 'all') query.set('status', status);
       if (type !== 'all') query.set('type', type);
-      if (search.trim()) query.set('search', search.trim());
+      if (appliedSearch) query.set('search', appliedSearch);
 
       const res = await apiFetch(`/api/admin/feedback?${query.toString()}`);
       const data = await res.json();
@@ -91,7 +133,7 @@ export function FeedbackTable() {
         query.set('limit', String(limit));
         if (status !== 'all') query.set('status', status);
         if (type !== 'all') query.set('type', type);
-        if (search.trim()) query.set('search', search.trim());
+        if (appliedSearch) query.set('search', appliedSearch);
 
         const res = await apiFetch(`/api/admin/feedback?${query.toString()}`);
         const data = await res.json();
@@ -117,12 +159,15 @@ export function FeedbackTable() {
     return () => {
       cancelled = true;
     };
-  }, [limit, page, pushToast, search, status, type]);
+  }, [appliedSearch, limit, page, pushToast, status, type]);
 
   const handleSearch = () => {
     setPage(1);
-    fetchFeedbacks();
+    setAppliedSearch(search.trim());
   };
+
+  const itemRevision = (id: string) =>
+    items.find((item) => item.id === id)?.adminCase?.revision ?? 1;
 
   const updateStatus = async (id: string, newStatus: FeedbackStatus) => {
     try {
@@ -134,17 +179,24 @@ export function FeedbackTable() {
         body: JSON.stringify({
           status: newStatus,
           adminMessage: adminMessage || undefined,
+          expectedRevision: itemRevision(id),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '更新状态失败');
       let message: string;
-      if (data.rewardGranted) {
+      if (data.rewardGranted && data.notifiedUser) {
         message = '状态已更新并通知用户，已发放 8000 灵石奖励';
+      } else if (data.rewardGranted) {
+        message = '状态已更新，已发放 8000 灵石奖励，但未找到用户角色，站内信未发送';
+      } else if (data.statusChanged && data.notifiedUser) {
+        message = '状态已更新并通知用户';
       } else if (data.statusChanged && !data.notifiedUser) {
         message = '状态已更新，但未找到用户角色，站内信未发送';
+      } else if (data.notifiedUser) {
+        message = '管理员留言已发送，状态未变化，未重复发放奖励';
       } else {
-        message = '状态已更新并通知用户';
+        message = '操作已记录，状态未变化，未重复发放奖励，未发送新通知';
       }
       pushToast({ message, tone: 'success' });
       await fetchFeedbacks();
@@ -222,6 +274,14 @@ export function FeedbackTable() {
           搜索
         </InkButton>
       </div>
+
+      <FeedbackPagination
+        page={page}
+        total={total}
+        totalPages={totalPages}
+        loading={loading}
+        onPageChange={setPage}
+      />
 
       {/* 表格 */}
       <div className="border-ink/15 bg-bgpaper/80 overflow-x-auto border border-dashed">
@@ -354,30 +414,13 @@ export function FeedbackTable() {
         </table>
       </div>
 
-      {/* 分页 */}
-      {totalPages > 1 && (
-        <div className="text-ink-secondary flex items-center justify-between text-sm">
-          <span>
-            共 {total} 条，第 {page} / {totalPages} 页
-          </span>
-          <div className="flex gap-2">
-            <InkButton
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              variant="secondary"
-            >
-              上一页
-            </InkButton>
-            <InkButton
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              variant="secondary"
-            >
-              下一页
-            </InkButton>
-          </div>
-        </div>
-      )}
+      <FeedbackPagination
+        page={page}
+        total={total}
+        totalPages={totalPages}
+        loading={loading}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

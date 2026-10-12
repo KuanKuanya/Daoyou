@@ -1,4 +1,9 @@
 import {
+  InventoryActionSchema,
+  InventoryManagementSchema,
+  InventoryQuerySchema,
+} from '@daoyou/contracts/inventory';
+import {
   Controller,
   Get,
   Header,
@@ -8,10 +13,6 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { ActiveCultivatorRef } from '@server/lib/auth/types.js';
-import {
-  InventoryActionSchema,
-  InventoryQuerySchema,
-} from '@daoyou/contracts/inventory';
 import type { z } from 'zod';
 import { Access, CurrentCultivator } from '../auth/access.js';
 import { CombatErrors } from '../combat/combat-errors.js';
@@ -46,5 +47,17 @@ export class InventoryController {
     action: z.infer<typeof InventoryActionSchema>,
   ) {
     return this.inventory.mutate(actor.cultivatorId, action);
+  }
+  @Post('management')
+  @HttpCode(200)
+  manage(
+    @CurrentCultivator() actor: ActiveCultivatorRef,
+    @JsonBody(new ZodPipe(InventoryManagementSchema))
+    input: z.infer<typeof InventoryManagementSchema>,
+  ) {
+    return this.inventory.manage(
+      { userId: actor.userId, cultivatorId: actor.cultivatorId },
+      input,
+    );
   }
 }

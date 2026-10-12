@@ -11,7 +11,6 @@ import { BEAST_SPECIES } from '@daoyou/game-content/beasts';
 import { BeastSchema } from '@daoyou/game-rules/beasts/validation';
 import { generateStarterBeast } from '@daoyou/game-rules/beasts/generation';
 import {
-  BEAST_CAPACITY,
   gainBeastExp,
   nextBeastExp,
 } from '@daoyou/game-rules/beasts/growth';
@@ -51,6 +50,7 @@ import { redisLockKeys, withRedisLock } from '@server/lib/redis/lock.js';
 import {
   beastIndividualData,
   readBeastOwner,
+  readBeastCapacity,
 } from '@server/lib/repositories/combatV6BeastRepository.js';
 import {
   findPlayerMutationRequest,
@@ -564,7 +564,8 @@ export async function grantDevResources(input: DevGrant) {
           .select({ total: count() })
           .from(cultivatorBeasts)
           .where(eq(cultivatorBeasts.cultivatorId, input.cultivatorId));
-        if (held.total >= BEAST_CAPACITY)
+        const { capacity } = await readBeastCapacity(input.cultivatorId, tx);
+        if (held.total >= capacity)
           throw new InventoryError('灵兽持有数量已达上限');
         const id = randomUUID();
         let starter = generateStarterBeast(

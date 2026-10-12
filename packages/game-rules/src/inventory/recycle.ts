@@ -1,18 +1,20 @@
+import { findItemDefinition } from '@daoyou/game-content/items';
 import { isEquipmentLevel } from '@daoyou/game-domain/equipment';
+import type { InventoryItem } from '@daoyou/game-domain/inventory';
 import {
   ConsumableFactsSchema,
   SeedFactsSchema,
 } from '@daoyou/game-domain/inventory';
-import { findItemDefinition } from '@daoyou/game-content/items';
 import { InventoryEquipmentSchema } from './equipment.js';
-import type { InventoryItem } from '@daoyou/game-domain/inventory';
 
 export function recycleBlockingReason(
   item: Pick<
     InventoryItem,
     'id' | 'location' | 'definitionId' | 'instanceData'
-  >,
+  > &
+    Partial<Pick<InventoryItem, 'isFavorite'>>,
 ): string | null {
+  if (item.isFavorite) return '请先取消收藏，再回收这件物品。';
   if (item.location === 'equipped') return '请先卸下道装。';
   const definition = findItemDefinition(item.definitionId);
   if (definition?.kind === 'material') return null;

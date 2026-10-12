@@ -31,6 +31,7 @@ type SlotItem = {
   icon: string;
   color: string;
   equipped?: boolean;
+  isFavorite?: boolean;
 };
 
 type SlotProps = {
@@ -316,6 +317,14 @@ export function PreviewSlot({
         {badge || item?.equipped ? (
           <span className="text-crimson bg-paper/90 absolute top-0 right-1 text-[10px]">
             {badge ?? '已装备'}
+          </span>
+        ) : null}
+        {item?.isFavorite ? (
+          <span
+            className="text-ink-secondary bg-paper/90 absolute right-1 bottom-0 text-[10px]"
+            aria-label="已收藏"
+          >
+            藏
           </span>
         ) : null}
       </button>

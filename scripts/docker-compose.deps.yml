@@ -1,0 +1,105 @@
+# Production dependency services for a single-host deployment.
+#
+# Usage (on the server, from a repository checkout):
+#   docker network create daoyou-runtime
+#   NATS_PASSWORD='<random>' POSTGRES_PASSWORD='<random>' \
+#     docker compose -f scripts/docker-compose.deps.yml up -d --wait
+#
+# Only PostgreSQL publishes a host port, and only on the loopback interface, so
+# that host-run Drizzle migrations can reach it. Redis and NATS are reachable
+# exclusively from the shared `daoyou-runtime` network, which is the same
+# network the app containers join through docker-compose.production.yml.
+#
+# The app containers therefore address these services by name:
+#   DATABASE_URL=postgresql://daoyou:<password>@postgres:5432/daoyou
+#   REDIS_URL=redis://:<password>@redis:6379/0
+#   NATS_SERVERS=nats://nats:4222
+# A URL that points at `host.docker.internal` only works when the service
+# listens on an address reachable from the Docker bridge; loopback-only
+# services are not.
+
+name: daoyou-deps
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-daoyou}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-daoyou}
+    # Loopback only: used by host-run migrations, not by the app containers.
+    ports:
+      - '127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-daoyou} -d ${POSTGRES_DB:-daoyou}']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - runtime
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # requirepass keeps the instance unusable without credentials even if the
+    # container is accidentally attached to another network.
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--requirepass',
+        '${REDIS_PASSWORD:?REDIS_PASSWORD is required}',
+      ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      # REDISCLI_AUTH keeps the password out of the healthcheck command line.
+      test: ['CMD-SHELL', 'redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    networks:
+      - runtime
+
+  nats:
+    image: nats:2.11-alpine
+    restart: unless-stopped
+    command:
+      [
+        '--config=/etc/nats/nats-server.conf',
+        '--jetstream',
+        '--store_dir=/data/jetstream',
+        '--http_port=8222',
+        '--user=${NATS_USER:-app}',
+        '--pass=${NATS_PASSWORD:?NATS_PASSWORD is required}',
+      ]
+    volumes:
+      - nats-data:/data/jetstream
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8222/healthz | grep -q ok']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    # The credentials above appear in the container's process arguments. If that
+    # is unacceptable, move authorization into a mounted config file instead.
+    networks:
+      - runtime
+
+volumes:
+  postgres-data:
+  redis-data:
+  nats-data:
+
+networks:
+  runtime:
+    name: ${APP_NETWORK:-daoyou-runtime}
+    external: true

@@ -1,3 +1,4 @@
+import type { MailDestination } from '@daoyou/contracts/mail';
 import type { ResourceChangeDescriptor } from '@daoyou/contracts/resources';
 import type { ResourceOperationSettlement } from '@daoyou/game-domain/resources';
 import { attachmentsToResourceOperations } from '@daoyou/game-rules/mail';
@@ -49,7 +50,13 @@ function mailClaimChanges(args: {
       payload: { unreadCount: args.unreadCount },
     },
   ];
-  if (args.attachments.some((attachment) => attachment.type !== 'beast_v1')) {
+  if (
+    args.attachments.some((attachment) =>
+      ['inventory_v1', 'material', 'consumable', 'artifact'].includes(
+        attachment.type,
+      ),
+    )
+  ) {
     changes.unshift({
       resourceTopic: 'inventory.bag',
       eventType: 'inventory.mail.claimed',
@@ -176,7 +183,12 @@ export class PlayerMailApplicationService {
     });
   }
 
-  claimCultivatorMail(args: { actor: MailActor; mailId: string }) {
+  claimCultivatorMail(args: {
+    actor: MailActor;
+    mailId: string;
+    destination?: MailDestination;
+  }) {
+    const destination = args.destination ?? 'bag';
     return this.withLock(
       {
         key: redisLockKeys.cultivatorMutation(args.actor.cultivatorId),
@@ -216,7 +228,7 @@ export class PlayerMailApplicationService {
           source: 'mail_claim',
           idempotency: {
             key: `mail-claim:${args.mailId}`,
-            fingerprint: `${args.actor.cultivatorId}:${args.mailId}`,
+            fingerprint: `${args.actor.cultivatorId}:${args.mailId}${destination === 'storage' ? ':storage' : ''}`,
           },
           allowEmpty: attachments.length === 0,
           command: async (tx) => {
@@ -248,6 +260,7 @@ export class PlayerMailApplicationService {
                 args.actor.cultivatorId,
                 attachments,
                 tx,
+                destination,
               )),
             ];
             const result = await this.resources.applyInTransaction({
@@ -288,7 +301,12 @@ export class PlayerMailApplicationService {
     );
   }
 
-  claimAllCultivatorMail(args: { actor: MailActor; requestId: string }) {
+  claimAllCultivatorMail(args: {
+    actor: MailActor;
+    requestId: string;
+    destination?: MailDestination;
+  }) {
+    const destination = args.destination ?? 'bag';
     return this.withLock(
       {
         key: redisLockKeys.cultivatorMutation(args.actor.cultivatorId),
@@ -308,7 +326,13 @@ export class PlayerMailApplicationService {
           userId: args.actor.userId,
           cultivatorId: args.actor.cultivatorId,
           source: 'mail_claim_all',
-          idempotency: { key: args.requestId, fingerprint: 'mail-claim-all' },
+          idempotency: {
+            key: args.requestId,
+            fingerprint:
+              destination === 'storage'
+                ? 'mail-claim-all:storage'
+                : 'mail-claim-all',
+          },
           allowEmpty: true,
           command: async (tx) => {
             const pendingMails = await tx.query.mails.findMany({
@@ -352,6 +376,7 @@ export class PlayerMailApplicationService {
                 args.actor.cultivatorId,
                 attachments,
                 tx,
+                destination,
               )),
             ];
             const result = await this.resources.applyInTransaction({

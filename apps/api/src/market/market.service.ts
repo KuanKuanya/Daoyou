@@ -57,13 +57,21 @@ export class MarketService {
     actor: ActiveCultivatorRef,
     input: z.infer<typeof RecycleRequestSchema>,
   ) {
+    if (input.phase === 'select')
+      return {
+        success: true,
+        data: await this.recycling.select(actor.cultivatorId, input),
+      };
     if (input.phase === 'preview')
       return {
         success: true,
         data: await this.recycling.preview(actor.cultivatorId, input.items),
       };
     return toPlayerStateMutationResponse(
-      await this.recycling.confirm(actor, input.quoteId),
+      await this.recycling.confirm(
+        { userId: actor.userId, cultivatorId: actor.cultivatorId },
+        input.quoteId,
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COMBAT_V6_SECT_DEFINITIONS } from '@daoyou/game-content/sects';
 import { BEAST_SKILLS } from '@daoyou/game-content/beasts';
 import { createBattle } from '@daoyou/combat-core/session';
+import { isActiveAttackSkill } from '@daoyou/combat-core';
 import { type SkillDef, type StatusDef } from '@daoyou/combat-core/types';
 import type { CombatV6TrainingPlayerInput } from '@daoyou/game-domain/combat';
 import { CombatV6PveHostSession } from './encounter/host.js';
@@ -949,7 +950,7 @@ describe('当前场次托管', () => {
     };
     const battle = fixture(['strike'], [...skills, physical]);
     const pet = battle.unit('pet');
-    pet.attrs.magicAtk = 300;
+    pet.attrs.magicAtk = 500;
     pet.skills = ['strike'];
     const petCommand = () =>
       automaticCommands(
@@ -966,6 +967,125 @@ describe('当前场次托管', () => {
     expect(petCommand()).toMatchObject({ type: 'skill', skillId: 'pet-physical' });
     pet.skillOverrides['pet-physical'] = { ...physical, effects: [{ type: 'physicalHit', coeff: 0.1 }] };
     expect(petCommand().type).toBe('attack');
+  });
+  it('普攻与等伤物理技能使用相同护盾收益，不虚报穿盾伤害或击倒', () => {
+    const hit: SkillDef = {
+      id: 'plain-hit', name: '物理技', tags: ['physical'],
+      targeting: { side: 'enemy' }, effects: [{ type: 'physicalHit', coeff: 1 }],
+    };
+    const battle = fixture([hit.id], [hit]);
+    const observation = observeAutoBattle(battle.snapshot(), 'player', []);
+    const player = observation.units.find(unit => unit.id === 'player')!;
+    const enemy = observation.units.find(unit => unit.id === 'enemy')!;
+    player.attrs.physicalAtk = 500;
+    enemy.attrs.physicalDef = 0;
+    enemy.attrs.hp = 100;
+    enemy.attrs.maxHp = 1000;
+    enemy.barriers = [{ id: 'shield', kind: 'shield', name: '护盾', current: 1000, remainingRounds: 2, sourceId: '', appliedRound: 0 }];
+    const candidates = rankAutoActions(observation, player.id, [hit], [], battle.queryCommands(player.id));
+    const attack = candidates.find(candidate => candidate.command.type === 'attack')!;
+    const skill = candidates.find(candidate => candidate.command.type === 'skill')!;
+    expect(attack.benefits.offense).toBeCloseTo(skill.benefits.offense);
+    expect(attack.intents[0].damage).toBe(0);
+    expect(skill.intents[0].damage).toBe(0);
+  });
+  it('灵法连击计入施法收益，首击已能击倒时不虚增收益', () => {
+    const flame = BEAST_SKILLS.find(skill => skill.id === 'beast.spirit-flame')!;
+    const combo = BEAST_SKILLS.find(skill => skill.id === 'beast.spell-combo')!;
+    const definitions = [flame, combo];
+    const battle = fixture([], definitions);
+    const pet = battle.unit('pet');
+    pet.skills = [flame.id];
+    pet.skillLevels[flame.id] = pet.level;
+    pet.attrs.magicAtk = 100;
+    const observation = observeAutoBattle(battle.snapshot(), 'player', []);
+    const source = observation.units.find(unit => unit.id === pet.id)!;
+    const target = observation.units.find(unit => unit.id === 'enemy')!;
+    target.attrs.magicDef = 0;
+    target.attrs.hp = target.attrs.maxHp = 10000;
+    const offense = () => rankAutoActions(observation, source.id, definitions, [], battle.queryCommands(source.id))
+      .find(candidate => candidate.command.type === 'skill')!.benefits.offense;
+    const baseline = offense();
+    source.passives = [combo.id];
+    expect(offense()).toBeCloseTo(baseline * 1.1);
+    source.passives = [];
+    target.attrs.hp = 1;
+    const lethal = offense();
+    source.passives = [combo.id];
+    expect(offense()).toBeCloseTo(lethal);
+  });
+  it('灵法培养收益能改变自动选择，缺蓝仍回退普攻', () => {
+    const flame = BEAST_SKILLS.find(skill => skill.id === 'beast.spirit-flame')!;
+    const battle = fixture([], BEAST_SKILLS);
+    battle.unit('player').command = { type: 'defend' };
+    const pet = battle.unit('pet');
+    pet.skills = [flame.id];
+    pet.skillLevels[flame.id] = pet.level;
+    pet.attrs.physicalAtk = 350;
+    pet.attrs.magicAtk = 450;
+    pet.attrs.hit = 200;
+    const choosePet = () => automaticCommands(
+      battle.snapshot(), 'player', BEAST_SKILLS, id => battle.queryCommands(id),
+    ).find(entry => entry.unitId === pet.id)!.command;
+    expect(choosePet().type).toBe('attack');
+    pet.passives = ['beast.spell-mastery', 'beast.spell-critical', 'beast.spell-combo'];
+    expect(choosePet()).toMatchObject({ type: 'skill', skillId: flame.id });
+    expect(pet.attrs.mp).toBe(100);
+    pet.attrs.mp = 0;
+    expect(choosePet().type).toBe('attack');
+  });
+  it.each([
+    { shield: 0, hp: 105, combo: false, offense: 12.55, damage: 100.5 },
+    { shield: 50, hp: 105, combo: false, offense: 11.05, damage: 55.5 },
+    { shield: 0, hp: 175, combo: true, offense: 14.645, damage: 116.95 },
+  ])('法暴和法连在护盾与生命封顶后按概率计击倒收益（护盾 $shield，法连 $combo）', ({ shield, hp, combo, offense, damage }) => {
+    const flame = BEAST_SKILLS.find(skill => skill.id === 'beast.spirit-flame')!;
+    const battle = fixture([], BEAST_SKILLS);
+    const pet = battle.unit('pet');
+    pet.skills = [flame.id];
+    pet.skillLevels[flame.id] = pet.level;
+    pet.attrs.magicAtk = 30;
+    pet.passives = ['beast.spell-critical', ...(combo ? ['beast.spell-combo'] : [])];
+    const observation = observeAutoBattle(battle.snapshot(), 'player', []);
+    const target = observation.units.find(unit => unit.id === 'enemy')!;
+    target.attrs.magicDef = 0;
+    target.attrs.hp = hp;
+    target.attrs.maxHp = 1000;
+    target.barriers = [{ id: 'shield', kind: 'shield', name: '护盾', current: shield, remainingRounds: 2, sourceId: '', appliedRound: 0 }];
+    const spell = rankAutoActions(observation, pet.id, BEAST_SKILLS, [], battle.queryCommands(pet.id))
+      .find(candidate => candidate.command.type === 'skill')!;
+    expect(spell.benefits.offense).toBeCloseTo(offense);
+    expect(spell.intents[0].damage).toBeCloseTo(damage);
+  });
+  it('物理连击计入一次普攻追加，首击未穿盾时不会触发', () => {
+    const hit: SkillDef = {
+      id: 'plain-hit', name: '物理技', tags: ['physical'],
+      targeting: { side: 'enemy' }, effects: [{ type: 'physicalHit', coeff: 1 }],
+    };
+    const definitions = [...BEAST_SKILLS, hit];
+    const battle = fixture([], definitions);
+    const pet = battle.unit('pet');
+    pet.skills = [hit.id];
+    pet.passives = ['beast.combo'];
+    pet.attrs.physicalAtk = 500;
+    pet.attrs.hit = 1000;
+    const observation = observeAutoBattle(battle.snapshot(), 'player', []);
+    const target = observation.units.find(unit => unit.id === 'enemy')!;
+    target.attrs.hp = target.attrs.maxHp = 10000;
+    target.attrs.physicalDef = 0;
+    target.attrs.dodge = 0;
+    const scores = () => rankAutoActions(observation, pet.id, definitions, [], battle.queryCommands(pet.id));
+    const attack = scores().find(candidate => candidate.command.type === 'attack')!;
+    const skill = scores().find(candidate => candidate.command.type === 'skill')!;
+    expect(attack.benefits.offense).toBeCloseTo(skill.benefits.offense * 1.45);
+    target.attrs.dodge = pet.attrs.hit + 16; // At level 60, each physical hit has a 50% chance.
+    const uncertain = scores();
+    expect(uncertain.find(candidate => candidate.command.type === 'attack')!.benefits.offense)
+      .toBeCloseTo(uncertain.find(candidate => candidate.command.type === 'skill')!.benefits.offense * 1.225);
+    target.barriers = [{ id: 'shield', kind: 'shield', name: '护盾', current: 1000, remainingRounds: 2, sourceId: '', appliedRound: 0 }];
+    const shielded = scores();
+    expect(shielded.find(candidate => candidate.command.type === 'attack')!.benefits.offense)
+      .toBeCloseTo(shielded.find(candidate => candidate.command.type === 'skill')!.benefits.offense);
   });
   it('灵兽在护体收益高于普攻时施法，已有灵罡或法力不足时继续攻击', () => {
     const guard: SkillDef = {
@@ -1031,10 +1151,10 @@ describe('当前场次托管', () => {
     const playerCommand = commands.find(
       ({ unitId }) => unitId === ownerId,
     )?.command;
-    expect(playerCommand).toMatchObject({
-      type: 'skill',
-      skillId: 'lingxiao.skill.shadow_strike',
-    });
+    expect(playerCommand?.type).toBe('skill');
+    if (playerCommand?.type !== 'skill') throw new Error('未选择攻击技能');
+    const selectedSkill = input.skills?.find(skill => skill.id === playerCommand.skillId);
+    expect(selectedSkill && isActiveAttackSkill(selectedSkill)).toBe(true);
     const ranked = rankAutoActions(
       observeAutoBattle(battle.snapshot(), ownerId, input.statusDefs ?? []),
       ownerId,

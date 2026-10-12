@@ -1,7 +1,23 @@
 import { z } from 'zod';
 
+export const MailDestinationSchema = z.enum(['bag', 'storage']);
+export type MailDestination = z.infer<typeof MailDestinationSchema>;
 
+export const ClaimMailSchema = z
+  .object({
+    mailId: z.uuid(),
+    destination: MailDestinationSchema.default('bag'),
+  })
+  .strict();
+export type ClaimMailRequest = z.infer<typeof ClaimMailSchema>;
 
+export const ClaimAllMailSchema = z
+  .object({
+    requestId: z.uuid(),
+    destination: MailDestinationSchema.default('bag'),
+  })
+  .strict();
+export type ClaimAllMailRequest = z.infer<typeof ClaimAllMailSchema>;
 
 export const SendMailSchema = z
   .object({

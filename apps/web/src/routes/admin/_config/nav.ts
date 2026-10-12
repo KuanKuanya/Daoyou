@@ -66,6 +66,11 @@ export const adminNavItems: AdminNavItem[] = [
     href: '/admin/online-users',
   },
   {
+    title: '运营诊断',
+    description: '排查反馈、邮件与赞助链路',
+    href: '/admin/operations-diagnostics',
+  },
+  {
     title: '蜃楼敌人',
     description: '查看每周阵容、机制与战斗属性',
     href: '/admin/tower-enemy-sets',

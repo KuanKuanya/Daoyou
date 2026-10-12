@@ -22,6 +22,7 @@ export const DOMAIN_EVENT_TYPES = [
   'sect.construction.donated',
   'alchemy.craft.completed',
   'ranking.challenge.completed',
+  'tower.floor.cleared',
   'dungeon.run.settled',
   'yield.claimed',
   'spirit-field.sown',
@@ -80,6 +81,16 @@ export function createDomainEventDataSchemas({
         cultivatorId: z.uuid(),
         opponentCultivatorId: z.uuid(),
         battleRecordId: z.uuid(),
+      })
+      .strict(),
+    'tower.floor.cleared': z
+      .object({
+        cultivatorId: z.uuid(),
+        seasonKey: z.string().min(1).max(40),
+        seasonEndAt: z.string().datetime(),
+        recordedRealm: z.enum(REALM_VALUES),
+        highestFloor: z.number().int().positive(),
+        firstReachedAt: z.string().datetime(),
       })
       .strict(),
     'dungeon.run.settled': z

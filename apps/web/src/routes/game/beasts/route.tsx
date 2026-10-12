@@ -10,17 +10,19 @@ import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkBadge } from '@app/components/ui/InkBadge';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
+import { useCultivatorIdentity } from '@app/lib/resources/player';
 import { useStory } from '@app/lib/story/useStory';
 import type { BeastManagementView } from '@daoyou/contracts/beasts';
 import {
-  BEAST_STARTER_SPECIES,
   BEAST_GENERATION,
+  BEAST_STARTER_SPECIES,
 } from '@daoyou/game-content/beasts';
-import { BEAST_CAPACITY } from '@daoyou/game-rules/beasts/growth';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { BeastActionDrawer, type BeastAction } from './BeastActionDrawer';
 import { BeastBookDrawer } from './BeastBookDrawer';
+import { BeastCapacityModal } from './BeastCapacityModal';
+import { hasPendingBeastCapacityExpansion } from './beastCapacityPending';
 import { BeastLeadSeal, BeastPanel } from './BeastPanel';
 import { BeastRenameModal } from './BeastRenameModal';
 import { BeastRosterScroll } from './BeastRosterScroll';
@@ -28,6 +30,12 @@ import { BeastRosterScroll } from './BeastRosterScroll';
 const base = '/api/combat-v6/beasts';
 export default function BeastsPage() {
   const [searchParams] = useSearchParams();
+  const identity = useCultivatorIdentity();
+  const ownerId = identity.data?.cultivator.id;
+  const expansionUnconfirmed = ownerId
+    ? hasPendingBeastCapacityExpansion(ownerId)
+    : false;
+  const [expanding, setExpanding] = useState(false);
   const [view, setView] = useState<BeastManagementView>();
   const story = useStory();
   const { pushToast } = useInkUI();
@@ -193,8 +201,22 @@ export default function BeastsPage() {
             <span>
               灵兽{' '}
               <span className="font-mono">
-                {view.beasts.length} / {BEAST_CAPACITY}
+                {view.beasts.length} / {view.capacity}
               </span>
+              <InkButton
+                disabled={
+                  pending ||
+                  !ownerId ||
+                  (view.capacityLevel >= 4 && !expansionUnconfirmed)
+                }
+                onClick={() => setExpanding(true)}
+              >
+                {expansionUnconfirmed
+                  ? '查看扩容结果'
+                  : view.capacityLevel >= 4
+                    ? '已扩满'
+                    : '扩容'}
+              </InkButton>
             </span>
             <span className="flex flex-wrap items-center justify-end gap-1">
               <InkButton disabled={pending} href="/game/beasts/codex">
@@ -217,7 +239,7 @@ export default function BeastsPage() {
                 {BEAST_STARTER_SPECIES.map((species) => (
                   <InkButton
                     key={species.id}
-                    disabled={pending || view.beasts.length >= BEAST_CAPACITY}
+                    disabled={pending || view.beasts.length >= view.capacity}
                     onClick={() => setClaimId(species.id)}
                   >
                     <BeastIcon speciesId={species.id} /> {species.name}
@@ -331,34 +353,34 @@ export default function BeastsPage() {
             </aside>
             {detail ? (
               <div data-guide="beast.detail" className="min-w-0">
-              <BeastPanel
-                key={`${detail.id}:${detail.revision}:${view.ownerLevel}`}
-                beast={detail}
-                ownerLevel={view.ownerLevel}
-                isLead={view.lineup.leadBeastId === detail.id}
-                carried={view.lineup.carriedBeastIds.includes(detail.id)}
-                full={view.lineup.carriedBeastIds.length >= 6}
-                pending={pending}
-                pendingLineup={
-                  pendingLineup?.beastId === detail.id
-                    ? pendingLineup.action
-                    : undefined
-                }
-                lineup={(type) => lineup(detail.id, type)}
-                act={(type) => setAction({ beastId: detail.id, type })}
-                learn={() => setLearningId(detail.id)}
-                refine={() => setRefiningId(detail.id)}
-                rejuvenate={() => setRejuvenatingId(detail.id)}
-                feed={() => setFeedingId(detail.id)}
-                rename={() => setRenamingId(detail.id)}
-                allocate={(points) =>
-                  mutate('allocate', {
-                    beastId: detail.id,
-                    expectedRevision: detail.revision,
-                    points,
-                  })
-                }
-              />
+                <BeastPanel
+                  key={`${detail.id}:${detail.revision}:${view.ownerLevel}`}
+                  beast={detail}
+                  ownerLevel={view.ownerLevel}
+                  isLead={view.lineup.leadBeastId === detail.id}
+                  carried={view.lineup.carriedBeastIds.includes(detail.id)}
+                  full={view.lineup.carriedBeastIds.length >= 6}
+                  pending={pending}
+                  pendingLineup={
+                    pendingLineup?.beastId === detail.id
+                      ? pendingLineup.action
+                      : undefined
+                  }
+                  lineup={(type) => lineup(detail.id, type)}
+                  act={(type) => setAction({ beastId: detail.id, type })}
+                  learn={() => setLearningId(detail.id)}
+                  refine={() => setRefiningId(detail.id)}
+                  rejuvenate={() => setRejuvenatingId(detail.id)}
+                  feed={() => setFeedingId(detail.id)}
+                  rename={() => setRenamingId(detail.id)}
+                  allocate={(points) =>
+                    mutate('allocate', {
+                      beastId: detail.id,
+                      expectedRevision: detail.revision,
+                      points,
+                    })
+                  }
+                />
               </div>
             ) : (
               <p
@@ -373,6 +395,14 @@ export default function BeastsPage() {
           </div>
         </>
       )}
+      {expanding && ownerId ? (
+        <BeastCapacityModal
+          key={ownerId}
+          ownerId={ownerId}
+          close={() => setExpanding(false)}
+          onUpdate={setView}
+        />
+      ) : null}
       {renamingBeast ? (
         <BeastRenameModal
           key={renamingBeast.id}
