@@ -1,4 +1,5 @@
 import { InkSection } from '@app/components/layout';
+import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
 import { InkChoiceButton } from '@app/components/ui/InkChoiceButton';
@@ -8,6 +9,8 @@ import {
   formatDungeonCostName,
   formatDungeonCostValue,
 } from '@app/lib/dungeon/formatDungeonCost';
+import { getResourceIcon } from '@daoyou/game-content/presentation/concepts';
+import type { Cultivator } from '@daoyou/game-domain/character';
 import type {
   DungeonMaterialSelection,
   DungeonOption,
@@ -15,8 +18,6 @@ import type {
   DungeonRound,
   DungeonState,
 } from '@daoyou/game-domain/dungeon';
-import { getResourceIcon } from '@daoyou/game-content/presentation/concepts';
-import type { Cultivator } from '@daoyou/game-domain/character';
 import { useState } from 'react';
 import { DungeonMaterialSubmission } from './DungeonMaterialSubmission';
 import type { DungeonDisplayResources } from './DungeonRunPanel';
@@ -54,7 +55,7 @@ function OptionCostPreview({ costs }: { costs: DungeonOptionCost[] }) {
             key={`${cost.type}-${index}`}
             className="border-ink/15 bg-paper-dark inline-flex items-center gap-1 border border-dashed px-1.5 py-0.5"
           >
-            <span>{getResourceIcon(cost.type)}</span>
+            <GameIcon value={getResourceIcon(cost.type)} />
             <span>{formatDungeonCostName(cost)}</span>
             <span className="text-crimson font-semibold">
               {formatDungeonCostValue(cost)}

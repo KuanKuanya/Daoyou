@@ -137,12 +137,21 @@ export async function registerMessageInfrastructure(
       }),
       startDomainEventConsumer({
         consumerName: DOMAIN_EVENT_CONSUMERS.towerLeaderboardProjector.name,
-        concurrency: DOMAIN_EVENT_CONSUMERS.towerLeaderboardProjector.concurrency,
+        concurrency:
+          DOMAIN_EVENT_CONSUMERS.towerLeaderboardProjector.concurrency,
         acceptedTypes: ['tower.floor.cleared'],
         handle: async (event) => {
           if (!isDomainEventType(event, 'tower.floor.cleared'))
             throw new Error('蜃楼榜单事件类型错误');
-          await updateTowerWeeklyRecord(event.data);
+          await executeDomainEvent({
+            consumerName: DOMAIN_EVENT_CONSUMERS.towerLeaderboardProjector.name,
+            source: 'tower_leaderboard_domain_event',
+            event,
+            handle: async (message) => {
+              await updateTowerWeeklyRecord(message.data);
+              return { result: null, resourceChanges: [] };
+            },
+          });
         },
       }),
       startDomainEventConsumer({

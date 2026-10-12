@@ -2,6 +2,7 @@ import { apiFetch } from '@app/lib/api/fetch';
 import { CraftInventoryPanel } from '@app/components/feature/items/CraftInventoryPanel';
 import { InventoryItems } from '@app/components/feature/items/InventoryItems';
 import { ItemSlot } from '@app/components/feature/items/ItemSlot';
+import { normalizeQiErrorMessage } from '@app/components/feature/cultivator/useQiActionConfirm';
 import {
   inventoryFilterActive,
   matchesInventoryFilters,
@@ -274,7 +275,7 @@ export default function SpiritFieldPage() {
     } catch (e) {
       bagQuery.invalidate();
       pushToast({
-        message: e instanceof Error ? e.message : '灵田操作失败',
+        message: normalizeQiErrorMessage(e, '灵田操作失败'),
         tone: 'danger',
       });
     } finally {
