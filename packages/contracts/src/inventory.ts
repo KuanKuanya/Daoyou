@@ -1,12 +1,13 @@
-import { z } from 'zod';
-import {
-  BAG_CAPACITY,
-  type InventoryItem,
-  INVENTORY_SORT_VALUES,
-  INVENTORY_MATERIAL_TYPES,
-} from '@daoyou/game-domain/inventory';
 import { ELEMENT_VALUES } from '@daoyou/constants/elements';
 import { QUALITY_VALUES } from '@daoyou/constants/qualities';
+import { REALM_VALUES } from '@daoyou/constants/realms';
+import {
+  BAG_CAPACITY,
+  INVENTORY_MATERIAL_TYPES,
+  INVENTORY_SORT_VALUES,
+  type InventoryItem,
+} from '@daoyou/game-domain/inventory';
+import { z } from 'zod';
 const ref = {
   id: z.string().min(1).max(160),
   revision: z.number().int().nonnegative(),
@@ -69,6 +70,9 @@ export const InventoryQuerySchema = z
     { message: '回收品质范围无效' },
   );
 export const InventoryActionSchema = z.discriminatedUnion('action', [
+  z
+    .object({ action: z.literal('favorite'), ...ref, isFavorite: z.boolean() })
+    .strict(),
   z
     .object({
       action: z.literal('feed'),
@@ -147,6 +151,54 @@ export const InventoryActionSchema = z.discriminatedUnion('action', [
     .strict(),
 ]);
 export type InventoryAction = z.infer<typeof InventoryActionSchema>;
+export const AutoStoreRulesSchema = z
+  .object({
+    materialsToStorage: z.boolean(),
+    lowRealmEquipmentToStorage: z.boolean(),
+  })
+  .strict();
+const bagRefs = z
+  .array(z.object(ref).strict())
+  .max(BAG_CAPACITY)
+  .refine(
+    (items) => new Set(items.map((item) => item.id)).size === items.length,
+    '同一物品不可重复',
+  );
+export const InventoryManagementSchema = z.discriminatedUnion('action', [
+  z
+    .object({
+      action: z.literal('auto_store_preview'),
+      rules: AutoStoreRulesSchema,
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('auto_store'),
+      requestId: z.uuid(),
+      realm: z.enum(REALM_VALUES),
+      rules: AutoStoreRulesSchema,
+      items: bagRefs,
+      selected: bagRefs,
+    })
+    .strict(),
+  z
+    .object({ action: z.literal('compact_storage'), requestId: z.uuid() })
+    .strict(),
+]);
+export type InventoryManagementAction = z.infer<
+  typeof InventoryManagementSchema
+>;
+export type AutoStorePreview = {
+  realm: (typeof REALM_VALUES)[number];
+  rules: z.infer<typeof AutoStoreRulesSchema>;
+  items: { id: string; revision: number }[];
+  selected: { id: string; revision: number; name: string; quantity: number }[];
+};
+export type StorageCompactResult = {
+  processed: number;
+  removed: number;
+  hasMore: boolean;
+};
 export type InventoryView = {
   items: (InventoryItem & {
     name: string;

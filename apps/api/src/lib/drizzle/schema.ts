@@ -472,7 +472,15 @@ export const cultivatorBeastLineups = pgTable(
       .references(() => cultivators.id, { onDelete: 'cascade' }),
     lineup: jsonb('lineup').$type<BeastLineup>().notNull(),
     starterClaimedAt: timestamp('starter_claimed_at', { withTimezone: true }),
+    capacityLevel: integer('capacity_level').notNull().default(0),
+    capacityRevision: integer('capacity_revision').notNull().default(0),
   },
+  (table) => [
+    check(
+      'beast_capacity_state_valid',
+      sql`${table.capacityLevel} BETWEEN 0 AND 4 AND ${table.capacityRevision} >= 0`,
+    ),
+  ],
 );
 
 export const sectCombatStates = pgTable(
@@ -612,6 +620,7 @@ export const inventoryItems = pgTable(
     stackKey: varchar('stack_key', { length: 200 }),
     quantity: integer('quantity').notNull(),
     instanceData: jsonb('instance_data'),
+    isFavorite: boolean('is_favorite').notNull().default(false),
     revision: integer('revision').notNull().default(0),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

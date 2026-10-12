@@ -33,14 +33,14 @@ export function buildNodeActions(
   if (node?.wild_encounter_id)
     actions.push({
       key: 'wild-explore',
-      label: '进入野外',
+      label: '寻觅灵兽',
       variant: 'primary',
       onClick: () => navigate(`/game/wild?nodeId=${ctx.selectedNodeId}`),
     });
   if (!ctx.isMainNode && hasDungeon) {
     actions.push({
       key: 'enter-dungeon',
-      label: '前往历练',
+      label: '云游探秘',
       variant: 'secondary',
       onClick: () => navigate(`/game/dungeon?nodeId=${ctx.selectedNodeId}`),
     });

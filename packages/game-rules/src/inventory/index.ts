@@ -1,56 +1,36 @@
 import {
   BAG_CAPACITY,
+  ConsumableFactsSchema,
+  INVENTORY_KINDS,
   InventoryRuleError,
+  MaterialFactsSchema,
+  SeedFactsSchema,
   createInventorySchemas,
   type InventoryItem,
   type ItemGrant,
-  ConsumableFactsSchema,
-  MaterialFactsSchema,
-  SeedFactsSchema,
 } from '@daoyou/game-domain/inventory';
 
-
-
-
-
-import { BeastSchema } from '../beasts/schema.js';
 import { type SummonedBeast } from '@daoyou/game-domain/beasts';
-
-
-
-
-
-
-
-
-
-
-
+import { BeastSchema } from '../beasts/schema.js';
 
 import { findItemDefinition } from '@daoyou/game-content/items';
 
-
-
 import { InventoryEquipmentSchema } from './equipment.js';
-
-
 
 export { BOOKS } from '@daoyou/game-content/items/beasts';
 
-export const { itemDefinition, InventoryItemSchema, ItemGrantSchema } = createInventorySchemas({ findItemDefinition, InventoryEquipmentSchema });
-
-
+export const { itemDefinition, InventoryItemSchema, ItemGrantSchema } =
+  createInventorySchemas({ findItemDefinition, InventoryEquipmentSchema });
 
 export function sameStack(a: InventoryItem, b: InventoryItem) {
   return (
     a.definitionId === b.definitionId &&
     a.stackKey !== null &&
     a.stackKey === b.stackKey &&
+    (a.isFavorite ?? false) === (b.isFavorite ?? false) &&
     itemDefinition(a.definitionId).stackLimit > 1
   );
 }
-
-
 
 export function emptySlot(
   items: InventoryItem[],
@@ -65,14 +45,18 @@ export function emptySlot(
   return null;
 }
 
-
-
 export function sortBag(items: InventoryItem[]) {
   const bag = items
     .filter((item) => item.location === 'bag')
     .map((item) => ({ ...item }))
     .sort(
       (a, b) =>
+        INVENTORY_KINDS.findIndex(
+          ([kind]) => kind === itemDefinition(a.definitionId).kind,
+        ) -
+          INVENTORY_KINDS.findIndex(
+            ([kind]) => kind === itemDefinition(b.definitionId).kind,
+          ) ||
         a.definitionId.localeCompare(b.definitionId) ||
         a.id.localeCompare(b.id),
     );
@@ -99,8 +83,6 @@ export function sortBag(items: InventoryItem[]) {
   ];
 }
 
-
-
 export function compactStorage(items: InventoryItem[]) {
   const merged: InventoryItem[] = [];
   for (const source of items) {
@@ -124,8 +106,6 @@ export function compactStorage(items: InventoryItem[]) {
   return merged;
 }
 
-
-
 /** Caller supplies fresh identities; no random or persistence effects in planning. */
 export function addItems(
   items: InventoryItem[],
@@ -135,6 +115,7 @@ export function addItems(
   id: () => string,
   stackKey: string | null,
   reservedSlots: readonly number[] = [],
+  isFavorite = false,
 ) {
   if (!Number.isSafeInteger(grant.quantity) || grant.quantity <= 0)
     throw new InventoryRuleError('物品数量无效');
@@ -153,6 +134,7 @@ export function addItems(
       instanceData: facts,
       stackKey: null,
       quantity: 1,
+      isFavorite,
       location: location === 'bag' && slotIndex === null ? 'storage' : location,
       slotIndex,
       revision: 0,
@@ -179,6 +161,7 @@ export function addItems(
         item.location !== destination ||
         item.definitionId !== grant.definitionId ||
         item.stackKey !== stackKey ||
+        (item.isFavorite ?? false) !== isFavorite ||
         item.quantity >= limit
       )
         continue;
@@ -202,6 +185,7 @@ export function addItems(
         quantity,
         instanceData: facts,
         stackKey,
+        isFavorite,
         revision: 0,
       });
       remaining -= quantity;
@@ -210,8 +194,6 @@ export function addItems(
   if (remaining) throw new InventoryRuleError('背包格子不足');
   return next;
 }
-
-
 
 export function learnBeastSkill(
   beast: SummonedBeast,

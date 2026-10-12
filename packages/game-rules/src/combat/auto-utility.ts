@@ -2,9 +2,11 @@ import type { CombatV6CommandOptions, Command, SkillDef, SkillEffect, StatusDef,
 import { evalExpr, skillLevelOf } from '@daoyou/combat-core/expr';
 import { isActiveAttackSkill } from '@daoyou/combat-core';
 import { FailReason } from '@daoyou/combat-core/enums';
+import { BUILTIN_SKILL_ID } from '@daoyou/combat-core/constants';
 import { matchesWhen, targetStatusStacks } from '@daoyou/combat-core/when';
 import { daoyouRulesetV6 } from './daoyou/index.js';
 import type { AutoObservation } from './auto-observation.js';
+import { autoNormalAttackRepeat, autoSpellRepeat, autoStrikeOutcomes } from './auto-strike.js';
 
 type Benefits = {
   offense: number;
@@ -86,13 +88,14 @@ export function rankAutoActions(
     // Evaluate preparatory facts on a private actor copy, never on the observation.
     const actor = observation.units.find(unit => unit.id === sourceId)!;
     const source = { ...actor, combatFacts: { ...actor.combatFacts } };
-    // Value the current spell's declared modifiers; passive hook chains remain outside this estimate.
+    // Direct damage includes known self modifiers; retaliation and future actions
+    // remain outside this bounded estimate.
     function modifiers(target: Unit, kind: 'physical' | 'spell' | 'fixed') {
       return (skill.modifiers ?? []).filter(m => matchesWhen(context, m.when, { source, target, skill, skillId: skill.id, kind, origin: 'action-direct', isPrimary: target.id === selected[0]?.id }));
     }
     const benefits = empty();
     const intentions: AutoIntent[] = [];
-    const notes = new Set<string>(['未知属性按观察者基线估算；不推演被动连锁']);
+    const notes = new Set<string>(['未知属性按等级中性基线估算；不推演反击及未来行动']);
     const skipsNextAction = skill.effects.some(
       (effect) => effect.type === 'skipNextAction' && !effect.when,
     );
@@ -323,13 +326,46 @@ export function rankAutoActions(
                 : kind === 'spell'
                   ? taken(target, 'damageTakenSpell')
                   : 1;
-            damage *= Math.max(0, 1 + modifier('damageBonus'));
-            const barrier = target.barriers.reduce((sum, b) => sum + b.current, 0);
+            const outcomes = autoStrikeOutcomes(
+              observation, source, target, skill, kind, damage, skills,
+              statusDefs, target.id === selected[0]?.id,
+              effect.type === 'physicalHit' ? effect.critMultiplier : undefined,
+            ).map(outcome => ({ ...outcome, damage: outcome.damage * Math.max(0, 1 + modifier('damageBonus')) }));
             const barrierFactor = Math.max(1, 1 + modifier('barrierDamageBonus'));
-            const removedBarrier = Math.min(barrier, damage * barrierFactor);
-            const hpDamage = Math.max(0, damage - removedBarrier / barrierFactor);
-            offense = (friendly ? -1 : 1) * (damageValue(target, hpDamage * chance, effect.cannotKill) + removedBarrier / Math.max(1, target.attrs.maxHp) * 60 * chance);
-            intent.damage = hpDamage * chance * probability;
+            const valueDamage = (amount: number) => {
+              const barrier = target.barriers.reduce((sum, b) => sum + b.current, 0);
+              const removedBarrier = Math.min(barrier, amount * barrierFactor);
+              const hpDamage = Math.max(0, amount - removedBarrier / barrierFactor);
+              return {
+                offense: (friendly ? -1 : 1) * (
+                  damageValue(target, hpDamage, effect.cannotKill) +
+                  removedBarrier / Math.max(1, target.attrs.maxHp) * 60
+                ),
+                damage: Math.min(target.attrs.hp, hpDamage),
+              };
+            };
+            const spellRepeat = effect.type === 'spellHit' ? autoSpellRepeat(skill, source, skills) : undefined;
+            const attackRepeat = skill.id === BUILTIN_SKILL_ID.Attack
+              ? autoNormalAttackRepeat(observation, source, target, skills)
+              : undefined;
+            const repeat = spellRepeat ?? attackRepeat;
+            // Crits, misses and one follow-up are separate outcomes. Cap HP,
+            // barriers and knockout rewards before taking their expectation.
+            for (const firstHit of outcomes) {
+              const first = valueDamage(firstHit.damage);
+              const firstProbability = firstHit.probability * chance;
+              const canRepeat = first.damage < target.attrs.hp && (spellRepeat || first.damage > 0);
+              const repeatChance = canRepeat ? (repeat?.chance ?? 0) * (attackRepeat ? chance : 1) : 0;
+              offense += first.offense * firstProbability * (1 - repeatChance);
+              intent.damage += first.damage * firstProbability * (1 - repeatChance) * probability;
+              if (!repeat || !repeatChance) continue;
+              for (const nextHit of outcomes) {
+                const repeated = valueDamage(firstHit.damage + nextHit.damage * repeat.factor);
+                const repeatedProbability = firstProbability * repeatChance * nextHit.probability;
+                offense += repeated.offense * repeatedProbability;
+                intent.damage += repeated.damage * repeatedProbability * probability;
+              }
+            }
           } else if (
             effect.type === 'revive' ||
             (effect.type === 'restoreHp' && effect.revive && !alive(target))
@@ -582,23 +618,18 @@ export function rankAutoActions(
   for (const id of options.attackTargetIds) {
     const target = observation.units.find((u) => u.id === id);
     if (!target) continue;
-    const damage =
-      formulas.baseDamage({
-        source,
-        target,
-        kind: 'physical',
-        family: 'physical',
-        coeff: 1,
-        power: 0,
-        fury: false,
-      }) *
-      formulas.physicalHitChance(source, target) *
-      taken(target, 'damageTakenPhysical');
+    const { benefits, notes, intentions } = evaluate({
+      id: BUILTIN_SKILL_ID.Attack,
+      name: '普通攻击',
+      tags: ['physical'],
+      targeting: { side: 'enemy' },
+      effects: [{ type: 'physicalHit', coeff: 1 }],
+    }, [target]);
     add(
       { type: 'attack', target: id },
-      { ...empty(), offense: damageValue(target, damage) },
-      [],
-      [{ targetId: id, damage, healing: 0, statuses: [], revive: false }],
+      benefits,
+      notes,
+      intentions,
     );
   }
   for (const option of options.skills) {

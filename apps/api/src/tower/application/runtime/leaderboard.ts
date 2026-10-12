@@ -23,32 +23,27 @@ export async function updateTowerWeeklyRecord(args: {
   firstReachedAt: string;
 }) {
   const key = getTowerLeaderboardKey(args.seasonKey, args.recordedRealm);
-  const currentScoreRaw = await redis.zscore(key, args.cultivatorId);
   const seasonEndAtMs = Date.parse(args.seasonEndAt);
   const nextReachedAtMs = Date.parse(args.firstReachedAt);
-
-  if (typeof currentScoreRaw === 'string') {
-    const currentScore = Number(currentScoreRaw);
-    const currentRecord = unpackTowerLeaderboardScore(
-      currentScore,
-      seasonEndAtMs,
-    );
-
-    if (currentRecord.highestFloor > args.highestFloor) {
-      return;
-    }
-    if (currentRecord.highestFloor === args.highestFloor) {
-      return;
-    }
-  }
-
+  const expiresAt = Math.ceil(seasonEndAtMs / 1000) + 86400;
+  if (Date.now() >= expiresAt * 1000) return;
   const nextScore = packTowerLeaderboardScore(
     args.highestFloor,
     nextReachedAtMs,
     seasonEndAtMs,
   );
-  await redis.zadd(key, nextScore, args.cultivatorId);
-  await redis.expireat(key, Math.ceil(seasonEndAtMs / 1000) + 86400);
+  // Score includes the original reach time. GT accepts only a higher floor or
+  // an earlier tie; the TTL commits atomically with the idempotent projection.
+  await redis.eval(
+    `redis.call('ZADD', KEYS[1], 'GT', ARGV[1], ARGV[2])
+     redis.call('EXPIREAT', KEYS[1], ARGV[3])
+     return 1`,
+    1,
+    key,
+    nextScore,
+    args.cultivatorId,
+    expiresAt,
+  );
 }
 
 export async function getTowerLeaderboard(args: {

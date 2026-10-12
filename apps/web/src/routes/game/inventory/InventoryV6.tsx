@@ -1,4 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import {
   combatV6Request,
   mutationBody,
@@ -22,7 +21,9 @@ import { GameSceneFrame } from '@app/components/game-shell/GameSceneFrame';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useInventoryBag } from '@app/lib/resources/bag';
+import { useInventoryInvalidation } from '@app/lib/resources/inventoryInvalidation';
 import { consumeResourceMutation } from '@app/lib/resources/mutations';
 import { useCultivatorIdentity } from '@app/lib/resources/player';
 import type {
@@ -33,20 +34,21 @@ import type {
   DaoEquipmentInstanceV1,
   DaoEquipmentSlot,
 } from '@daoyou/game-domain/equipment';
-import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
+import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
 import {
   BAG_CAPACITY,
-  type InventorySort,
   ConsumableFactsSchema,
+  type InventorySort,
 } from '@daoyou/game-domain/inventory';
+import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
 import {
   itemDefinition,
   sortInventoryItems,
 } from '@daoyou/game-rules/inventory';
-import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { EquipmentAction, EquipmentRack } from './EquipmentRack';
+import { InventoryManagementActions } from './InventoryManagementActions';
 
 const endpoint = '/api/combat-v6/inventory';
 type Item = InventoryView['items'][number];
@@ -85,6 +87,11 @@ export default function InventoryV6() {
   const busy = useRef(false);
   const reader = useRef<AbortController | null>(null);
   const mounted = useRef(true);
+  const invalidateStorage = useCallback(() => {
+    setData(undefined);
+    setRefresh((value) => value + 1);
+  }, []);
+  useInventoryInvalidation(character?.id, invalidateStorage);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -136,6 +143,7 @@ export default function InventoryV6() {
     busy.current = true;
     setPending(true);
     reader.current?.abort();
+    let freed = 0;
     try {
       if (action.action === 'use') {
         await consumeResourceMutation(
@@ -148,10 +156,12 @@ export default function InventoryV6() {
             }),
           ),
         );
-      } else
-        await consumeResourceMutation(
+      } else {
+        const result = await consumeResourceMutation<{ freed?: number }>(
           await apiFetch(endpoint, mutationBody(action)),
         );
+        freed = result.freed ?? 0;
+      }
       if (!mounted.current) return;
       pushToast({
         message:
@@ -166,10 +176,16 @@ export default function InventoryV6() {
                   ? '物品已取入储物袋。'
                   : '物品已存入洞府储藏室。'
                 : action.action === 'sort'
-                  ? '已整理随身物品。'
-                  : action.action === 'use'
-                    ? '物品已使用。'
-                    : '物品已更新。',
+                  ? freed
+                    ? `已整理，腾出 ${freed} 格。`
+                    : '已整理随身物品。'
+                  : action.action === 'favorite'
+                    ? action.isFavorite
+                      ? '已收藏，归仓与回收会跳过此物品。'
+                      : '已取消收藏。'
+                    : action.action === 'use'
+                      ? '物品已使用。'
+                      : '物品已更新。',
         tone: 'success',
       });
       setSelectedIds(new Set());
@@ -425,6 +441,16 @@ export default function InventoryV6() {
               </div>
             </div>
           </div>
+          <InventoryManagementActions
+            owner={character?.id}
+            location={location}
+            disabled={unavailable}
+            onComplete={() => {
+              setData(undefined);
+              setRefresh((value) => value + 1);
+              void bagQuery.reload();
+            }}
+          />
           {bagQuery.error ? (
             <p role="alert" className="text-crimson text-sm">
               {bagQuery.error}
@@ -613,6 +639,14 @@ function ItemActions({
           }
         />
       ) : null}
+      <InkButton
+        disabled={pending}
+        onClick={() =>
+          void act({ action: 'favorite', ...ref, isFavorite: !item.isFavorite })
+        }
+      >
+        {item.isFavorite ? '取消收藏' : '收藏'}
+      </InkButton>
       <InkButton
         disabled={pending || item.equipped}
         onClick={() =>

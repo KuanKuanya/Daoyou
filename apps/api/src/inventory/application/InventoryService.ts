@@ -1,53 +1,40 @@
-import { recordJournalItems } from '@server/player/application/JournalSettlement.js';
-import { StoryService } from '@server/story/application/StoryService.js';
+import { QUALITY_VALUES } from '@daoyou/constants/qualities';
 import type {
   InventoryAction,
   InventoryQuerySchema,
   InventoryView,
 } from '@daoyou/contracts/inventory';
+import { BEAST_REFINEMENT } from '@daoyou/game-content/beasts';
+import { ITEM_DEFINITIONS } from '@daoyou/game-content/items';
+import { BEAST_REJUVENATION } from '@daoyou/game-content/items/beasts';
+import { type DaoEquipmentInstanceV1 } from '@daoyou/game-domain/equipment';
+import {
+  BAG_CAPACITY,
+  ConsumableFactsSchema,
+  INVENTORY_KINDS,
+  MaterialFactsSchema,
+  SeedFactsSchema,
+  type InventoryItem,
+  type ItemGrant,
+} from '@daoyou/game-domain/inventory';
 import {
   previewBeastFeeding,
   rejuvenateBeast,
 } from '@daoyou/game-rules/beasts/growth';
 import { refineBeast } from '@daoyou/game-rules/beasts/refinement';
-import { BEAST_REFINEMENT } from '@daoyou/game-content/beasts';
 import { compileDaoEquipmentSpecialLoadoutV1 } from '@daoyou/game-rules/equipment/projection';
-import { type DaoEquipmentInstanceV1 } from '@daoyou/game-domain/equipment';
-import {
-  BAG_CAPACITY,
-  type InventoryItem,
-  type ItemGrant,
-  INVENTORY_KINDS,
-  ConsumableFactsSchema,
-  MaterialFactsSchema,
-  SeedFactsSchema,
-} from '@daoyou/game-domain/inventory';
 import {
   addItems,
+  changeEquipmentLocation,
   emptySlot,
   InventoryItemSchema,
   itemDefinition,
   learnBeastSkill,
   sameStack,
   sortBag,
-  changeEquipmentLocation,
 } from '@daoyou/game-rules/inventory';
-import { BEAST_REJUVENATION } from '@daoyou/game-content/items/beasts';
-import { ITEM_DEFINITIONS } from '@daoyou/game-content/items';
-import { QUALITY_VALUES } from '@daoyou/constants/qualities';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  or,
-  sql,
-} from 'drizzle-orm';
-import { randomInt, randomUUID } from 'node:crypto';
-import type { z } from 'zod';
+import { hasActiveCombat } from '@server/combat/application/CombatOccupancy.js';
+import { inventoryStackKey } from '@server/inventory/application/inventoryStackKey.js';
 import {
   db,
   runDbTasks,
@@ -67,13 +54,26 @@ import {
   readBeastRoster,
 } from '@server/lib/repositories/combatV6BeastRepository.js';
 import { lockCultivatorForStateMutation } from '@server/lib/repositories/playerStateRepository.js';
-import { hasActiveCombat } from '@server/combat/application/CombatOccupancy.js';
-import { inventoryStackKey } from '@server/inventory/application/inventoryStackKey.js';
-import { publishResourceEvents } from '@server/realtime/infrastructure/playerStateBroadcaster.js';
+import { recordJournalItems } from '@server/player/application/JournalSettlement.js';
 import {
   ResourceEventCommitter,
   type ResourceCommitResult,
 } from '@server/player/application/state/ResourceEventCommitter.js';
+import { publishResourceEvents } from '@server/realtime/infrastructure/playerStateBroadcaster.js';
+import { StoryService } from '@server/story/application/StoryService.js';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+} from 'drizzle-orm';
+import { randomInt, randomUUID } from 'node:crypto';
+import type { z } from 'zod';
 
 export class InventoryError extends Error {}
 export function inventoryItemOf(
@@ -88,6 +88,7 @@ export function inventoryItemOf(
     instanceData: row.instanceData,
     stackKey: row.stackKey,
     revision: row.revision,
+    isFavorite: row.isFavorite,
   });
   if (item.definitionId === 'seed.v1')
     item.instanceData = SeedFactsSchema.parse(item.instanceData);
@@ -210,11 +211,14 @@ export async function readInventory(
   );
   const recentOrder = [desc(inventoryItems.updatedAt), desc(inventoryItems.id)];
   const kindOrder = sql`case ${sql.join(
-    INVENTORY_KINDS.filter(([kind]) => kind !== 'all').map(([kind], index) =>
-      sql`when ${inArray(
-        inventoryItems.definitionId,
-        ITEM_DEFINITIONS.filter((item) => item.kind === kind).map((item) => item.id),
-      )} then ${index}`,
+    INVENTORY_KINDS.filter(([kind]) => kind !== 'all').map(
+      ([kind], index) =>
+        sql`when ${inArray(
+          inventoryItems.definitionId,
+          ITEM_DEFINITIONS.filter((item) => item.kind === kind).map(
+            (item) => item.id,
+          ),
+        )} then ${index}`,
     ),
     sql` `,
   )} end`;
@@ -344,45 +348,56 @@ export async function grantInventory(
   grants: ItemGrant[],
   tx: DbTransaction,
   overflow = true,
+  destination: 'bag' | 'storage' = 'bag',
 ) {
   if (!grants.length) return [];
   // Only relevant stacks and the bounded bag are needed, even with an unlimited store.
-  const rows = (
-    await tx
-      .select()
-      .from(inventoryItems)
-      .where(
-        and(
-          eq(inventoryItems.cultivatorId, owner),
+  const rows = await tx
+    .select()
+    .from(inventoryItems)
+    .where(
+      and(
+        eq(inventoryItems.cultivatorId, owner),
+        destination === 'storage'
+          ? eq(inventoryItems.location, 'storage')
+          : or(
+              eq(inventoryItems.location, 'bag'),
+              eq(inventoryItems.location, 'storage'),
+            ),
+        or(
+          destination === 'bag'
+            ? eq(inventoryItems.location, 'bag')
+            : undefined,
           or(
-            eq(inventoryItems.location, 'bag'),
-            or(
-              ...grants.map((g) =>
-                and(
-                  eq(inventoryItems.definitionId, g.definitionId),
-                  eq(
-                    inventoryItems.stackKey,
-                    inventoryStackKey(g.definitionId, g.instanceData) ?? '',
-                  ),
-                  sql`${inventoryItems.quantity} < ${itemDefinition(g.definitionId).stackLimit}`,
+            ...grants.map((g) =>
+              and(
+                eq(inventoryItems.definitionId, g.definitionId),
+                eq(inventoryItems.isFavorite, false),
+                eq(
+                  inventoryItems.stackKey,
+                  inventoryStackKey(g.definitionId, g.instanceData) ?? '',
                 ),
+                sql`${inventoryItems.quantity} < ${itemDefinition(g.definitionId).stackLimit}`,
               ),
             ),
           ),
         ),
-      )
-  );
+      ),
+    );
   // Unrelated legacy definitions still occupy slots, but need not be decoded to grant items.
   const reservedSlots = rows.flatMap((row) =>
     row.location === 'bag' && row.slotIndex !== null ? [row.slotIndex] : [],
   );
   const before = rows
     .filter((row) =>
-      grants.some((grant) =>
-        row.definitionId === grant.definitionId &&
-        row.stackKey !== null &&
-        row.stackKey === inventoryStackKey(grant.definitionId, grant.instanceData) &&
-        row.quantity < itemDefinition(grant.definitionId).stackLimit,
+      grants.some(
+        (grant) =>
+          !row.isFavorite &&
+          row.definitionId === grant.definitionId &&
+          row.stackKey !== null &&
+          row.stackKey ===
+            inventoryStackKey(grant.definitionId, grant.instanceData) &&
+          row.quantity < itemDefinition(grant.definitionId).stackLimit,
       ),
     )
     .map(inventoryItemOf);
@@ -391,11 +406,12 @@ export async function grantInventory(
     next = addItems(
       next,
       grant,
-      'bag',
+      destination,
       overflow,
       randomUUID,
       inventoryStackKey(grant.definitionId, grant.instanceData),
       reservedSlots,
+      false,
     );
   await saveInventoryPlan(owner, before, next, tx);
   return next.filter(
@@ -405,7 +421,7 @@ export async function grantInventory(
         (before.find((previous) => previous.id === item.id)?.quantity ?? 0),
   );
 }
-function transferInventoryItem(
+export function transferInventoryItem(
   items: InventoryItem[],
   item: InventoryItem,
   location: 'bag' | 'storage',
@@ -438,6 +454,8 @@ function transferInventoryItem(
       item.definitionId === 'consumable.v1'
         ? inventoryStackKey(item.definitionId, item.instanceData)
         : item.stackKey,
+      [],
+      item.isFavorite,
     ).map((entry) =>
       entry.id === item.id ? { ...entry, revision: item.revision + 1 } : entry,
     );
@@ -458,7 +476,11 @@ function normalizeConsumableStack(item: InventoryItem): InventoryItem {
     : { ...item, stackKey, revision: item.revision + 1 };
 }
 
-export async function mutateInventory(owner: string, input: InventoryAction, database: DbClient = db) {
+export async function mutateInventory(
+  owner: string,
+  input: InventoryAction,
+  database: DbClient = db,
+) {
   const committed = await withRedisLock(
     {
       key: redisLockKeys.cultivatorMutation(owner),
@@ -507,16 +529,22 @@ export async function mutateInventory(owner: string, input: InventoryAction, dat
           if (equipped.length) throw new InventoryError('请先卸下装备');
           const stackFilters = sources.flatMap((item) =>
             item.stackKey
-              ? [and(
-                  eq(inventoryItems.definitionId, item.definitionId),
-                  eq(
-                    inventoryItems.stackKey,
-                    item.definitionId === 'consumable.v1'
-                      ? inventoryStackKey(item.definitionId, item.instanceData)!
-                      : item.stackKey,
+              ? [
+                  and(
+                    eq(inventoryItems.definitionId, item.definitionId),
+                    eq(inventoryItems.isFavorite, item.isFavorite),
+                    eq(
+                      inventoryItems.stackKey,
+                      item.definitionId === 'consumable.v1'
+                        ? inventoryStackKey(
+                            item.definitionId,
+                            item.instanceData,
+                          )!
+                        : item.stackKey,
+                    ),
+                    sql`${inventoryItems.quantity} < ${itemDefinition(item.definitionId).stackLimit}`,
                   ),
-                  sql`${inventoryItems.quantity} < ${itemDefinition(item.definitionId).stackLimit}`,
-                )]
+                ]
               : [],
           );
           const targets =
@@ -591,11 +619,15 @@ export async function mutateInventory(owner: string, input: InventoryAction, dat
                   eq(inventoryItems.cultivatorId, owner),
                   eq(inventoryItems.location, 'storage'),
                   eq(inventoryItems.definitionId, source.definitionId),
+                  eq(inventoryItems.isFavorite, source.isFavorite),
                   eq(
                     inventoryItems.stackKey,
                     source.definitionId === 'consumable.v1'
-                      ? inventoryStackKey(source.definitionId, source.instanceData)!
-                      : source.stackKey ?? '',
+                      ? inventoryStackKey(
+                          source.definitionId,
+                          source.instanceData,
+                        )!
+                      : (source.stackKey ?? ''),
                   ),
                   sql`${inventoryItems.quantity} < ${itemDefinition(source.definitionId).stackLimit}`,
                 ),
@@ -622,6 +654,7 @@ export async function mutateInventory(owner: string, input: InventoryAction, dat
           newSkill?: string;
           oldSkillCount?: number;
           newSkillCount?: number;
+          freed?: number;
         } = {};
         let state: ResourceCommitResult = { changes: [], baselines: [] };
         if (input.action === 'sort') {
@@ -638,12 +671,18 @@ export async function mutateInventory(owner: string, input: InventoryAction, dat
           )
             throw new InventoryError('背包已变化，请刷新');
           next = sortBag(next.map(normalizeConsumableStack));
+          result.freed =
+            bag.length -
+            next.filter((entry) => entry.location === 'bag').length;
         } else if (item) {
           const equipped = await tx
             .select()
             .from(cultivatorEquipmentSlots)
             .where(eq(cultivatorEquipmentSlots.equipmentInstanceId, item.id));
-          if (input.action === 'transfer') {
+          if (input.action === 'favorite') {
+            item.isFavorite = input.isFavorite;
+            item.revision++;
+          } else if (input.action === 'transfer') {
             if (equipped.length) throw new InventoryError('请先卸下装备');
             next = transferInventoryItem(next, item, input.location);
           } else if (input.action === 'move') {

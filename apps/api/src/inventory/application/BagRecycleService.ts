@@ -1,25 +1,29 @@
+import { QUALITY_ORDER } from '@daoyou/constants/qualities';
 import type {
+  RecycleCondition,
   RecycleQuote,
   RecycleResult,
   RecycleSelection,
 } from '@daoyou/contracts/recycle';
-import { InventoryEquipmentSchema } from '@daoyou/game-rules/inventory/equipment';
-import {
-  recycleBlockingReason,
-  blueprintRecycleUnitPrice,
-  equipmentRecycleUnitPrice,
-  manualJadeRecycleUnitPrice,
-  seedRecycleUnitPrice,
-} from '@daoyou/game-rules/inventory/recycle';
+import { findItemDefinition } from '@daoyou/game-content/items';
 import {
   ConsumableFactsSchema,
   SeedFactsSchema,
   materialFactsOf,
 } from '@daoyou/game-domain/inventory';
-import { findItemDefinition } from '@daoyou/game-content/items';
 import { calculateSpiritFruitRecycleUnitPrice } from '@daoyou/game-rules/alchemy';
-import { QUALITY_ORDER } from '@daoyou/constants/qualities';
+import { InventoryEquipmentSchema } from '@daoyou/game-rules/inventory/equipment';
 import {
+  blueprintRecycleUnitPrice,
+  compareRecycleCandidates,
+  equipmentRecycleUnitPrice,
+  manualJadeRecycleUnitPrice,
+  matchesRecycleConditions,
+  recycleBlockingReason,
+  seedRecycleUnitPrice,
+} from '@daoyou/game-rules/inventory/recycle';
+import {
+  assertInventoryIdle,
   inventoryItemOf,
   saveInventoryPlan,
 } from '@server/inventory/application/InventoryService.js';
@@ -30,6 +34,8 @@ import {
   playerCommandExecutor,
   type PlayerCommandExecutor,
 } from '@server/player/application/state/CommandExecutors.js';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 import {
   MarketRecycleError,
   buildMaterialHighTierAppraisal,
@@ -37,8 +43,6 @@ import {
   calculateLowTierUnitPrice,
   calculatePillRecycleUnitPrice,
 } from './RecycleAppraisal.js';
-import { and, eq, inArray, sql } from 'drizzle-orm';
-import { randomUUID } from 'node:crypto';
 
 const key = (owner: string, id: string) => `market:bag-recycle:${owner}:${id}`;
 async function selectedItems(
@@ -70,14 +74,70 @@ async function selectedItems(
   });
 }
 
+/** Scan with bounded memory across the complete source, then freeze an explicit batch. */
+export async function previewRecycleByCondition(
+  owner: string,
+  conditions: RecycleCondition,
+  database: DbExecutor = getExecutor(),
+) {
+  let matchingCount = 0;
+  let candidates: Awaited<ReturnType<typeof selectedItems>> = [];
+  let cursor: string | undefined;
+  while (true) {
+    const rows = await database
+      .select()
+      .from(inventoryItems)
+      .where(
+        and(
+          eq(inventoryItems.cultivatorId, owner),
+          eq(inventoryItems.location, conditions.location),
+          eq(inventoryItems.isFavorite, false),
+          cursor ? sql`${inventoryItems.id} > ${cursor}` : undefined,
+        ),
+      )
+      .orderBy(asc(inventoryItems.id))
+      .limit(200);
+    for (const row of rows) {
+      const item = inventoryItemOf(row);
+      if (!matchesRecycleConditions(item, conditions)) continue;
+      matchingCount++;
+      candidates.push(item);
+    }
+    candidates = candidates.sort(compareRecycleCandidates).slice(0, 200);
+    if (rows.length < 200) break;
+    cursor = rows[rows.length - 1].id;
+  }
+  if (!candidates.length)
+    throw new MarketRecycleError(400, '没有符合条件的可回收物品。');
+  return previewBagRecycle(
+    owner,
+    candidates.map(({ id, revision, quantity }) => ({
+      id,
+      revision,
+      quantity: conditions.onePerStack ? 1 : quantity,
+    })),
+    database,
+    {
+      matchingCount,
+      remainingCount: matchingCount - candidates.length,
+      conditions,
+    },
+  );
+}
+
 export async function previewBagRecycle(
   owner: string,
   selection: RecycleSelection[],
   database: DbExecutor = getExecutor(),
+  context?: {
+    matchingCount: number;
+    remainingCount: number;
+    conditions: RecycleCondition;
+  },
 ) {
   const snapshots = await selectedItems(owner, selection, database);
   const items = snapshots.map((item, index) => {
-    const ref = selection[index];
+    const ref = { ...selection[index], availableQuantity: item.quantity };
     const definition = findItemDefinition(item.definitionId);
     if (definition?.kind === 'seed') {
       const facts = SeedFactsSchema.parse(item.instanceData);
@@ -148,10 +208,16 @@ export async function previewBagRecycle(
     expiresAt: Date.now() + 600_000,
     items,
     total,
+    ...(context
+      ? {
+          matchingCount: context.matchingCount,
+          remainingCount: context.remainingCount,
+        }
+      : {}),
   };
   await redis.set(
     key(owner, quote.id),
-    JSON.stringify({ quote, snapshots }),
+    JSON.stringify({ quote, snapshots, context }),
     'EX',
     600,
   );
@@ -168,6 +234,14 @@ export function confirmBagRecycle(
     source: 'bag_recycle',
     idempotency: { key: `bag-recycle:${quoteId}`, fingerprint: quoteId },
     command: async (tx) => {
+      try {
+        await assertInventoryIdle(actor.cultivatorId, tx);
+      } catch (error) {
+        throw new MarketRecycleError(
+          409,
+          error instanceof Error ? error.message : '请先结束战斗',
+        );
+      }
       const raw = await redis.get(key(actor.cultivatorId, quoteId));
       if (!raw)
         throw new MarketRecycleError(410, '这份报价已过期，请重新询价。');
@@ -175,7 +249,7 @@ export function confirmBagRecycle(
         quote: RecycleQuote;
         snapshots: Awaited<ReturnType<typeof selectedItems>>;
       };
-      if (stored.quote.expiresAt < Date.now())
+      if (stored.quote.expiresAt <= Date.now())
         throw new MarketRecycleError(410, '这份报价已过期，请重新询价。');
       const before = await selectedItems(
         actor.cultivatorId,

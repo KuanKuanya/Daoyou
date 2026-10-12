@@ -117,7 +117,10 @@ function renderPreparationNotice(
         title: '秘境探索说明',
         content: (
           <div className="space-y-3 text-sm leading-7">
-            <p>每轮选择前可查看代价与危险度，离开秘境时结算收获。</p>
+            <p>
+              探索与遭遇战胜利会积累修为、灵石，并有机会获得材料等物品；离开秘境时统一结算。
+            </p>
+            <p>每轮选择前可查看代价与危险度。</p>
             <p>
               气血、法力、异常状态用于出行前判断，不作为探索选项的通过条件。
             </p>

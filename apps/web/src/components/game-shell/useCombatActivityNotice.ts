@@ -7,37 +7,72 @@ import { useEffect, useState } from 'react';
 
 const POLL_MS = 8_000;
 
-export function useCombatActivityNotice(enabled: boolean) {
-  const [notice, setNotice] = useState<CombatActivityNotice | null>(null);
+export function useCombatActivityNotice(cultivatorId: string | null) {
+  const [result, setResult] = useState<{
+    cultivatorId: string;
+    notice: CombatActivityNotice | null;
+  } | null>(null);
   useEffect(() => {
-    if (!enabled) return;
+    if (!cultivatorId) return;
     let cancelled = false;
-    const load = () => {
-      apiFetch('/api/combat-v6/activity', { cache: 'no-store' })
-        .then(async (response) => {
-          const body = (await response.json()) as {
-            success?: boolean;
-            data?: unknown;
-          };
-          if (!response.ok || !body.success) return;
-          const parsed = CombatActivityNoticeSchema.nullable().safeParse(
-            body.data ?? null,
-          );
-          if (!cancelled && parsed.success) setNotice(parsed.data);
-        })
-        .catch(() => undefined);
+    let request: AbortController | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const load = async () => {
+      if (cancelled || document.visibilityState !== 'visible' || request)
+        return;
+      clearTimeout(timer);
+      const abort = new AbortController();
+      request = abort;
+      try {
+        const response = await apiFetch('/api/combat-v6/activity', {
+          cache: 'no-store',
+          signal: abort.signal,
+        });
+        const body = (await response.json()) as {
+          success?: boolean;
+          data?: unknown;
+        };
+        if (!response.ok || !body.success) return;
+        const parsed = CombatActivityNoticeSchema.nullable().safeParse(
+          body.data ?? null,
+        );
+        if (
+          !cancelled &&
+          !abort.signal.aborted &&
+          request === abort &&
+          parsed.success
+        )
+          setResult({ cultivatorId, notice: parsed.data });
+      } catch {
+        // Keep the last notice until the next successful poll.
+      } finally {
+        if (request === abort) {
+          request = undefined;
+          if (!cancelled && document.visibilityState === 'visible')
+            timer = setTimeout(() => void load(), POLL_MS);
+        }
+      }
     };
-    load();
-    const timer = window.setInterval(load, POLL_MS);
     const onVisible = () => {
-      if (document.visibilityState === 'visible') load();
+      clearTimeout(timer);
+      if (document.visibilityState === 'visible') {
+        void load();
+      } else {
+        const pending = request;
+        request = undefined;
+        pending?.abort();
+      }
     };
     document.addEventListener('visibilitychange', onVisible);
+    void load();
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      request?.abort();
+      clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [enabled]);
-  return enabled ? notice : null;
+  }, [cultivatorId]);
+  return cultivatorId && result?.cultivatorId === cultivatorId
+    ? result.notice
+    : null;
 }

@@ -152,6 +152,7 @@ export function createWildHost(
     combatants,
     projected.unit.level!,
     player.beasts?.beasts.length ?? 0,
+    player.beasts?.capacity,
   );
   projected.unit.skills = [...(projected.unit.skills ?? []), capture.id];
   return new WildHost({

@@ -35,7 +35,6 @@ import {
 } from '@daoyou/game-rules/beasts/fusion';
 import {
   allocateBeast,
-  BEAST_CAPACITY,
   beastRestCost,
   type BeastAllocationSchema,
 } from '@daoyou/game-rules/beasts/growth';
@@ -170,7 +169,7 @@ async function mutate<T>(
     async (lease) =>
       db.transaction(async (tx) => {
         await lockCultivatorForStateMutation(tx, cultivatorId);
-        await assertBeastIdle(cultivatorId);
+        await assertBeastIdle(cultivatorId, tx);
         const result = await action(tx);
         lease.assertHeld();
         return result;
@@ -187,7 +186,7 @@ export async function claimStarterBeast(
   const claimed = await mutate(cultivatorId, async (tx) => {
     const roster = await readBeastRoster(cultivatorId, tx);
     if (roster.starterClaimed) return { roster, state: null };
-    if (roster.beasts.length >= BEAST_CAPACITY)
+    if (roster.beasts.length >= roster.capacity)
       throw new BeastError('灵兽持有已满');
     const beast = generateStarterBeast(
       randomUUID(),

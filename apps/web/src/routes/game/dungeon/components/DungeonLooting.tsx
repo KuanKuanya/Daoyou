@@ -1,8 +1,9 @@
 import { InkSection } from '@app/components/layout';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
-import type { DungeonState } from '@daoyou/game-domain/dungeon';
 import type { Cultivator } from '@daoyou/game-domain/character';
+import type { DungeonState } from '@daoyou/game-domain/dungeon';
+import { DungeonRewardSummary } from './DungeonRewardSummary';
 import type { DungeonDisplayResources } from './DungeonRunPanel';
 import { DungeonRunPanel } from './DungeonRunPanel';
 
@@ -26,6 +27,10 @@ export function DungeonLooting({
   processing,
 }: DungeonLootingProps) {
   const finalRound = state.currentRound >= state.maxRounds;
+  // Victory appends its reward before the flow enters LOOTING.
+  const battleReward = [...(state.v6Rewards ?? [])]
+    .reverse()
+    .find((reward) => reward.key.startsWith('battle:'));
   return (
     <div className="space-y-6 pb-28">
       <DungeonRunPanel
@@ -40,8 +45,18 @@ export function DungeonLooting({
         <h3 className="text-ink mb-4 text-center text-xl font-bold">
           战斗胜利
         </h3>
-        <p className="text-ink-secondary mb-6 text-center leading-relaxed">
-          已完成第 {state.currentRound} 轮战斗。可以继续深入，或带着当前收获离开。
+        <p className="text-ink-secondary mb-4 text-center leading-relaxed">
+          已完成第 {state.currentRound}{' '}
+          轮战斗。可以继续深入，或带着当前收获离开。
+        </p>
+        {battleReward ? (
+          <DungeonRewardSummary
+            rewards={[battleReward]}
+            title="本战收获（待结算）"
+          />
+        ) : null}
+        <p className="text-ink-secondary mt-3 text-sm leading-6">
+          修为、灵石与物品会在离开秘境时统一结算；继续深入会累计收获。
         </p>
       </InkCard>
 

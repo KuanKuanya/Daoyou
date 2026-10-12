@@ -1,4 +1,12 @@
 import {
+  ClaimAllMailSchema,
+  ClaimMailSchema,
+  SendMailSchema,
+  type ClaimAllMailRequest,
+  type ClaimMailRequest,
+  type SendMailRequest,
+} from '@daoyou/contracts/mail';
+import {
   Controller,
   Get,
   HttpCode,
@@ -6,15 +14,14 @@ import {
   Post,
   UseFilters,
 } from '@nestjs/common';
+import { BeastError } from '@server/combat/application/BeastMutationGuard.js';
+import { InventoryError } from '@server/inventory/operations.js';
 import type { ActiveCultivatorRef } from '@server/lib/auth/types.js';
 import { redisLockErrorResponse } from '@server/lib/http/errors.js';
-import { BeastError } from '@server/combat/application/BeastMutationGuard.js';
-import { PlayerCommandIdempotencyError } from '@server/player/application/state/CommandExecutors.js';
-import { InventoryError } from '@server/inventory/operations.js';
+import { JournalIdempotencyError } from '@server/lib/repositories/playerJournalRepository.js';
 import { PlayerMailCommandError } from '@server/mail/application/PlayerMailApplicationService.js';
 import { PlayerMailServiceError } from '@server/mail/application/PlayerMailService.js';
-import { SendMailSchema, type SendMailRequest } from '@daoyou/contracts/mail';
-import { JournalRequestSchema } from '@daoyou/contracts/player/journal';
+import { PlayerCommandIdempotencyError } from '@server/player/application/state/CommandExecutors.js';
 import { z } from 'zod';
 import { Access, CurrentCultivator } from '../auth/access.js';
 import { apiErrorFilter } from '../http/error-filter.js';
@@ -43,12 +50,30 @@ const SendErrors = apiErrorFilter((error) => {
   return Response.json({ error: '发送传音失败' }, { status: 500 });
 });
 const ClaimAllErrors = apiErrorFilter((error) => {
-  if (error instanceof BeastError)
+  if (error instanceof z.ZodError)
+    return Response.json(
+      { error: '参数错误', details: error.issues },
+      { status: 400 },
+    );
+  if (
+    error instanceof BeastError ||
+    error instanceof PlayerCommandIdempotencyError ||
+    error instanceof JournalIdempotencyError
+  )
     return Response.json({ error: error.message }, { status: 409 });
   return redisLockErrorResponse(error) ?? undefined;
 });
 const ClaimErrors = apiErrorFilter((error) => {
-  if (error instanceof BeastError)
+  if (error instanceof z.ZodError)
+    return Response.json(
+      { error: '参数错误', details: error.issues },
+      { status: 400 },
+    );
+  if (
+    error instanceof BeastError ||
+    error instanceof PlayerCommandIdempotencyError ||
+    error instanceof JournalIdempotencyError
+  )
     return Response.json({ error: error.message }, { status: 409 });
   const lock = redisLockErrorResponse(error);
   if (lock) return lock;
@@ -94,9 +119,9 @@ export class MailController {
   @UseFilters(ClaimErrors)
   claim(
     @CurrentCultivator() actor: ActiveCultivatorRef,
-    @JsonBody(new ZodPipe(MailIdSchema)) input: z.infer<typeof MailIdSchema>,
+    @JsonBody(new ZodPipe(ClaimMailSchema)) input: ClaimMailRequest,
   ) {
-    return this.mail.claim(actor, input.mailId);
+    return this.mail.claim(actor, input);
   }
 
   @Post('claim-all')
@@ -104,10 +129,9 @@ export class MailController {
   @UseFilters(ClaimAllErrors)
   claimAll(
     @CurrentCultivator() actor: ActiveCultivatorRef,
-    @JsonBody({ fallback: undefined }, new ZodPipe(JournalRequestSchema))
-    input: z.infer<typeof JournalRequestSchema>,
+    @JsonBody(new ZodPipe(ClaimAllMailSchema)) input: ClaimAllMailRequest,
   ) {
-    return this.mail.claimAll(actor, input.requestId);
+    return this.mail.claimAll(actor, input);
   }
 
   @Post('read')

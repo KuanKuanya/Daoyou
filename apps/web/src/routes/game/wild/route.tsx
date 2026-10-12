@@ -1,4 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { CombatV6Battle } from '@app/components/feature/combat-v6/CombatV6Battle';
 import { CombatV6Page } from '@app/components/feature/combat-v6/CombatV6Page';
 import {
@@ -10,6 +9,7 @@ import { useQiState } from '@app/components/feature/cultivator/useQiState';
 import { GameLoadingState } from '@app/components/game-shell/GameLoadingState';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton } from '@app/components/ui/InkButton';
+import { apiFetch } from '@app/lib/api/fetch';
 import { consumeResourceMutation } from '@app/lib/resources/mutations';
 import {
   useCultivatorCondition,
@@ -19,12 +19,15 @@ import {
 } from '@app/lib/resources/player';
 import { resolveMapReturnHref } from '@app/lib/router/mapNavigation';
 import { useStory } from '@app/lib/story/useStory';
-import type { WildEncounterView } from '@daoyou/game-domain/wild';
-import type { WildRegionView, WildSessionView } from '@daoyou/contracts/combat/wild';
+import { REALM_ORDER } from '@daoyou/constants/realms';
+import type {
+  WildRegionView,
+  WildSessionView,
+} from '@daoyou/contracts/combat/wild';
 import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
+import type { WildEncounterView } from '@daoyou/game-domain/wild';
 import { itemDefinition } from '@daoyou/game-rules/inventory';
 import { InventoryEquipmentSchema } from '@daoyou/game-rules/inventory/equipment';
-import { REALM_ORDER } from '@daoyou/constants/realms';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { WildSeekingScene } from './WildSeekingScene';
@@ -230,6 +233,23 @@ function WildRegion({ nodeId }: { nodeId: string }) {
       onConfirm: closeBattle,
     });
   };
+  const capturedNames = session
+    ? [
+        ...new Set(
+          session.events.flatMap(({ event }) =>
+            event.type === 'unitCaptured' &&
+            event.unitId === session.controlledUnitId
+              ? [event.targetId]
+              : [],
+          ),
+        ),
+      ].map(
+        (id) =>
+          session.display?.unitNames?.[id] ??
+          session.units.find((unit) => unit.id === id)?.name ??
+          '灵兽',
+      )
+    : [];
   if (!session) {
     return (
       <div className="app-safe-area-page bg-paper text-ink h-full overflow-y-auto">
@@ -345,19 +365,28 @@ function WildRegion({ nodeId }: { nodeId: string }) {
           backLabel="返回地图"
         />
       )}
-      {session?.settlement === 'settled' &&
-      !combat.playing &&
-      session.itemRewards?.length ? (
-        <p role="status" className="mt-3 text-sm">
-          获得{' '}
-          {session.itemRewards
-            .map(
-              (item) =>
-                `${item.definitionId === 'equipment.v6' ? InventoryEquipmentSchema.parse(item.instanceData).name : itemDefinition(item.definitionId).name} ×${item.quantity}`,
-            )
-            .join('、')}
-          。已收存，背包不足的部分自动存入洞府储藏室。
-        </p>
+      {session?.settlement === 'settled' && !combat.playing ? (
+        <div role="status" className="mt-3 space-y-1 text-sm leading-6">
+          <p>本次寻觅已结算。</p>
+          <p>
+            {capturedNames.length
+              ? `捕捉到${capturedNames.join('、')}，已收入灵兽袋。`
+              : '本次未捕捉到灵兽。'}
+          </p>
+          <p>
+            {session.itemRewards?.length
+              ? `获得 ${session.itemRewards
+                  .map(
+                    (item) =>
+                      `${item.definitionId === 'equipment.v6' ? InventoryEquipmentSchema.parse(item.instanceData).name : itemDefinition(item.definitionId).name} ×${item.quantity}`,
+                  )
+                  .join('、')}。已收存，背包不足的部分自动存入洞府储藏室。`
+              : '本次未获得物品。'}
+          </p>
+          <p className="text-ink-secondary text-xs">
+            寻觅以寻找、捕捉伙伴为主；人物修为与灵石可在云游探秘离开时结算。
+          </p>
+        </div>
       ) : null}
     </CombatV6Page>
   );

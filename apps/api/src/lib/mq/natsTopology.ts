@@ -76,6 +76,11 @@ export const DOMAIN_EVENT_CONSUMERS = {
     filterSubject: `${DOMAIN_EVENT_SUBJECT_PREFIX}.gameplay.cultivator-realm-changed.v1`,
     concurrency: 4,
   },
+  towerLeaderboardProjector: {
+    name: 'tower-leaderboard-projector-v1',
+    filterSubject: `${DOMAIN_EVENT_SUBJECT_PREFIX}.tower.floor-cleared.v1`,
+    concurrency: 4,
+  },
   mailNotificationProjector: {
     name: 'mail-notification-projector-v1',
     filterSubject: `${DOMAIN_EVENT_SUBJECT_PREFIX}.communication.mail-created.v1`,

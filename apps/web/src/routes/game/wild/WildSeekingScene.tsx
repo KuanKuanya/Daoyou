@@ -169,6 +169,9 @@ export function WildSeekingScene({
             </InkButton>
           )}
         </div>
+        <p className="text-ink-secondary mx-auto mt-3 max-w-lg text-xs leading-6">
+          寻找并捕捉灵兽伙伴，携伙伴一同应战。人物修为与灵石可在云游探秘中积累，离开时结算。
+        </p>
         <p className="text-ink-secondary mt-3 text-xs leading-6">
           每次寻觅消耗 <span className="font-mono">{region.qiCost}</span>{' '}
           点天地灵气

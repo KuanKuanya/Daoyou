@@ -1,5 +1,10 @@
 /** Public beasts capabilities. Keep implementation files private. */
 export {
+  BEAST_CAPACITY_RECIPES,
+  BEAST_CAPACITY_RECIPE_VERSION,
+  BEAST_CAPACITY_STAGES,
+} from '../beasts/capacity.js';
+export {
   BEAST_ADVANCED_SKILL_IDS,
   BEAST_COMBO_SKILL_IDS,
   BEAST_GENERATION,

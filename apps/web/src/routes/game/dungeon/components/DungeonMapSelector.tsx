@@ -1,9 +1,9 @@
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
 import { InkNotice } from '@app/components/ui/InkNotice';
-import { dungeonReadiness } from '@daoyou/game-rules/dungeon';
-import { MapNodeInfo } from '@daoyou/game-domain/world/map';
 import type { RealmType } from '@daoyou/constants/realms';
+import { MapNodeInfo } from '@daoyou/game-domain/world/map';
+import { dungeonReadiness } from '@daoyou/game-rules/dungeon';
 import { MapNodeCard } from '../MapNodeCard';
 type NoviceDungeonReadiness = ReturnType<typeof dungeonReadiness>;
 
@@ -31,7 +31,9 @@ export function DungeonMapSelector({
   if (!selectedNode) {
     return (
       <InkCard className="p-8 text-center">
-        <p className="text-ink-secondary">请选择一个秘境</p>
+        <p className="text-ink-secondary">
+          选择秘境历练，积累修为、灵石，寻获材料等物品。离开时统一结算。
+        </p>
         <InkButton href="/game/map-v2" variant="primary" className="mt-4">
           前往地图
         </InkButton>
@@ -42,6 +44,9 @@ export function DungeonMapSelector({
   return (
     <div className="space-y-4">
       <MapNodeCard node={selectedNode} playerRealm={playerRealm} />
+      <p className="text-ink-secondary text-sm leading-6">
+        探索与遭遇战胜利可积累修为、灵石，并有机会获得材料等物品；离开时统一结算。
+      </p>
       {realmBlockReason ? (
         <InkNotice tone="warning">{realmBlockReason}</InkNotice>
       ) : null}

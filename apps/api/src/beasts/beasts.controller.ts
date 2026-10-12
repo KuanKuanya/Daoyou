@@ -1,4 +1,11 @@
-import { BeastAllocateSchema } from './beasts-input.js';
+import {
+  BeastCapacityExpandSchema,
+  BeastClaimSchema,
+  BeastFusionRequestSchema,
+  BeastLineupRequestSchema,
+  BeastRenameSchema,
+  BeastRestSchema,
+} from '@daoyou/contracts/beasts';
 import {
   Controller,
   Get,
@@ -10,21 +17,15 @@ import {
   Put,
   UseFilters,
 } from '@nestjs/common';
-import type { ActiveCultivatorRef } from '@server/lib/auth/types.js';
 import { BeastError } from '@server/combat/application/CombatV6BeastService.js';
-import {
-  BeastClaimSchema,
-  BeastFusionRequestSchema,
-  BeastLineupRequestSchema,
-  BeastRenameSchema,
-  BeastRestSchema,
-} from '@daoyou/contracts/beasts';
+import type { ActiveCultivatorRef } from '@server/lib/auth/types.js';
 import { z } from 'zod';
 import { Access, CurrentCultivator } from '../auth/access.js';
 import { CombatErrors, combatErrorResponse } from '../combat/combat-errors.js';
 import { apiErrorFilter } from '../http/error-filter.js';
 import { JsonBody } from '../http/json-body.js';
 import { ZodPipe } from '../http/zod.pipe.js';
+import { BeastAllocateSchema } from './beasts-input.js';
 import { BeastsService } from './beasts.service.js';
 
 const FusionErrors = apiErrorFilter((error) => {
@@ -46,6 +47,21 @@ export class BeastsController {
   @Header('Cache-Control', 'no-store')
   read(@CurrentCultivator() actor: ActiveCultivatorRef) {
     return this.beasts.read(actor.cultivatorId);
+  }
+  @Get('capacity')
+  @Header('Cache-Control', 'no-store')
+  capacity(@CurrentCultivator() actor: ActiveCultivatorRef) {
+    return this.beasts.capacity(actor.cultivatorId);
+  }
+
+  @Post('capacity/expand')
+  @HttpCode(200)
+  expand(
+    @CurrentCultivator() actor: ActiveCultivatorRef,
+    @JsonBody(new ZodPipe(BeastCapacityExpandSchema))
+    input: z.infer<typeof BeastCapacityExpandSchema>,
+  ) {
+    return this.beasts.expand(actor.userId, actor.cultivatorId, input);
   }
 
   @Get('fusions/:requestId')

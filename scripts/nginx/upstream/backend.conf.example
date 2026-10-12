@@ -1,0 +1,16 @@
+# Blue-green target for the API upstream declared in
+# scripts/nginx/petpal.conf.example.
+#
+# scripts/blue-green-app.sh rewrites this file with
+#
+#   sed -E "s/server[[:space:]]+127\.0\.0\.1:[0-9]+;/server 127.0.0.1:<port>;/"
+#
+# and reads the current port back with
+#
+#   sed -nE 's/^[[:space:]]*server[[:space:]]+127\.0\.0\.1:([0-9]+);.*$/\1/p'
+#
+# Both patterns require the line to be exactly `server 127.0.0.1:<port>;` with
+# only leading whitespace allowed. Adding any parameter to this line (weight,
+# max_fails, backup, ...) breaks the automated switch, so keep it bare.
+
+server 127.0.0.1:3000;
