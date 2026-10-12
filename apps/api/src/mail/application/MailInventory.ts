@@ -1,6 +1,6 @@
+import type { MailDestination } from '@daoyou/contracts/mail';
 import { beastTradePreview } from '@daoyou/game-domain/beasts';
-import { BeastTransferSchema } from '@daoyou/game-rules/beasts/trade';
-import { MailInventoryGrantSchema } from '@daoyou/game-rules/mail';
+import type { Consumable, Material } from '@daoyou/game-domain/character';
 import {
   consumableFactsOf,
   INVENTORY_MATERIAL_TYPES,
@@ -8,12 +8,13 @@ import {
   seedFactsOf,
   SeedFactsSchema,
 } from '@daoyou/game-domain/inventory';
-import { assertCurrentRewardItem } from '@daoyou/game-rules/legacy/retired-draw';
-import type { Consumable, Material } from '@daoyou/game-domain/character';
 import type { MailAttachment } from '@daoyou/game-domain/mail';
-import type { DbTransaction } from '@server/lib/drizzle/db.js';
+import { BeastTransferSchema } from '@daoyou/game-rules/beasts/trade';
+import { assertCurrentRewardItem } from '@daoyou/game-rules/legacy/retired-draw';
+import { MailInventoryGrantSchema } from '@daoyou/game-rules/mail';
 import { grantInventory } from '@server/inventory/operations.js';
 import { sanitizeMaterialForClient } from '@server/inventory/presentation.js';
+import type { DbTransaction } from '@server/lib/drizzle/db.js';
 
 /** Only used when producing new rewards; never converts stored mail on claim. */
 export function newRewardAttachment(item: MailAttachment): MailAttachment {
@@ -33,9 +34,7 @@ export function newRewardAttachment(item: MailAttachment): MailAttachment {
     };
   if (item.type === 'material' && item.data) {
     const material = item.data as Material;
-    if (
-      !['seed', ...INVENTORY_MATERIAL_TYPES].includes(material.type)
-    )
+    if (!['seed', ...INVENTORY_MATERIAL_TYPES].includes(material.type))
       return item;
     const facts =
       material.type === 'seed'
@@ -105,6 +104,7 @@ export async function deliverMailInventory(
   owner: string,
   attachments: MailAttachment[],
   tx: DbTransaction,
+  destination: MailDestination = 'bag',
 ) {
   const grants = attachments
     .filter((a) => a.type === 'inventory_v1')
@@ -113,7 +113,7 @@ export async function deliverMailInventory(
       if (grant.quantity !== a.quantity) throw new Error('邮件物品数量不一致');
       return grant;
     });
-  const delivered = await grantInventory(owner, grants, tx);
+  const delivered = await grantInventory(owner, grants, tx, true, destination);
   return [
     ...new Set([
       ...delivered.map((item) => item.location),

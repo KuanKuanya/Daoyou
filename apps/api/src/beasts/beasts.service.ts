@@ -1,14 +1,12 @@
 import type {
   BeastAllocateRequest,
+  BeastCapacityExpandRequest,
   BeastFusionRequest,
   BeastLineupRequestSchema,
   BeastRenameSchema,
   BeastRestSchema,
 } from '@daoyou/contracts/beasts';
 import { Inject, Injectable } from '@nestjs/common';
-import { DRIZZLE_DATABASE } from '@server/database/database.service.js';
-import type { DbClient } from '@server/lib/drizzle/db.js';
-import { readBeastRoster } from '@server/lib/repositories/combatV6BeastRepository.js';
 import {
   allocateBeastPoints,
   claimStarterBeast,
@@ -19,7 +17,15 @@ import {
   restBeast,
   updateBeastLineup,
 } from '@server/combat/application/CombatV6BeastService.js';
+import { DRIZZLE_DATABASE } from '@server/database/database.service.js';
+import type { DbClient } from '@server/lib/drizzle/db.js';
+import { readBeastRoster } from '@server/lib/repositories/combatV6BeastRepository.js';
+import { toPlayerStateMutationResponse } from '@server/player/application/state/ResourceMutationResponse.js';
 import type { z } from 'zod';
+import {
+  expandBeastCapacity,
+  readBeastCapacityPreview,
+} from './application/BeastCapacityService.js';
 
 @Injectable()
 export class BeastsService {
@@ -27,6 +33,18 @@ export class BeastsService {
 
   async read(owner: string) {
     return { success: true, data: await readBeastRoster(owner, this.database) };
+  }
+  async capacity(owner: string) {
+    return { success: true, data: await readBeastCapacityPreview(owner) };
+  }
+  async expand(
+    userId: string,
+    owner: string,
+    input: BeastCapacityExpandRequest,
+  ) {
+    return toPlayerStateMutationResponse(
+      await expandBeastCapacity(userId, owner, input),
+    );
   }
   async fusion(owner: string, requestId: string) {
     return { success: true, data: await readBeastFusion(owner, requestId) };

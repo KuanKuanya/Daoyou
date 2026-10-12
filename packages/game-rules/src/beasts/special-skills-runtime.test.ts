@@ -499,7 +499,8 @@ describe('灵兽特殊技能首轮战斗', () => {
       {
         skills: ['beast.mountain-breaker'],
         ownerId: 'owner',
-        attrs: { ...source.attrs, physicalAtk: 1000 },
+        // Keep the neutral target alive after a normal hit, so the special skill adds value.
+        attrs: { ...source.attrs, physicalAtk: 300 },
       },
       {},
       [actor('owner', 0, { kind: 'player' })],

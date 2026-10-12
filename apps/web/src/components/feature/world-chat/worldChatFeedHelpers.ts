@@ -4,6 +4,8 @@ import type {
 } from '@daoyou/contracts/world-chat';
 
 export const PAGE_SIZE = 20;
+// World and sect chat history each retain at most 100 messages on the server.
+export const MAX_CACHED_MESSAGES = 100;
 
 export function mergeWorldChatMessages(
   base: WorldChatMessageDTO[],
@@ -16,7 +18,9 @@ export function mergeWorldChatMessages(
     return true;
   });
 
-  return merged.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  return merged
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, MAX_CACHED_MESSAGES);
 }
 
 export function countNewWorldChatMessages(

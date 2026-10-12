@@ -1,19 +1,19 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { InventoryHeader } from '@app/components/feature/items/InventoryHeader';
 import { InventoryItems } from '@app/components/feature/items/InventoryItems';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useInventoryBag } from '@app/lib/resources/bag';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import { useCultivatorCondition } from '@app/lib/resources/player';
 import type { InventoryView } from '@daoyou/contracts/inventory';
+import type { Cultivator } from '@daoyou/game-domain/character';
+import type { DungeonState } from '@daoyou/game-domain/dungeon';
 import { ConsumableFactsSchema } from '@daoyou/game-domain/inventory';
 import { canUseDungeonRecoveryPill } from '@daoyou/game-rules/dungeon';
-import type { DungeonState } from '@daoyou/game-domain/dungeon';
-import { dungeonRewardItemName } from '@daoyou/game-rules/rewards/dungeon';
-import type { Cultivator } from '@daoyou/game-domain/character';
 import { useRef, useState } from 'react';
+import { DungeonRewardSummary } from './DungeonRewardSummary';
 
 export interface DungeonDisplayResources {
   hp: { current: number; max: number; percent: number };
@@ -51,9 +51,15 @@ export function DungeonRunPanel({
     !!condition.error ||
     condition.loading ||
     condition.isRefreshing;
-  const rewards = (state.v6Rewards ?? [])
-    .flatMap((r) => r.items)
-    .map((item) => `${dungeonRewardItemName(item)} ×${item.quantity}`);
+  const rewards = state.v6Rewards ?? [];
+  const experience = rewards.reduce(
+    (sum, reward) => sum + reward.experience,
+    0,
+  );
+  const spiritStones = rewards.reduce(
+    (sum, reward) => sum + reward.spiritStones,
+    0,
+  );
   const refresh = () => Promise.all([bagQuery.reload(), condition.reload()]);
   const readInventory = async () => {
     if (busy.current) return;
@@ -118,6 +124,12 @@ export function DungeonRunPanel({
           </InkButton>
         </div>
       </div>
+      <p className="text-ink-secondary text-xs leading-6">
+        累计待结算：修为{' '}
+        <span className="font-mono">{experience.toLocaleString()}</span>
+        {' · '}灵石{' '}
+        <span className="font-mono">{spiritStones.toLocaleString()}</span>
+      </p>
       <InkDetailDrawer
         isOpen={open}
         onClose={() => {
@@ -132,10 +144,8 @@ export function DungeonRunPanel({
             {' · '}法力 {Math.floor(displayResources?.mp.current ?? 0)}/
             {displayResources?.mp.max ?? 0}
           </p>
-          <p>
-            {rewards.length ? rewards.join('、') : '暂未获得物品'}
-            。离开秘境时统一结算。
-          </p>
+          <DungeonRewardSummary rewards={rewards} title="累计收获（待结算）" />
+          <p className="text-ink-secondary">离开秘境时统一结算这些收获。</p>
           <p>选择随身恢复丹药，查看药效后使用一枚。</p>
           {readError || condition.error ? (
             <p role="alert">

@@ -43,7 +43,7 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
     cultivatorId: snapshot?.cultivatorId ?? '',
   });
   const meritTier = usePlayerMeritTier(snapshot?.cultivatorId);
-  const combatNotice = useCombatActivityNotice(!!snapshot?.cultivatorId);
+  const combatNotice = useCombatActivityNotice(snapshot?.cultivatorId ?? null);
   const dialogs = useGameHudDialogs(snapshot, qiState, qiError);
 
   if (!snapshot || !dialogs) return <GameTopHudPlaceholder />;

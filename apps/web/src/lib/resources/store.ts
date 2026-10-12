@@ -1,12 +1,23 @@
 import { apiFetch } from '@app/lib/api/fetch';
 import { realtimeClient } from '@app/lib/realtime/realtimeClient';
+import { ResourceChangeSchema } from '@app/lib/resources/schemas';
 import type { ApiFailure } from '@daoyou/contracts/http';
 import type {
   PlayerResourceEventsResponse,
   PlayerStateMutationResponse,
 } from '@daoyou/contracts/player';
-import { ResourceChangeSchema } from '@app/lib/resources/schemas';
-import { advanceContiguousResourceCursor, createResourceCacheKey, getResourceScopeTransitionKinds, orderResourceChanges, type ResourceCacheKey, type ResourceChange, type ResourceDataMap, type ResourceScope, type ResourceScopeKind, type ResourceTopic } from '@daoyou/contracts/resources';
+import {
+  advanceContiguousResourceCursor,
+  createResourceCacheKey,
+  getResourceScopeTransitionKinds,
+  orderResourceChanges,
+  type ResourceCacheKey,
+  type ResourceChange,
+  type ResourceDataMap,
+  type ResourceScope,
+  type ResourceScopeKind,
+  type ResourceTopic,
+} from '@daoyou/contracts/resources';
 
 export type ResourceStatus = 'idle' | 'loading' | 'ready' | 'stale' | 'error';
 
@@ -25,9 +36,7 @@ export type ResourceRuntimeScopes = {
 };
 
 export type ResourceReducerResult<T> =
-  | { status: 'applied'; data: T }
-  | { status: 'ignored' }
-  | { status: 'stale' };
+  { status: 'applied'; data: T } | { status: 'ignored' } | { status: 'stale' };
 
 export interface ResourceDefinition<
   TTopic extends ResourceTopic,
@@ -109,6 +118,16 @@ export class ResourceStore {
   private readonly seenChangeIds = new Set<string>();
   private readonly recoveringScopes = new Map<string, Promise<void>>();
   private readonly scopeListeners = new Set<Listener>();
+  private readonly changeListeners = new Set<
+    (change: ResourceChange) => void
+  >();
+  private readonly scopeStaleListeners = new Map<
+    string,
+    {
+      scope: ResourceScope;
+      listeners: Set<Listener>;
+    }
+  >();
   private scopes: ResourceRuntimeScopes = {
     accountId: null,
     cultivatorId: null,
@@ -157,6 +176,33 @@ export class ResourceStore {
     return () => this.scopeListeners.delete(listener);
   };
 
+  /** Observe accepted changes for HTTP views which are not resource snapshots. */
+  subscribeChanges = (
+    listener: (change: ResourceChange) => void,
+  ): (() => void) => {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
+  };
+
+  /** HTTP views must also reload when replay history requires a complete resync. */
+  subscribeScopeStale = (
+    scope: ResourceScope,
+    listener: Listener,
+  ): (() => void) => {
+    const key = scopeKey(scope);
+    let entry = this.scopeStaleListeners.get(key);
+    if (!entry) {
+      entry = { scope, listeners: new Set() };
+      this.scopeStaleListeners.set(key, entry);
+    }
+    entry.listeners.add(listener);
+    return () => {
+      const current = this.scopeStaleListeners.get(key);
+      current?.listeners.delete(listener);
+      if (current?.listeners.size === 0) this.scopeStaleListeners.delete(key);
+    };
+  };
+
   register<TTopic extends ResourceTopic, TParams>(
     definition: ResourceDefinition<TTopic, TParams>,
     params: TParams,
@@ -164,7 +210,11 @@ export class ResourceStore {
     const normalizedParams = definition.normalizeParams(params);
     const scope = definition.resolveScope(this.scopes, normalizedParams);
     if (!scope) return null;
-    const key = createResourceCacheKey(scope, definition.topic, normalizedParams);
+    const key = createResourceCacheKey(
+      scope,
+      definition.topic,
+      normalizedParams,
+    );
     const existing = this.entries.get(key);
     if (!existing) {
       this.entries.set(key, {
@@ -225,12 +275,15 @@ export class ResourceStore {
         });
       }
       if (current.subscribers === 0 && current.parameterized) {
-        current.cleanupTimer = setTimeout(() => {
-          const candidate = this.entries.get(key);
-          if (!candidate || candidate.subscribers > 0) return;
-          candidate.controller?.abort();
-          this.entries.delete(key);
-        }, 5 * 60 * 1_000);
+        current.cleanupTimer = setTimeout(
+          () => {
+            const candidate = this.entries.get(key);
+            if (!candidate || candidate.subscribers > 0) return;
+            candidate.controller?.abort();
+            this.entries.delete(key);
+          },
+          5 * 60 * 1_000,
+        );
       }
     };
   }
@@ -305,7 +358,8 @@ export class ResourceStore {
     this.consumeChanges(json.state.changes);
     for (const baseline of json.state.baselines) {
       const cursor = this.eventCursors.get(scopeKey(baseline.scope)) ?? 0;
-      if (baseline.scopeVersion > cursor) void this.recoverScope(baseline.scope);
+      if (baseline.scopeVersion > cursor)
+        void this.recoverScope(baseline.scope);
     }
     return json.data;
   }
@@ -328,15 +382,17 @@ export class ResourceStore {
         if (payload.changes.length) this.consumeChanges(payload.changes);
       },
     );
-    this.unsubscribeRealtimeStatus = realtimeClient.subscribeStatus((status) => {
-      const channel = status.channels['player-state'];
-      if (channel.state === 'online') {
-        if (this.needsRealtimeRecovery) void this.recoverChanges();
-        this.needsRealtimeRecovery = false;
-      } else if (channel.state === 'offline' || channel.state === 'blocked') {
-        this.needsRealtimeRecovery = true;
-      }
-    });
+    this.unsubscribeRealtimeStatus = realtimeClient.subscribeStatus(
+      (status) => {
+        const channel = status.channels['player-state'];
+        if (channel.state === 'online') {
+          if (this.needsRealtimeRecovery) void this.recoverChanges();
+          this.needsRealtimeRecovery = false;
+        } else if (channel.state === 'offline' || channel.state === 'blocked') {
+          this.needsRealtimeRecovery = true;
+        }
+      },
+    );
   }
 
   clear(): void {
@@ -349,8 +405,12 @@ export class ResourceStore {
   }
 
   private applyChange(change: ResourceChange): void {
+    this.changeListeners.forEach((listener) => listener(change));
     for (const entry of this.entries.values()) {
-      if (entry.topic !== change.resourceTopic || !sameScope(entry.scope, change.scope)) {
+      if (
+        entry.topic !== change.resourceTopic ||
+        !sameScope(entry.scope, change.scope)
+      ) {
         continue;
       }
       if (change.resourceVersion < entry.version) continue;
@@ -409,7 +469,11 @@ export class ResourceStore {
       .load(entry.scope, entry.params, controller.signal)
       .then((result) => {
         const current = this.entries.get(entry.key);
-        if (!current || controller.signal.aborted || current.requestSequence !== sequence) {
+        if (
+          !current ||
+          controller.signal.aborted ||
+          current.requestSequence !== sequence
+        ) {
           return;
         }
         const cursorKey = scopeKey(current.scope);
@@ -472,8 +536,12 @@ export class ResourceStore {
   }
 
   private markScopeStale(scope: ResourceScope, reloadActive = true): void {
+    this.scopeStaleListeners
+      .get(scopeKey(scope))
+      ?.listeners.forEach((listener) => listener());
     for (const entry of this.entries.values()) {
-      if (sameScope(entry.scope, scope)) this.markEntryStale(entry, reloadActive);
+      if (sameScope(entry.scope, scope))
+        this.markEntryStale(entry, reloadActive);
     }
   }
 
@@ -484,6 +552,9 @@ export class ResourceStore {
 
   private activeScopes(): ResourceScope[] {
     const scopes = new Map<string, ResourceScope>();
+    for (const [key, entry] of this.scopeStaleListeners) {
+      if (this.isActiveScope(entry.scope)) scopes.set(key, entry.scope);
+    }
     for (const entry of this.entries.values()) {
       if (entry.subscribers <= 0 || entry.status === 'idle') continue;
       scopes.set(scopeKey(entry.scope), entry.scope);
@@ -549,8 +620,7 @@ export class ResourceStore {
       });
       const response = await apiFetch(`/api/player/resources/events?${query}`);
       const json = (await response.json()) as
-        | PlayerResourceEventsResponse
-        | ApiFailure;
+        PlayerResourceEventsResponse | ApiFailure;
       if (revision !== this.scopeRevision || !this.isActiveScope(scope)) return;
       if (!response.ok || !json.success) {
         this.markScopeStale(scope);
@@ -628,7 +698,10 @@ export class ResourceStore {
     return entry;
   }
 
-  private updateEntry(entry: ResourceEntry, next: ResourceEntry): ResourceEntry {
+  private updateEntry(
+    entry: ResourceEntry,
+    next: ResourceEntry,
+  ): ResourceEntry {
     this.entries.set(entry.key, next);
     for (const listener of entry.listeners) listener();
     return next;

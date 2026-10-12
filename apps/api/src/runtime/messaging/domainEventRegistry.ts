@@ -52,6 +52,7 @@ import { processSponsorshipOrder } from '@server/sponsorship/application/Sponsor
 import { projectRealmChangedRanking } from '@server/story/application/RealmChangedDomainEventProjector.js';
 import { projectStoryDomainEvent } from '@server/story/application/StoryDomainEventProjector.js';
 import { projectTaskDomainEvent } from '@server/tasks/application/TaskDomainEventProjector.js';
+import { updateTowerWeeklyRecord } from '@server/tower/application/runtime/leaderboard.js';
 
 let registered = false;
 
@@ -133,6 +134,16 @@ export async function registerMessageInfrastructure(
           'beast.exceptional.acquired',
         ],
         handle: handleWorldRumorEvent,
+      }),
+      startDomainEventConsumer({
+        consumerName: DOMAIN_EVENT_CONSUMERS.towerLeaderboardProjector.name,
+        concurrency: DOMAIN_EVENT_CONSUMERS.towerLeaderboardProjector.concurrency,
+        acceptedTypes: ['tower.floor.cleared'],
+        handle: async (event) => {
+          if (!isDomainEventType(event, 'tower.floor.cleared'))
+            throw new Error('蜃楼榜单事件类型错误');
+          await updateTowerWeeklyRecord(event.data);
+        },
       }),
       startDomainEventConsumer({
         consumerName: DOMAIN_EVENT_CONSUMERS.rankingRealmProjector.name,

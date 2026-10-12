@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { inventoryBagSchema } from './bag.js';
-import { RESOURCE_DATA_SCHEMAS, ResourceChangeSchema } from './test-helpers.js';
 import { RESOURCE_TOPIC_SCOPE_KIND } from './registry.js';
+import { RESOURCE_DATA_SCHEMAS, ResourceChangeSchema } from './test-helpers.js';
 
 describe('完整背包资源契约', () => {
   const data = {
@@ -27,7 +27,10 @@ describe('完整背包资源契约', () => {
     page: 0,
   };
   it('保留原格位、数量及展示字段，资源属于当前角色', () => {
-    expect(RESOURCE_DATA_SCHEMAS['inventory.bag'].parse(data)).toEqual(data);
+    expect(RESOURCE_DATA_SCHEMAS['inventory.bag'].parse(data)).toEqual({
+      ...data,
+      items: data.items.map((item) => ({ ...item, isFavorite: false })),
+    });
     expect(RESOURCE_TOPIC_SCOPE_KIND['inventory.bag']).toBe('cultivator');
     expect(
       ResourceChangeSchema.safeParse({

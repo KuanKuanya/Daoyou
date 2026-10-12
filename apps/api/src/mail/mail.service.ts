@@ -1,4 +1,8 @@
-import type { SendMailRequest } from '@daoyou/contracts/mail';
+import type {
+  ClaimAllMailRequest,
+  ClaimMailRequest,
+  SendMailRequest,
+} from '@daoyou/contracts/mail';
 import { Inject, Injectable } from '@nestjs/common';
 import { DRIZZLE_DATABASE } from '@server/database/database.service.js';
 import type { ActiveCultivatorRef } from '@server/lib/auth/types.js';
@@ -62,15 +66,15 @@ export class MailService {
     );
   }
 
-  async claim(actor: ActiveCultivatorRef, mailId: string) {
+  async claim(actor: ActiveCultivatorRef, input: ClaimMailRequest) {
     return toPlayerStateMutationResponse(
-      await this.application.claimCultivatorMail({ actor, mailId }),
+      await this.application.claimCultivatorMail({ actor, ...input }),
     );
   }
 
-  async claimAll(actor: ActiveCultivatorRef, requestId: string) {
+  async claimAll(actor: ActiveCultivatorRef, input: ClaimAllMailRequest) {
     return toPlayerStateMutationResponse(
-      await this.application.claimAllCultivatorMail({ actor, requestId }),
+      await this.application.claimAllCultivatorMail({ actor, ...input }),
     );
   }
 

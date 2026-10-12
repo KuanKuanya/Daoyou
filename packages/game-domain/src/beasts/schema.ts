@@ -83,4 +83,9 @@ export const BeastLineupSchema = z
 
 export type BeastLineup = z.infer<typeof BeastLineupSchema>;
 
-export type BeastRoster = { beasts: SummonedBeast[]; lineup: BeastLineup };
+export type BeastRoster = {
+  beasts: SummonedBeast[];
+  lineup: BeastLineup;
+  /** Host-supplied personal bag capacity; legacy pure fixtures default to 24. */
+  capacity?: number;
+};

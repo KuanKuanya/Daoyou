@@ -277,6 +277,7 @@ export async function huntLobby(
 export async function readMyHuntTeam(
   actor: HuntActor,
 ): Promise<HuntTeam | null> {
+  if (!(await redis.get(memberKey(actor.userId)))) return null;
   return lock((lease) => currentTeam(actor, lease));
 }
 export async function createHuntTeam(

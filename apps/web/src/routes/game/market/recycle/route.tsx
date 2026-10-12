@@ -8,6 +8,7 @@ import { InkDiscreteRange } from '@app/components/ui/InkDiscreteRange';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
 import { apiFetch } from '@app/lib/api/fetch';
 import { inventoryBagResource, useInventoryBag } from '@app/lib/resources/bag';
+import { useInventoryInvalidation } from '@app/lib/resources/inventoryInvalidation';
 import { consumeResourceMutation } from '@app/lib/resources/mutations';
 import { usePlayerSession } from '@app/lib/resources/player';
 import { resourceStore } from '@app/lib/resources/store';
@@ -16,6 +17,7 @@ import {
   QUALITY_VALUES,
   type Quality,
 } from '@daoyou/constants/qualities';
+import { REALM_VALUES, type RealmType } from '@daoyou/constants/realms';
 import type { InventoryView } from '@daoyou/contracts/inventory';
 import type {
   RecycleQuote,
@@ -154,9 +156,47 @@ function QuantityChoice({
     </form>
   );
 }
+function QuoteQuantityChoice({
+  item,
+  disabled,
+  update,
+}: {
+  item: RecycleQuote['items'][number];
+  disabled: boolean;
+  update(quantity: number): void;
+}) {
+  const [quantity, setQuantity] = useState(String(item.quantity));
+  const amount = Number(quantity);
+  const max = item.availableQuantity ?? item.quantity;
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2">
+      <InkQuantityInput
+        label={`${item.name}出售份数`}
+        value={quantity}
+        max={max}
+        disabled={disabled}
+        onChange={setQuantity}
+      />
+      <InkButton
+        disabled={
+          disabled || !Number.isInteger(amount) || amount < 1 || amount > max
+        }
+        onClick={() => update(amount)}
+      >
+        更新份数
+      </InkButton>
+      <InkButton disabled={disabled} onClick={() => update(0)}>
+        不卖这项
+      </InkButton>
+    </div>
+  );
+}
 
 export default function MarketRecyclePage() {
   const owner = usePlayerSession().data?.activeCultivator?.id;
+  return <RecyclePage key={owner ?? ''} owner={owner} />;
+}
+function RecyclePage({ owner }: { owner?: string }) {
   const bagQuery = useInventoryBag();
   const view = bagQuery.data;
   const [storageRefresh, setStorageRefresh] = useState(0);
@@ -186,6 +226,21 @@ export default function MarketRecyclePage() {
   const storageError =
     storageSnapshot?.key === storageKey ? (storageSnapshot.error ?? '') : '';
   const [onePerStack, setOnePerStack] = useState(false);
+  const [maxRealm, setMaxRealm] = useState<RealmType>();
+  const [crossPage, setCrossPage] = useState(false);
+  const [batchCount, setBatchCount] = useState<number>();
+  const [nextBatch, setNextBatch] = useState(false);
+  const pendingKey = `daoyou:recycle-pending:${owner ?? ''}`;
+  const [unresolvedQuote, setUnresolvedQuote] = useState<string | undefined>(
+    () => {
+      try {
+        const id = sessionStorage.getItem(pendingKey);
+        return id && /^[0-9a-f-]{36}$/i.test(id) ? id : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+  );
   const [selection, setSelection] = useState<RecycleSelection[]>([]);
   const [quote, setQuote] = useState<{ key: string; value: RecycleQuote }>();
   const [message, setMessage] = useState(
@@ -201,6 +256,7 @@ export default function MarketRecyclePage() {
   );
   const busy = useRef(false);
   const quoteReader = useRef<AbortController | null>(null);
+  const suppliedQuoteKey = useRef<string | undefined>(undefined);
   const storageReader = useRef<AbortController | null>(null);
   const storageTotal =
     storageSnapshot?.key === storageKey ? storageSnapshot.total : 0;
@@ -230,21 +286,27 @@ export default function MarketRecyclePage() {
     return true;
   });
   const selectionKey = JSON.stringify({ owner, selection });
-  const selectionCurrent = selection.every((ref) =>
-    visibleItems.some(
-      (item) =>
-        item.id === ref.id &&
-        item.revision === ref.revision &&
-        item.quantity >= ref.quantity,
-    ),
-  );
+  const selectionCurrent =
+    crossPage ||
+    selection.every((ref) =>
+      visibleItems.some(
+        (item) =>
+          item.id === ref.id &&
+          item.revision === ref.revision &&
+          item.quantity >= ref.quantity,
+      ),
+    );
   const currentQuote =
     quote?.key === selectionKey && selectionCurrent ? quote.value : undefined;
   const frozen =
+    !!unresolvedQuote ||
     pending ||
     (location === 'bag'
       ? !view || bagQuery.isRefreshing || !!readError
       : storageLoading || !!storageError);
+  useInventoryInvalidation(owner, () =>
+    setStorageRefresh((value) => value + 1),
+  );
   useEffect(() => {
     if (!owner) return;
     const controller = new AbortController();
@@ -295,6 +357,8 @@ export default function MarketRecyclePage() {
     };
     if (!input.owner || !input.selection.length)
       return () => controller.abort();
+    if (suppliedQuoteKey.current === selectionKey || unresolvedQuote)
+      return () => controller.abort();
     const timer = setTimeout(() => {
       void readJson<RecycleQuote>('/api/market/recycle', {
         method: 'POST',
@@ -314,7 +378,7 @@ export default function MarketRecyclePage() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [selectionKey, refresh]);
+  }, [selectionKey, refresh, unresolvedQuote]);
   useEffect(() => {
     if (!currentQuote) return;
     const timer = setTimeout(
@@ -348,17 +412,24 @@ export default function MarketRecyclePage() {
     );
   }
   function changePage(page: number) {
+    if (pending || unresolvedQuote) return;
     setStoragePage(page);
     setSelection([]);
     setQuote(undefined);
     setQuoteError('');
+    setCrossPage(false);
+    setBatchCount(undefined);
   }
   function changeLocation(next: 'bag' | 'storage') {
+    if (pending || unresolvedQuote) return;
     if (next === location) return;
     setLocation(next);
     setSelection([]);
     setQuote(undefined);
     setQuoteError('');
+    setCrossPage(false);
+    setBatchCount(undefined);
+    setNextBatch(false);
   }
   function selectFiltered() {
     if (
@@ -378,24 +449,78 @@ export default function MarketRecyclePage() {
         .map((item) => ({
           id: item.id,
           revision: item.revision,
-          quantity: onePerStack ? 1 : Math.min(item.quantity, 99),
+          quantity: onePerStack ? 1 : item.quantity,
         }))
         .sort((a, b) => a.id.localeCompare(b.id)),
     );
     setQuote(undefined);
     setQuoteError('');
+    setCrossPage(false);
+    setBatchCount(undefined);
     setMessage(`本页已选中 ${selected.length} 格，请核对报价后出售。`);
   }
   function reload() {
-    if (busy.current) return;
+    if (busy.current || unresolvedQuote) return;
     setQuote(undefined);
     setQuoteError('');
     setSelection([]);
     void bagQuery.reload();
     setStorageRefresh((value) => value + 1);
     setRefresh((value) => value + 1);
+    setCrossPage(false);
+    setBatchCount(undefined);
+  }
+  async function selectConditions() {
+    if (!owner || busy.current || unresolvedQuote) return;
+    busy.current = true;
+    setPending(true);
+    quoteReader.current?.abort();
+    try {
+      const value = await readJson<RecycleQuote>('/api/market/recycle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phase: 'select',
+          location,
+          category: filterCategory,
+          ...(qualityLimited
+            ? {
+                minQuality: QUALITY_VALUES[minQuality],
+                maxQuality: QUALITY_VALUES[maxQuality],
+              }
+            : {}),
+          ...(filterCategory === 'material' && materialType
+            ? { materialType }
+            : {}),
+          ...(maxRealm ? { maxRealm } : {}),
+          onePerStack,
+        }),
+      });
+      const refs = value.items.map(({ id, revision, quantity }) => ({
+        id,
+        revision,
+        quantity,
+      }));
+      suppliedQuoteKey.current = JSON.stringify({ owner, selection: refs });
+      setCrossPage(true);
+      setBatchCount(value.matchingCount);
+      setSelection(refs);
+      setQuote({ key: JSON.stringify({ owner, selection: refs }), value });
+      setQuoteError('');
+      setNextBatch(false);
+      setMessage('已核对整个来源。请逐项审阅本批报价，确认后才出售。');
+    } catch (error) {
+      setQuoteError(error instanceof Error ? error.message : '按条件询价失败');
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
   }
   async function requote() {
+    if (crossPage) {
+      await selectConditions();
+      return;
+    }
     if (busy.current || !owner) return;
     busy.current = true;
     setPending(true);
@@ -454,18 +579,38 @@ export default function MarketRecyclePage() {
     }
   }
   async function sell() {
-    if (busy.current || !currentQuote) return;
+    const quoteId = unresolvedQuote ?? currentQuote?.id;
+    if (busy.current || !quoteId) return;
     busy.current = true;
     setPending(true);
     quoteReader.current?.abort();
     try {
-      const result = await consumeResourceMutation<RecycleResult>(
-        await apiFetch('/api/market/recycle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phase: 'confirm', quoteId: currentQuote.id }),
-        }),
-      );
+      setUnresolvedQuote(quoteId);
+      try {
+        sessionStorage.setItem(pendingKey, quoteId);
+      } catch {
+        /* Retain the in-memory quote id. */
+      }
+      const response = await apiFetch('/api/market/recycle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phase: 'confirm', quoteId }),
+      });
+      if (response.status >= 400 && response.status < 500) {
+        setUnresolvedQuote(undefined);
+        try {
+          sessionStorage.removeItem(pendingKey);
+        } catch {
+          /* Storage is optional. */
+        }
+      }
+      const result = await consumeResourceMutation<RecycleResult>(response);
+      setUnresolvedQuote(undefined);
+      try {
+        sessionStorage.removeItem(pendingKey);
+      } catch {
+        /* Storage is optional. */
+      }
       const receipt = `收妥 ${result.quantity} 份，付你 ${result.total} 灵石。`;
       setReceipts((previous) => [...previous.slice(-4), receipt]);
       setMessage('银货两清。还有要出手的，尽管拿来。');
@@ -474,6 +619,7 @@ export default function MarketRecyclePage() {
       setQuoteError('');
       setStorageRefresh((value) => value + 1);
       setRefresh((value) => value + 1);
+      setNextBatch(crossPage && (batchCount ?? 0) > selection.length);
     } catch (error) {
       bagQuery.invalidate();
       setStorageRefresh((value) => value + 1);
@@ -489,6 +635,12 @@ export default function MarketRecyclePage() {
     <GameSceneFrame variant="workflow">
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <section className="min-w-0 space-y-5" aria-label="回收掌柜对话">
+          {unresolvedQuote && !pending ? (
+            <div className="space-y-2 text-sm">
+              <p>上次成交结果尚未确认，先恢复该笔结果。</p>
+              <InkButton onClick={() => void sell()}>恢复未确认成交</InkButton>
+            </div>
+          ) : null}
           <div className="flex items-center gap-3">
             <span
               aria-hidden="true"
@@ -510,6 +662,19 @@ export default function MarketRecyclePage() {
             >
               {currentQuote ? (
                 <>
+                  {crossPage && batchCount !== undefined ? (
+                    <p className="text-ink-secondary text-sm">
+                      符合条件 {batchCount} 项；本批 {currentQuote.items.length}{' '}
+                      项／
+                      {currentQuote.items.reduce(
+                        (sum, item) => sum + item.quantity,
+                        0,
+                      )}{' '}
+                      份；另外{' '}
+                      {Math.max(0, batchCount - currentQuote.items.length)}{' '}
+                      项尚未出售。
+                    </p>
+                  ) : null}
                   <details
                     open={quoteExpanded}
                     onToggle={(event) =>
@@ -538,6 +703,28 @@ export default function MarketRecyclePage() {
                               {item.unitPrice} 灵石/份
                             </span>
                           </div>
+                          {crossPage ? (
+                            <QuoteQuantityChoice
+                              key={`${item.id}:${item.quantity}`}
+                              item={item}
+                              disabled={pending || !!unresolvedQuote}
+                              update={(quantity) => {
+                                setQuote(undefined);
+                                setQuoteError('');
+                                setSelection((previous) =>
+                                  quantity
+                                    ? previous.map((ref) =>
+                                        ref.id === item.id
+                                          ? { ...ref, quantity }
+                                          : ref,
+                                      )
+                                    : previous.filter(
+                                        (ref) => ref.id !== item.id,
+                                      ),
+                                );
+                              }}
+                            />
+                          ) : null}
                           {item.comment ? (
                             <details className="text-ink-secondary mt-1 text-xs">
                               <summary className="cursor-pointer">
@@ -573,10 +760,14 @@ export default function MarketRecyclePage() {
                 {currentQuote ? (
                   <InkButton
                     className="hidden lg:inline-flex"
-                    disabled={pending}
+                    disabled={pending || !!unresolvedQuote}
                     onClick={() => void sell()}
                   >
-                    {pending ? '正在成交……' : '出售所选'}
+                    {pending
+                      ? '正在成交……'
+                      : crossPage
+                        ? '出售这批'
+                        : '出售所选'}
                   </InkButton>
                 ) : null}
                 {quoteError ? (
@@ -585,17 +776,27 @@ export default function MarketRecyclePage() {
                   </InkButton>
                 ) : null}
                 <InkButton
-                  disabled={pending}
+                  disabled={pending || !!unresolvedQuote}
                   onClick={() => {
                     setSelection([]);
                     setQuote(undefined);
                     setQuoteError('');
+                    setCrossPage(false);
+                    setBatchCount(undefined);
                   }}
                 >
                   清空选择
                 </InkButton>
               </div>
             </div>
+          ) : null}
+          {nextBatch ? (
+            <InkButton
+              disabled={pending || !!unresolvedQuote}
+              onClick={() => void selectConditions()}
+            >
+              查看下一批
+            </InkButton>
           ) : null}
           {receipts.length ? (
             <details className="text-ink-secondary text-xs">
@@ -630,7 +831,7 @@ export default function MarketRecyclePage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <InkButton
-                disabled={pending}
+                disabled={pending || !!unresolvedQuote}
                 onClick={() => {
                   setDraftCategory(filterCategory);
                   setDraftMinQuality(minQuality);
@@ -647,11 +848,44 @@ export default function MarketRecyclePage() {
               >
                 批量选本页
               </InkButton>
+              <InkButton
+                disabled={pending || !!unresolvedQuote || !owner}
+                onClick={() => void selectConditions()}
+              >
+                按条件选取
+              </InkButton>
               <InkButton disabled={pending} onClick={reload}>
                 刷新
               </InkButton>
             </div>
           </div>
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            回收境界上限
+            <select
+              className="border-ink/20 border bg-transparent p-1"
+              value={maxRealm ?? ''}
+              disabled={pending || !!unresolvedQuote}
+              onChange={(event) => {
+                setMaxRealm(
+                  (event.target.value || undefined) as RealmType | undefined,
+                );
+                setNextBatch(false);
+                setSelection([]);
+                setQuote(undefined);
+                setBatchCount(undefined);
+              }}
+            >
+              <option value="">不限</option>
+              {REALM_VALUES.map((realm) => (
+                <option key={realm} value={realm}>
+                  {realm}及以下
+                </option>
+              ))}
+            </select>
+            <span className="text-ink-secondary text-xs">
+              仅按条件选取时生效，适用于道装、图纸、功法玉简。
+            </span>
+          </label>
           {location === 'bag' && readError ? (
             <p role="alert" className="text-crimson text-sm">
               {readError}
@@ -747,10 +981,10 @@ export default function MarketRecyclePage() {
             )}
           </span>
           <InkButton
-            disabled={pending || !currentQuote}
+            disabled={pending || !!unresolvedQuote || !currentQuote}
             onClick={() => void sell()}
           >
-            {pending ? '正在成交……' : '出售所选'}
+            {pending ? '正在成交……' : crossPage ? '出售这批' : '出售所选'}
           </InkButton>
         </div>
       ) : null}

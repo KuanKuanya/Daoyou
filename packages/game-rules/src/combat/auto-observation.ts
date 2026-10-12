@@ -1,11 +1,19 @@
 import type { BattleState, StatusDef, Unit } from '@daoyou/combat-core/types';
-import { effectiveAttrs } from '@daoyou/combat-core/units';
+import { DEFAULT_ATTRS, effectiveAttrs } from '@daoyou/combat-core/units';
+import {
+  ATTRIBUTE_KEY_COUNT,
+  BASE_ATTRIBUTE_VALUE,
+  FREE_ATTRIBUTE_POINTS_PER_LEVEL,
+  NATURAL_ATTRIBUTE_GAIN_PER_LEVEL,
+} from '../progression/attributes.js';
+import { compileCharacterPanelV1 } from './projection/character-panel-v1.js';
 
 export type AutoObservation = { round: number; units: Unit[] };
 
 /** Same ownership boundary and basis-point bars as the public arena view.
  * Unit is reused only for pure expression/formula evaluation. Hidden fields are
- * reconstructed, never copied. Unknown attributes use the observer's baseline.
+ * reconstructed, never copied. Unknown attributes use a neutral same-level panel,
+ * independent of the observer's equipment, allocation and temporary statuses.
  */
 export function observeAutoBattle(
   state: BattleState,
@@ -19,7 +27,22 @@ export function observeAutoBattle(
       .map((unit) => unit.id),
   );
   const definitions = new Map(statusDefs.map((status) => [status.id, status]));
-  const baseline = effectiveAttrs(owner);
+  // Reuse the character growth budget and distribute free points evenly. This
+  // is an estimate, not an inference about any enemy's hidden build or level.
+  const attribute = BASE_ATTRIBUTE_VALUE +
+    owner.level * NATURAL_ATTRIBUTE_GAIN_PER_LEVEL +
+    Math.floor(owner.level * FREE_ATTRIBUTE_POINTS_PER_LEVEL / ATTRIBUTE_KEY_COUNT);
+  const baseline = {
+    ...DEFAULT_ATTRS,
+    ...compileCharacterPanelV1({
+      vitality: attribute,
+      strength: attribute,
+      spirit: attribute,
+      endurance: attribute,
+      speed: attribute,
+      willpower: attribute,
+    }),
+  };
   return {
     round: state.round,
     units: state.units

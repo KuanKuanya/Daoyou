@@ -1,0 +1,4 @@
+ALTER TABLE "wanjiedaoyou_cultivator_beast_lineups" ADD COLUMN "capacity_level" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "wanjiedaoyou_cultivator_beast_lineups" ADD COLUMN "capacity_revision" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "wanjiedaoyou_inventory_items" ADD COLUMN "is_favorite" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "wanjiedaoyou_cultivator_beast_lineups" ADD CONSTRAINT "beast_capacity_state_valid" CHECK ("wanjiedaoyou_cultivator_beast_lineups"."capacity_level" BETWEEN 0 AND 4 AND "wanjiedaoyou_cultivator_beast_lineups"."capacity_revision" >= 0);

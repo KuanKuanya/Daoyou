@@ -1,19 +1,23 @@
+import type { RealmStage, RealmType } from '@daoyou/constants/realms';
+import {
+  BeastLineupSchema,
+  type BeastRoster,
+  type SummonedBeast,
+} from '@daoyou/game-domain/beasts';
+import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
+import type { WildSettlement } from '@daoyou/game-domain/wild';
+import {
+  beastCapacityAt,
+  gainBeastExp,
+  loseBeastLifespan,
+} from '@daoyou/game-rules/beasts/growth';
+import { BeastSchema } from '@daoyou/game-rules/beasts/validation';
 import type { DbExecutor } from '@server/lib/drizzle/db.js';
 import {
   cultivatorBeastLineups,
   cultivatorBeasts,
   cultivators,
 } from '@server/lib/drizzle/schema.js';
-import type { WildSettlement } from '@daoyou/game-domain/wild';
-import { BeastLineupSchema, type BeastRoster, type SummonedBeast } from '@daoyou/game-domain/beasts';
-import { BeastSchema } from '@daoyou/game-rules/beasts/validation';
-import {
-  loseBeastLifespan,
-  BEAST_CAPACITY,
-  gainBeastExp,
-} from '@daoyou/game-rules/beasts/growth';
-import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
-import type { RealmStage, RealmType } from '@daoyou/constants/realms';
 import { and, eq, inArray } from 'drizzle-orm';
 
 /** Identity and ownership have a single authority in relational columns. */
@@ -61,6 +65,9 @@ export async function readBeastRoster(
     starterClaimed: boolean;
     ownerLevel: number;
     spiritStones: number;
+    capacity: number;
+    capacityLevel: number;
+    capacityRevision: number;
   }
 > {
   const rows = await tx
@@ -81,6 +88,25 @@ export async function readBeastRoster(
       state?.lineup ?? { carriedBeastIds: [], revision: 0 },
     ),
     starterClaimed: !!state?.starterClaimedAt,
+    capacity: beastCapacityAt(state?.capacityLevel ?? 0),
+    capacityLevel: state?.capacityLevel ?? 0,
+    capacityRevision: state?.capacityRevision ?? 0,
+  };
+}
+
+export async function readBeastCapacity(cultivatorId: string, tx: DbExecutor) {
+  const [state] = await tx
+    .select({
+      capacityLevel: cultivatorBeastLineups.capacityLevel,
+      capacityRevision: cultivatorBeastLineups.capacityRevision,
+    })
+    .from(cultivatorBeastLineups)
+    .where(eq(cultivatorBeastLineups.cultivatorId, cultivatorId));
+  const capacityLevel = state?.capacityLevel ?? 0;
+  return {
+    capacity: beastCapacityAt(capacityLevel),
+    capacityLevel,
+    capacityRevision: state?.capacityRevision ?? 0,
   };
 }
 
@@ -91,7 +117,10 @@ export async function settleBeastProgress(
 ) {
   const roster = await readBeastRoster(summary.cultivatorId, tx);
   const captured = summary.capturedBeasts ?? [];
-  if (roster.beasts.length + captured.length > BEAST_CAPACITY)
+  if (
+    captured.length &&
+    roster.beasts.length + captured.length > roster.capacity
+  )
     throw new Error('灵兽持有数量超限');
   for (const individual of captured) {
     const beast = BeastSchema.parse(individual);

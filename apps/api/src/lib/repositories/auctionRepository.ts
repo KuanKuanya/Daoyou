@@ -1,9 +1,13 @@
-import type { AuctionAssetType, AuctionItemType } from '@daoyou/game-domain/auction';
+import type {
+  AuctionAssetType,
+  AuctionItemType,
+} from '@daoyou/game-domain/auction';
 import {
   and,
   asc,
   desc,
   eq,
+  gt,
   gte,
   lte,
   ne,
@@ -86,7 +90,7 @@ export async function findById(
 }
 
 /**
- * 查询进行中的拍卖列表（支持筛选、分页、排序）
+ * 查询进行中的拍卖列表（支持筛选、分页、排序）。到期边界统一为 expiresAt > now。
  */
 export interface FindActiveListingsOptions {
   scope?: 'all' | 'mine';
@@ -128,7 +132,7 @@ export async function findActiveListings(
   // 构建筛选条件
   const conditions: SQL<unknown>[] = [
     eq(schema.auctionListings.status, 'active'),
-    gte(schema.auctionListings.expiresAt, new Date()),
+    gt(schema.auctionListings.expiresAt, new Date()),
   ];
 
   if (assetType) {
@@ -228,6 +232,7 @@ export async function countActiveBySeller(
       and(
         eq(schema.auctionListings.sellerId, sellerId),
         eq(schema.auctionListings.status, 'active'),
+        gt(schema.auctionListings.expiresAt, new Date()),
       ),
     );
   return result[0]?.count || 0;
@@ -293,7 +298,7 @@ export async function consumeListingQuantity(
       and(
         eq(schema.auctionListings.id, id),
         eq(schema.auctionListings.status, 'active'),
-        gte(schema.auctionListings.expiresAt, new Date()),
+        gt(schema.auctionListings.expiresAt, new Date()),
         gte(schema.auctionListings.remainingQuantity, quantity),
       ),
     )
@@ -302,7 +307,7 @@ export async function consumeListingQuantity(
 }
 
 /**
- * 查询过期但状态仍为 active 的拍卖记录
+ * 查询过期但状态仍为 active 的拍卖记录（包含 expiresAt = now 的边界）。
  */
 export async function findExpiredListings(
   limit = 1000,
@@ -314,7 +319,7 @@ export async function findExpiredListings(
     .where(
       and(
         eq(schema.auctionListings.status, 'active'),
-        sql`${schema.auctionListings.expiresAt} < NOW()`,
+        sql`${schema.auctionListings.expiresAt} <= NOW()`,
       ),
     )
     .limit(limit);
@@ -347,7 +352,7 @@ export async function markExpiredListings(
     .where(
       and(
         eq(schema.auctionListings.status, 'active'),
-        sql`${schema.auctionListings.expiresAt} < NOW()`,
+        sql`${schema.auctionListings.expiresAt} <= NOW()`,
       ),
     )
     .returning();

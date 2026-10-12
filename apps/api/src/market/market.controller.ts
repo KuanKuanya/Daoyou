@@ -1,3 +1,5 @@
+import { MarketBuySchema } from '@daoyou/contracts/market';
+import { RecycleRequestSchema } from '@daoyou/contracts/recycle';
 import {
   Controller,
   Get,
@@ -7,13 +9,11 @@ import {
   Post,
   UseFilters,
 } from '@nestjs/common';
+import { MarketRecycleError } from '@server/inventory/recycle-errors.js';
 import type { ActiveCultivatorRef } from '@server/lib/auth/types.js';
 import { redisLockErrorResponse } from '@server/lib/http/errors.js';
-import { PlayerCommandIdempotencyError } from '@server/player/application/state/CommandExecutors.js';
-import { MarketRecycleError } from '@server/inventory/recycle-errors.js';
 import { MarketServiceError } from '@server/market/application/MarketService.js';
-import { MarketBuySchema } from '@daoyou/contracts/market';
-import { RecycleRequestSchema } from '@daoyou/contracts/recycle';
+import { PlayerCommandIdempotencyError } from '@server/player/application/state/CommandExecutors.js';
 import { z } from 'zod';
 import { Access, CurrentCultivator } from '../auth/access.js';
 import { apiErrorFilter } from '../http/error-filter.js';
@@ -31,6 +31,8 @@ const RecycleErrors = apiErrorFilter((error) => {
       { status: 400 },
     );
   if (error instanceof MarketRecycleError)
+    return Response.json({ error: error.message }, { status: error.status });
+  if (error instanceof PlayerCommandIdempotencyError)
     return Response.json({ error: error.message }, { status: error.status });
   return undefined;
 });

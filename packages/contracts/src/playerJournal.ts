@@ -73,6 +73,7 @@ export const JOURNAL_ACTIVITIES = {
   black_market_purchase: '黑市购买',
   reputation_shop_buy: '声望兑换',
   bag_recycle: '回收道具',
+  beast_capacity_expand: '灵兽袋扩容',
   alchemy_formula: '按方炼丹',
   alchemy_improvised: '即兴炼丹',
   forging: '炼器',

@@ -1,8 +1,8 @@
 import type { MapNodeAction } from '@app/components/feature/map/mapActions';
 import { WildNodePreview } from '@app/components/feature/map/WildNodePreview';
 import { InkButton } from '@app/components/ui/InkButton';
-import { getAtlasCategory } from '@daoyou/game-rules/world/atlas';
 import { type WorldMapLocation } from '@daoyou/game-domain/world/map';
+import { getAtlasCategory } from '@daoyou/game-rules/world/atlas';
 import { resolveDungeonMapConfig } from '@daoyou/game-rules/world/dungeon';
 import { AtlasNodeKinds } from './AtlasNodeKinds';
 
@@ -58,14 +58,24 @@ export function AtlasNodePanel({
       {actions.length ? (
         <div className="border-ink/10 mt-3 shrink-0 border-t pt-2">
           {actions.map((action) => (
-            <InkButton
-              key={action.key}
-              className="min-h-11"
-              variant="primary"
-              onClick={action.onClick}
-            >
-              {action.label}
-            </InkButton>
+            <div key={action.key} className="space-y-1">
+              <InkButton
+                className="min-h-11"
+                variant="primary"
+                onClick={action.onClick}
+              >
+                {action.label}
+              </InkButton>
+              {action.key === 'wild-explore' ? (
+                <p className="text-ink-secondary text-xs leading-6">
+                  寻找并捕捉灵兽伙伴，携伙伴一同应战。
+                </p>
+              ) : action.key === 'enter-dungeon' ? (
+                <p className="text-ink-secondary text-xs leading-6">
+                  云游可获人物修为与灵石，并有机会寻得材料；离开时结算。
+                </p>
+              ) : null}
+            </div>
           ))}
         </div>
       ) : null}

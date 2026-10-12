@@ -1,5 +1,6 @@
 import type {
   InventoryActionSchema,
+  InventoryManagementAction,
   InventoryQuerySchema,
 } from '@daoyou/contracts/inventory';
 import { Inject, Injectable } from '@nestjs/common';
@@ -11,6 +12,7 @@ import {
 import type { DbClient } from '@server/lib/drizzle/db.js';
 import { readResourceWithMeta } from '@server/player/application/state/ResourceReadService.js';
 import type { z } from 'zod';
+import { manageInventory } from './application/InventoryManagementService.js';
 
 @Injectable()
 export class InventoryService {
@@ -35,5 +37,11 @@ export class InventoryService {
       success: true,
       ...(await mutateInventory(owner, action, this.database)),
     };
+  }
+  manage(
+    actor: { userId: string; cultivatorId: string },
+    input: InventoryManagementAction,
+  ) {
+    return manageInventory(actor, input, this.database);
   }
 }
