@@ -30,6 +30,7 @@ type SlotItem = {
   quantity: number;
   icon: string;
   color: string;
+  tier?: string;
   equipped?: boolean;
   isFavorite?: boolean;
 };
@@ -177,7 +178,9 @@ export function PreviewSlot({
         data-guide={guideAnchor}
         type="button"
         aria-label={
-          item ? `${item.name}，${item.quantity}件` : emptyLabel || '空格'
+          item
+            ? `${item.name}${item.tier ? `，${item.tier}` : ''}，${item.quantity}件`
+            : emptyLabel || '空格'
         }
         aria-expanded={item ? open : undefined}
         aria-disabled={disabled || (!item && !onQuickAction)}
@@ -262,6 +265,20 @@ export function PreviewSlot({
           } else show();
         }}
       >
+        {item?.tier ? (
+          <>
+            <span
+              aria-hidden="true"
+              className={cn(
+                'pointer-events-none absolute inset-0 border-2 border-current',
+                item.color,
+              )}
+            />
+            <span className="text-ink bg-paper/95 pointer-events-none absolute top-0.5 right-0.5 z-10 px-0.5 text-[clamp(0.5rem,14cqw,0.625rem)] leading-tight font-semibold whitespace-nowrap">
+              {item.tier}
+            </span>
+          </>
+        ) : null}
         <span
           aria-hidden="true"
           className={cn(
@@ -302,10 +319,10 @@ export function PreviewSlot({
           <span
             className="text-ink absolute top-1 left-1 font-mono text-[clamp(0.75rem,20cqw,1rem)] leading-none font-semibold tracking-tight whitespace-nowrap [text-shadow:0_1px_2px_var(--color-paper)]"
             style={
-              item.quantity > 9999
+              item.quantity > 9999 || item.tier
                 ? {
-                    // Leave room for the multiplier and 万 in narrow slots.
-                    fontSize: `min(1rem, 20cqw, calc((100cqw - 0.5rem) / ${quantityText.length * 0.65 + 1}))`,
+                    // Keep the full quantity clear of the tier label in narrow slots.
+                    fontSize: `min(1rem, 20cqw, calc((100cqw - ${item.tier ? '1.75rem' : '0.5rem'}) / ${quantityText.length * 0.65 + 1}))`,
                   }
                 : undefined
             }
@@ -315,7 +332,12 @@ export function PreviewSlot({
           </span>
         ) : null}
         {badge || item?.equipped ? (
-          <span className="text-crimson bg-paper/90 absolute top-0 right-1 text-[10px]">
+          <span
+            className={cn(
+              'text-crimson bg-paper/90 absolute right-1 text-[10px]',
+              item?.tier ? 'top-[22%]' : 'top-0',
+            )}
+          >
             {badge ?? '已装备'}
           </span>
         ) : null}
