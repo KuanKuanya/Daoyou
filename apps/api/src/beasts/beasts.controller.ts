@@ -3,6 +3,8 @@ import {
   BeastClaimSchema,
   BeastFusionRequestSchema,
   BeastLineupRequestSchema,
+  BeastPickerQuerySchema,
+  BeastPlaceSchema,
   BeastRenameSchema,
   BeastRestSchema,
 } from '@daoyou/contracts/beasts';
@@ -23,6 +25,7 @@ import { z } from 'zod';
 import { Access, CurrentCultivator } from '../auth/access.js';
 import { CombatErrors, combatErrorResponse } from '../combat/combat-errors.js';
 import { apiErrorFilter } from '../http/error-filter.js';
+import { FirstQuery } from '../http/first-query.js';
 import { JsonBody } from '../http/json-body.js';
 import { ZodPipe } from '../http/zod.pipe.js';
 import { BeastAllocateSchema } from './beasts-input.js';
@@ -62,6 +65,16 @@ export class BeastsController {
     input: z.infer<typeof BeastCapacityExpandSchema>,
   ) {
     return this.beasts.expand(actor.userId, actor.cultivatorId, input);
+  }
+
+  @Get('picker')
+  @Header('Cache-Control', 'no-store')
+  picker(
+    @CurrentCultivator() actor: ActiveCultivatorRef,
+    @FirstQuery(new ZodPipe(BeastPickerQuerySchema))
+    query: z.infer<typeof BeastPickerQuerySchema>,
+  ) {
+    return this.beasts.picker(actor.cultivatorId, query);
   }
 
   @Get('fusions/:requestId')
@@ -137,6 +150,16 @@ export class BeastsController {
     input: z.infer<typeof BeastRenameSchema>,
   ) {
     return this.beasts.rename(actor.cultivatorId, input);
+  }
+
+  @Post('place')
+  @HttpCode(200)
+  place(
+    @CurrentCultivator() actor: ActiveCultivatorRef,
+    @JsonBody(new ZodPipe(BeastPlaceSchema))
+    input: z.infer<typeof BeastPlaceSchema>,
+  ) {
+    return this.beasts.place(actor.cultivatorId, input);
   }
 
   @Post('release')

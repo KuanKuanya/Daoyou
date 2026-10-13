@@ -5,9 +5,7 @@ import {
   mutationBody,
 } from '@app/components/feature/combat-v6/request';
 import { GameSceneFrame } from '@app/components/game-shell/GameSceneFrame';
-import { GameSceneTabs } from '@app/components/game-shell/GameSceneTabs';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
-import { InkBadge } from '@app/components/ui/InkBadge';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
 import { useCultivatorIdentity } from '@app/lib/resources/player';
@@ -17,8 +15,14 @@ import {
   BEAST_GENERATION,
   BEAST_STARTER_SPECIES,
 } from '@daoyou/game-content/beasts';
+import {
+  BEAST_BAG_CAPACITY,
+  BEAST_WAREHOUSE_CAPACITY,
+  carriedBeastIds,
+  warehouseBeastCount,
+} from '@daoyou/game-rules/beasts/growth';
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { BeastActionDrawer, type BeastAction } from './BeastActionDrawer';
 import { BeastBookDrawer } from './BeastBookDrawer';
 import { BeastCapacityModal } from './BeastCapacityModal';
@@ -26,10 +30,12 @@ import { hasPendingBeastCapacityExpansion } from './beastCapacityPending';
 import { BeastLeadSeal, BeastPanel } from './BeastPanel';
 import { BeastRenameModal } from './BeastRenameModal';
 import { BeastRosterScroll } from './BeastRosterScroll';
+import { FusionWorkspace } from './fusion/FusionWorkspace';
 
 const base = '/api/combat-v6/beasts';
 export default function BeastsPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const identity = useCultivatorIdentity();
   const ownerId = identity.data?.cultivator.id;
   const expansionUnconfirmed = ownerId
@@ -38,13 +44,12 @@ export default function BeastsPage() {
   const [expanding, setExpanding] = useState(false);
   const [view, setView] = useState<BeastManagementView>();
   const story = useStory();
-  const { pushToast } = useInkUI();
+  const { openDialog, pushToast } = useInkUI();
   const [failed, setFailed] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'team'>('all');
   const [pending, setPending] = useState(false);
   const [pendingLineup, setPendingLineup] = useState<{
     beastId: string;
-    action: 'carry' | 'lead' | 'unlead';
+    action: 'lead' | 'unlead';
   }>();
   const [detailId, setDetailId] = useState<string | undefined>(
     () => searchParams.get('beast') ?? undefined,
@@ -62,6 +67,17 @@ export default function BeastsPage() {
   const busy = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [fusion, setFusion] = useState<{
+    nonce: number;
+    beastId?: string;
+  } | null>(null);
+  function openFusion(beastId?: string) {
+    if (!ownerId) return;
+    setFusion((current) => ({
+      nonce: (current?.nonce ?? 0) + 1,
+      beastId,
+    }));
+  }
   useEffect(() => {
     const reload = () => {
       if (!busy.current) setRefresh((value) => value + 1);
@@ -87,7 +103,12 @@ export default function BeastsPage() {
       });
     return () => controller.current?.abort();
   }, [pushToast, refresh]);
-  async function mutate(path: string, body: unknown, method = 'POST') {
+  async function mutate(
+    path: string,
+    body: unknown,
+    method = 'POST',
+    message?: string,
+  ) {
     if (busy.current) return false;
     busy.current = true;
     setPending(true);
@@ -106,7 +127,8 @@ export default function BeastsPage() {
         setAction(undefined);
         pushToast({
           message:
-            path === 'lineup'
+            message ??
+            (path === 'lineup'
               ? '携带出战已更新'
               : path === 'claim'
                 ? '结缘成功'
@@ -116,7 +138,9 @@ export default function BeastsPage() {
                     ? '属性已分配'
                     : path === 'rename'
                       ? '灵兽名字已更新'
-                      : '灵兽已放生',
+                      : path === 'place'
+                        ? '灵兽已转移'
+                        : '灵兽已放生'),
           tone: 'success',
         });
         if (path === 'claim') void story.reload();
@@ -134,46 +158,33 @@ export default function BeastsPage() {
     }
     return false;
   }
-  async function lineup(beastId: string, action: 'carry' | 'lead' | 'unlead') {
+  async function lineup(beastId: string, action: 'lead' | 'unlead') {
     if (!view || busy.current) return;
     const current = view.lineup;
-    const carried = current.carriedBeastIds.includes(beastId);
-    const ids =
-      action === 'lead'
-        ? carried
-          ? current.carriedBeastIds
-          : [...current.carriedBeastIds, beastId]
-        : action === 'unlead'
-          ? current.carriedBeastIds
-          : carried
-            ? current.carriedBeastIds.filter((id) => id !== beastId)
-            : [...current.carriedBeastIds, beastId];
+    const ids = carriedBeastIds(view.beasts, current);
     setPendingLineup({ beastId, action });
     await mutate(
       'lineup',
       {
         carriedBeastIds: ids,
-        leadBeastId:
-          action === 'unlead'
-            ? undefined
-            : action === 'lead'
-              ? beastId
-              : ids.includes(current.leadBeastId ?? '')
-                ? current.leadBeastId
-                : undefined,
+        leadBeastId: action === 'unlead' ? undefined : beastId,
         revision: current.revision,
       },
       'PUT',
     );
     setPendingLineup(undefined);
   }
-  const visibleBeasts =
-    view?.beasts.filter(
-      (beast) =>
-        filter === 'all' || view.lineup.carriedBeastIds.includes(beast.id),
-    ) ?? [];
+  const bagIds = view ? carriedBeastIds(view.beasts, view.lineup) : [];
+  const bagBeasts =
+    view?.beasts.filter((beast) => bagIds.includes(beast.id)) ?? [];
+  const orderedBag = bagIds
+    .map((id) => bagBeasts.find((beast) => beast.id === id))
+    .filter((beast) => beast !== undefined);
+  const warehouseCount = view
+    ? warehouseBeastCount(view.beasts, view.lineup)
+    : 0;
   const detail =
-    visibleBeasts.find((beast) => beast.id === detailId) ?? visibleBeasts[0];
+    orderedBag.find((beast) => beast.id === detailId) ?? orderedBag[0];
   const claim = BEAST_STARTER_SPECIES.find((species) => species.id === claimId);
   const renamingBeast = view?.beasts.find((beast) => beast.id === renamingId);
   const actionBeast = view?.beasts.find(
@@ -192,6 +203,24 @@ export default function BeastsPage() {
             </InkButton>
           ) : null}
         </div>
+      ) : fusion && ownerId ? (
+        <FusionWorkspace
+          key={fusion.nonce}
+          ownerId={ownerId}
+          ownerLevel={view.ownerLevel}
+          lineup={view.lineup}
+          initialBeast={view.beasts.find(
+            (beast) => beast.id === fusion.beastId,
+          )}
+          closeLabel="返回"
+          onClose={() => setFusion(null)}
+          onRoster={setView}
+          onViewResult={(beast, inBag) => {
+            setFusion(null);
+            if (inBag) setDetailId(beast.id);
+            else navigate(`/game/beasts/warehouse?beast=${beast.id}`);
+          }}
+        />
       ) : (
         <>
           <div
@@ -199,9 +228,9 @@ export default function BeastsPage() {
             className="text-ink-secondary flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs"
           >
             <span>
-              灵兽{' '}
+              灵兽袋{' '}
               <span className="font-mono">
-                {view.beasts.length} / {view.capacity}
+                {bagBeasts.length} / {BEAST_BAG_CAPACITY} · 持有 {view.beasts.length} / {view.capacity}
               </span>
               <InkButton
                 disabled={
@@ -222,8 +251,14 @@ export default function BeastsPage() {
               <InkButton disabled={pending} href="/game/beasts/codex">
                 灵兽图鉴
               </InkButton>
-              <InkButton disabled={pending} href="/game/beasts/fusion">
-                灵兽融合
+              <InkButton
+                disabled={pending || !ownerId}
+                onClick={() => openFusion(detail?.id)}
+              >
+                融合
+              </InkButton>
+              <InkButton disabled={pending} href="/game/beasts/warehouse">
+                仓库
               </InkButton>
             </span>
           </div>
@@ -239,7 +274,11 @@ export default function BeastsPage() {
                 {BEAST_STARTER_SPECIES.map((species) => (
                   <InkButton
                     key={species.id}
-                    disabled={pending || view.beasts.length >= view.capacity}
+                    disabled={
+                      pending ||
+                      bagBeasts.length >= BEAST_BAG_CAPACITY ||
+                      view.beasts.length >= view.capacity
+                    }
                     onClick={() => setClaimId(species.id)}
                   >
                     <BeastIcon speciesId={species.id} /> {species.name}
@@ -254,32 +293,11 @@ export default function BeastsPage() {
               className="border-ink/15 min-w-0 border-b pb-4 md:relative md:min-h-60 md:border-r md:border-b-0 md:pb-0"
             >
               <div className="md:absolute md:inset-0 md:flex md:min-h-0 md:flex-col md:pr-4">
-                <GameSceneTabs
-                  className="mb-3 shrink-0"
-                  activeValue={filter}
-                  onChange={(value) =>
-                    setFilter(value === 'team' ? 'team' : 'all')
-                  }
-                  items={[
-                    { value: 'all', label: '全部' },
-                    {
-                      value: 'team',
-                      label: (
-                        <>
-                          携带出战{' '}
-                          <span className="font-mono">
-                            {view.lineup.carriedBeastIds.length}/6
-                          </span>
-                        </>
-                      ),
-                    },
-                  ]}
-                />
                 <p className="text-ink-secondary mb-3 shrink-0 text-xs leading-5">
-                  携带的灵兽可在战斗中召唤，首发自动入场。
+                  袋中灵兽可在战斗中召唤，首发自动入场。
                 </p>
-                <BeastRosterScroll key={filter}>
-                  {visibleBeasts.map((beast) => (
+                <BeastRosterScroll>
+                  {orderedBag.map((beast) => (
                     <button
                       type="button"
                       key={beast.id}
@@ -307,47 +325,34 @@ export default function BeastsPage() {
                           <span className="font-mono">{beast.level} 级</span>
                           {view.lineup.leadBeastId === beast.id ? (
                             <BeastLeadSeal />
-                          ) : view.lineup.carriedBeastIds.includes(beast.id) ? (
-                            <InkBadge compact>携带</InkBadge>
                           ) : null}
                         </span>
                       </span>
                     </button>
                   ))}
-                  {filter === 'team'
-                    ? Array.from(
-                        {
-                          length: Math.max(
-                            0,
-                            6 - view.lineup.carriedBeastIds.length,
-                          ),
-                        },
-                        (_, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            className="text-ink-secondary hover:bg-teal/5 hover:text-teal min-h-14 text-xs transition-colors"
-                            onClick={() => {
-                              setFilter('all');
-                              setDetailId(
-                                view.beasts.find(
-                                  (beast) =>
-                                    !view.lineup.carriedBeastIds.includes(
-                                      beast.id,
-                                    ),
-                                )?.id,
-                              );
-                              pushToast({
-                                message: '选择灵兽后，点击「携带出战」',
-                                tone: 'default',
-                              });
-                            }}
-                          >
-                            ＋ 空位
-                          </button>
-                        ),
-                      )
-                    : null}
+                  {Array.from(
+                    {
+                      length: Math.max(
+                        0,
+                        BEAST_BAG_CAPACITY - orderedBag.length,
+                      ),
+                    },
+                    (_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="text-ink-secondary hover:bg-teal/5 hover:text-teal min-h-14 text-xs transition-colors"
+                        onClick={() =>
+                          pushToast({
+                            message: '可从灵兽仓库取出，或在野外捕捉。',
+                            tone: 'default',
+                          })
+                        }
+                      >
+                        ＋ 空位
+                      </button>
+                    ),
+                  )}
                 </BeastRosterScroll>
               </div>
             </aside>
@@ -358,8 +363,7 @@ export default function BeastsPage() {
                   beast={detail}
                   ownerLevel={view.ownerLevel}
                   isLead={view.lineup.leadBeastId === detail.id}
-                  carried={view.lineup.carriedBeastIds.includes(detail.id)}
-                  full={view.lineup.carriedBeastIds.length >= 6}
+                  bagFull={bagBeasts.length >= BEAST_BAG_CAPACITY}
                   pending={pending}
                   pendingLineup={
                     pendingLineup?.beastId === detail.id
@@ -380,6 +384,36 @@ export default function BeastsPage() {
                       points,
                     })
                   }
+                  warehouseFull={warehouseCount >= BEAST_WAREHOUSE_CAPACITY}
+                  fuse={() => openFusion(detail.id)}
+                  store={() => {
+                    const save = () =>
+                      mutate(
+                        'place',
+                        {
+                          beastId: detail.id,
+                          expectedRevision: detail.revision,
+                          location: 'warehouse',
+                        },
+                        'POST',
+                        view.lineup.leadBeastId === detail.id
+                          ? '已存入灵兽仓库，并取消首发'
+                          : '已存入灵兽仓库',
+                      );
+                    if (view.lineup.leadBeastId === detail.id) {
+                      openDialog({
+                        title: '存入仓库',
+                        content: '这只灵兽正在首发。存入仓库后会取消首发。',
+                        confirmLabel: '存入',
+                        cancelLabel: '留下',
+                        onConfirm: () => {
+                          void save();
+                        },
+                      });
+                      return;
+                    }
+                    void save();
+                  }}
                 />
               </div>
             ) : (
@@ -387,8 +421,8 @@ export default function BeastsPage() {
                 data-guide="beast.detail"
                 className="text-ink-secondary py-8 text-center text-sm"
               >
-                {filter === 'team'
-                  ? '尚未携带灵兽，选择空位添加出战伙伴。'
+                {warehouseCount
+                  ? '灵兽袋尚空，可从仓库取出，或在野外捕捉。'
                   : '灵兽袋尚空，可在野外捕捉灵兽。'}
               </p>
             )}
@@ -423,7 +457,18 @@ export default function BeastsPage() {
           beastId={feedingId}
           mode="feed"
           close={() => setFeedingId(undefined)}
-          onUpdate={setView}
+          onUpdate={(beast) =>
+            setView((current) =>
+              current
+                ? {
+                    ...current,
+                    beasts: current.beasts.map((entry) =>
+                      entry.id === beast.id ? beast : entry,
+                    ),
+                  }
+                : current,
+            )
+          }
         />
       ) : null}
       {refiningId ? (
@@ -431,7 +476,18 @@ export default function BeastsPage() {
           beastId={refiningId}
           mode="refine"
           close={() => setRefiningId(undefined)}
-          onUpdate={setView}
+          onUpdate={(beast) =>
+            setView((current) =>
+              current
+                ? {
+                    ...current,
+                    beasts: current.beasts.map((entry) =>
+                      entry.id === beast.id ? beast : entry,
+                    ),
+                  }
+                : current,
+            )
+          }
         />
       ) : null}
       {rejuvenatingId ? (
@@ -439,14 +495,36 @@ export default function BeastsPage() {
           beastId={rejuvenatingId}
           mode="rejuvenate"
           close={() => setRejuvenatingId(undefined)}
-          onUpdate={setView}
+          onUpdate={(beast) =>
+            setView((current) =>
+              current
+                ? {
+                    ...current,
+                    beasts: current.beasts.map((entry) =>
+                      entry.id === beast.id ? beast : entry,
+                    ),
+                  }
+                : current,
+            )
+          }
         />
       ) : null}
       {learningId ? (
         <BeastBookDrawer
           beastId={learningId}
           close={() => setLearningId(undefined)}
-          onUpdate={setView}
+          onUpdate={(beast) =>
+            setView((current) =>
+              current
+                ? {
+                    ...current,
+                    beasts: current.beasts.map((entry) =>
+                      entry.id === beast.id ? beast : entry,
+                    ),
+                  }
+                : current,
+            )
+          }
         />
       ) : null}
       {actionBeast && action ? (
