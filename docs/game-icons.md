@@ -5,6 +5,7 @@
 技能图标的美术设计与风格验收遵循 [水墨技能图腾](../.agents/skills/daoyou-skill-totems/SKILL.md)，以已验收的三枚固定参考保持构形与笔墨一致。两批共 41 枚技能图腾已验收并接入，覆盖 65 条技能配置；生产素材使用 `-totem-v2.webp` 版本路径，业务图标名称保持不变。
 
 React 图标入口为 `apps/web/src/components/ui/GameIcon.tsx`。美术图标显式填写 `icon:名称`，只查询集中注册的 SVG／WebP／PNG 图片，不拼接路径、不加载远程地址、不注入 SVG 字符串。其他普通字符串作为字面符号显示；未知名称和空值显示 `?`。项目尚未上线，不维护 emoji 别名或旧存档图标转换。
+第三轮新增技能采用六枚独立 `-totem-v1.webp` 水墨图腾：横扫四方、灵息激发、宝相庄严、风起龙游、招财进宝、十日横空。飞行／高级飞行共用 🪽，幸运／高级幸运共用 🌟，号令／高级号令共用 🚩。素材、提示词与小尺寸验收见[第三轮图标记录](beast-skill-totems-third-round.md)。
 
 ```tsx
 <GameIcon value="icon:map-wild" />

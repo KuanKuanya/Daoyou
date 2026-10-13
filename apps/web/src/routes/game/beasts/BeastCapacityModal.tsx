@@ -107,7 +107,7 @@ export function BeastCapacityModal({
       setRequest(undefined);
       onUpdate(result.view);
       pushToast({
-        message: `灵兽袋已扩至 ${result.capacity} 格`,
+        message: `灵兽仓库已扩至 ${result.warehouseCapacity} 格`,
         tone: 'success',
       });
       close();
@@ -135,7 +135,7 @@ export function BeastCapacityModal({
   return (
     <InkModal
       isOpen
-      title="灵兽袋扩容"
+      title="灵兽仓库扩容"
       onClose={() => {
         if (!busy.current) close();
       }}
@@ -169,15 +169,15 @@ export function BeastCapacityModal({
         <p className="text-ink-secondary text-sm">正在准备扩容方案……</p>
       ) : !preview.recipe ? (
         <p className="text-sm">
-          灵兽袋已扩至 <span className="font-mono">{preview.capacity}</span>{' '}
-          格。
+          灵兽仓库已扩至{' '}
+          <span className="font-mono">{preview.warehouseCapacity}</span> 格。
         </p>
       ) : (
         <div className="space-y-4 text-sm">
           <p>
-            容量{' '}
+            仓库容量{' '}
             <span className="font-mono">
-              {preview.capacity} → {preview.nextCapacity}
+              {preview.warehouseCapacity} → {preview.nextWarehouseCapacity}
             </span>{' '}
             格
           </p>
@@ -228,8 +228,8 @@ export function BeastCapacityModal({
             </p>
           ) : null}
           <p className="text-ink-secondary text-xs leading-6">
-            仅消耗上方材料，收藏材料不会用于扩容。扩容不影响携带出战的 6
-            个位置。
+            仅消耗上方材料，收藏材料不会用于扩容。随身袋固定 8
+            个位置，扩容只增加仓库容量。
           </p>
         </div>
       )}

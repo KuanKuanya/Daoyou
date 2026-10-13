@@ -65,9 +65,11 @@ const points = z.number().int().min(0).max(100000);
 
 export type SummonedBeast = z.infer<ReturnType<typeof createBeastSchema>>;
 
+export const BEAST_CARRIED_CAPACITY = 8;
+
 export const BeastLineupSchema = z
   .object({
-    carriedBeastIds: z.array(z.uuid()).max(6),
+    carriedBeastIds: z.array(z.uuid()).max(BEAST_CARRIED_CAPACITY),
     leadBeastId: z.uuid().optional(),
     revision: points,
   })
@@ -83,9 +85,14 @@ export const BeastLineupSchema = z
 
 export type BeastLineup = z.infer<typeof BeastLineupSchema>;
 
+/** Where a place request moves a beast. The bag is the carried lineup, not a stored column. */
+export const BeastLocationSchema = z.enum(['bag', 'warehouse']);
+
+export type BeastLocation = z.infer<typeof BeastLocationSchema>;
+
 export type BeastRoster = {
   beasts: SummonedBeast[];
   lineup: BeastLineup;
-  /** Host-supplied personal bag capacity; legacy pure fixtures default to 24. */
-  capacity?: number;
+  /** Maximum number of beasts held in the warehouse; the carried bag is fixed at eight. */
+  warehouseCapacity?: number;
 };

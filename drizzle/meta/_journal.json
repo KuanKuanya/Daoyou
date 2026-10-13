@@ -449,6 +449,20 @@
       "when": 1791739108106,
       "tag": "0063_beast-capacity-inventory-management",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1791879602110,
+      "tag": "0064_sponsorship_subscription_pass",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1791884582274,
+      "tag": "0065_channel_chat",
+      "breakpoints": true
     }
   ]
 }

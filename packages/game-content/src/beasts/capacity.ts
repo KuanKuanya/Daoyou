@@ -1,7 +1,11 @@
 import type { Quality } from '@daoyou/constants/qualities';
 
-export const BEAST_CAPACITY_RECIPE_VERSION = 1;
-export const BEAST_CAPACITY_STAGES = [24, 40, 60, 80, 100] as const;
+// Version 2 changes expansion from total ownership to warehouse slots.
+export const BEAST_CAPACITY_RECIPE_VERSION = 2;
+/** Warehouse slots unlocked by each expansion level; the carried bag stays at eight. */
+export const BEAST_WAREHOUSE_CAPACITY_STAGES = [50, 70, 90, 120, 160] as const;
+/** @deprecated Use BEAST_WAREHOUSE_CAPACITY_STAGES for new code. */
+export const BEAST_CAPACITY_STAGES = BEAST_WAREHOUSE_CAPACITY_STAGES;
 
 export const BEAST_CAPACITY_RECIPES: readonly {
   rank: Quality;

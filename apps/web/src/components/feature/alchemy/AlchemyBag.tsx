@@ -1,6 +1,4 @@
 import {
-  defaultInventoryFilter,
-  inventoryFilterActive,
   matchesInventoryFilters,
   type InventoryFilter,
 } from '@app/components/feature/items/inventoryFilterModel';
@@ -8,6 +6,7 @@ import { InkButton } from '@app/components/ui/InkButton';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
 import { useInventoryBag } from '@app/lib/resources/bag';
 import { useCraftStorage } from '@app/lib/resources/craftStorage';
+import { isAlchemyMaterialType } from '@daoyou/game-rules/alchemy';
 import {
   groupAlchemyBagMaterials,
   groupAlchemyStorageMaterials,
@@ -28,7 +27,7 @@ export function AlchemyBag({
   const session = useAlchemyCraftSession();
   const bagQuery = useInventoryBag();
   const [source, setSource] = useState<'bag' | 'storage'>('bag');
-  const [filter, setFilter] = useState<InventoryFilter>(defaultInventoryFilter);
+  const [filter, setFilter] = useState<InventoryFilter>({ kind: 'material' });
   const storage = useCraftStorage(filter, source === 'storage');
   const reloadStorage = storage.reload;
   const view = source === 'bag' ? bagQuery.data : storage.view;
@@ -46,6 +45,17 @@ export function AlchemyBag({
     source === 'bag'
       ? groupAlchemyBagMaterials(view?.items ?? [])
       : groupAlchemyStorageMaterials(view?.items ?? []);
+  const materialByItemId = new Map(
+    groups
+      .filter((material) => isAlchemyMaterialType(material.type))
+      .flatMap((material) =>
+        material.members.map((member) => [member.id, material] as const),
+      ),
+  );
+  const items = (view?.items ?? []).filter(
+    (item) =>
+      materialByItemId.has(item.id) && matchesInventoryFilters(item, filter),
+  );
   return (
     <CraftInventoryPanel
       source={source}
@@ -57,6 +67,7 @@ export function AlchemyBag({
       loading={source === 'bag' ? bagQuery.isRefreshing : storage.loading}
       error={error}
       filter={filter}
+      kindDisabled
       onFilter={(value) => {
         setFilter(value);
         storage.setPage(0);
@@ -67,20 +78,12 @@ export function AlchemyBag({
       }
     >
       <InventoryItems
-        items={
-          source === 'bag' && inventoryFilterActive(filter)
-            ? (view?.items ?? []).filter((item) =>
-                matchesInventoryFilters(item, filter),
-              )
-            : (view?.items ?? [])
-        }
+        items={items}
         location={source}
-        compact={source === 'bag' && inventoryFilterActive(filter)}
+        compact
         quickTouchHint
         slotProps={(item) => {
-          const material = groups.find((g) =>
-            g.members.some((m) => m.id === item?.id),
-          );
+          const material = item ? materialByItemId.get(item.id) : undefined;
           const dose = material
             ? session.materials.doses[material.id]
             : undefined;
@@ -123,11 +126,7 @@ export function AlchemyBag({
                     close={close}
                   />
                 )
-              : item
-                ? () => (
-                    <p className="text-ink-secondary">此物品不能用于炼丹。</p>
-                  )
-                : undefined,
+              : undefined,
           };
         }}
       />

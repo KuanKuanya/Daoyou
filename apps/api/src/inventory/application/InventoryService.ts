@@ -589,6 +589,51 @@ export async function mutateInventory(
           lease.assertHeld();
           return { data: { transferred: ids.length }, state };
         }
+        if (input.action === 'discard_many') {
+          const ids = input.items.map((item) => item.id);
+          const rows = await tx
+            .select()
+            .from(inventoryItems)
+            .where(
+              and(
+                eq(inventoryItems.cultivatorId, owner),
+                inArray(inventoryItems.id, ids),
+              ),
+            );
+          const sources = input.items.map((ref) => {
+            const row = rows.find((item) => item.id === ref.id);
+            if (!row || row.revision !== ref.revision)
+              throw new InventoryError('物品已变化，请刷新后重试');
+            if (row.location !== 'bag' && row.location !== 'storage')
+              throw new InventoryError('请先卸下装备');
+            return inventoryItemOf(row);
+          });
+          const equipped = await tx
+            .select({ id: cultivatorEquipmentSlots.equipmentInstanceId })
+            .from(cultivatorEquipmentSlots)
+            .where(
+              and(
+                eq(cultivatorEquipmentSlots.cultivatorId, owner),
+                inArray(cultivatorEquipmentSlots.equipmentInstanceId, ids),
+              ),
+            );
+          if (equipped.length) throw new InventoryError('请先卸下装备');
+          await saveInventoryPlan(owner, sources, [], tx);
+          const state = await new ResourceEventCommitter().commit(tx, {
+            actor: { cultivatorId: owner },
+            source: 'inventory-discard-many',
+            scopeDefaults: { cultivatorId: owner },
+            changes: [
+              {
+                resourceTopic: 'inventory.bag',
+                operation: 'invalidate',
+                eventType: 'inventory.bag.changed',
+              },
+            ],
+          });
+          lease.assertHeld();
+          return { data: { discarded: ids.length }, state };
+        }
         const before = (
           await tx
             .select()
@@ -877,6 +922,11 @@ export async function mutateInventory(
             item.quantity--;
             item.revision++;
             if (!item.quantity) next = next.filter((i) => i.id !== item.id);
+          } else if (input.action === 'discard') {
+            if (item.location !== 'bag' && item.location !== 'storage')
+              throw new InventoryError('请先卸下装备');
+            if (equipped.length) throw new InventoryError('请先卸下装备');
+            next = next.filter((entry) => entry.id !== item.id);
           } else if (input.action === 'equip') {
             if (
               item.location !== (input.equipped ? 'bag' : 'equipped') ||

@@ -30,6 +30,7 @@ export interface RetreatEfficiencyModel {
   isValidYears: boolean;
   retreatTags: RetreatBuffTag[];
   breakthroughTags: RetreatBuffTag[];
+  bottleneckActive: boolean;
   hasCultivationBoost: boolean;
   lifespanCost: number;
   qiCost: number;
@@ -151,6 +152,7 @@ export function buildRetreatEfficiencyModel(input: {
     isValidYears,
     retreatTags,
     breakthroughTags,
+    bottleneckActive,
     hasCultivationBoost: Boolean(boostStatus),
     lifespanCost: safeYears,
     qiCost: safeYears > 0 ? getRetreatQiCost(safeYears) : 0,

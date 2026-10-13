@@ -10,7 +10,7 @@ describe('chat message creation', () => {
     });
     expect(result.success).toBe(false);
     if (!result.success)
-      expect(result.error.issues[0].message).toContain('仅支持文字、道具、灵兽与战绩消息');
+      expect(result.error.issues[0].message).toContain('仅支持文字、道具、灵兽、战绩与红包消息');
   });
   it('accepts text, item and beast showcases', () => {
     expect(

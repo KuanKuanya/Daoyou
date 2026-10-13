@@ -1,15 +1,25 @@
 import type { RealmStage, RealmType } from '@daoyou/constants/realms';
 import {
+  BEAST_PICKER_PAGE_SIZE,
+  type BeastPickerLocation,
+  type BeastPickerPage,
+} from '@daoyou/contracts/beasts';
+import {
   BeastLineupSchema,
+  type BeastLineup,
   type BeastRoster,
   type SummonedBeast,
 } from '@daoyou/game-domain/beasts';
 import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
 import type { WildSettlement } from '@daoyou/game-domain/wild';
 import {
-  beastCapacityAt,
+  BEAST_BAG_CAPACITY,
+  beastWarehouseCapacityAt,
+  carriedBeastIds,
   gainBeastExp,
   loseBeastLifespan,
+  splitCapturedBeasts,
+  warehouseBeastCount,
 } from '@daoyou/game-rules/beasts/growth';
 import { BeastSchema } from '@daoyou/game-rules/beasts/validation';
 import type { DbExecutor } from '@server/lib/drizzle/db.js';
@@ -18,7 +28,7 @@ import {
   cultivatorBeasts,
   cultivators,
 } from '@server/lib/drizzle/schema.js';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray, notInArray, type SQL } from 'drizzle-orm';
 
 /** Identity and ownership have a single authority in relational columns. */
 export function beastIndividualData(beast: SummonedBeast) {
@@ -65,7 +75,7 @@ export async function readBeastRoster(
     starterClaimed: boolean;
     ownerLevel: number;
     spiritStones: number;
-    capacity: number;
+    warehouseCapacity: number;
     capacityLevel: number;
     capacityRevision: number;
   }
@@ -88,7 +98,7 @@ export async function readBeastRoster(
       state?.lineup ?? { carriedBeastIds: [], revision: 0 },
     ),
     starterClaimed: !!state?.starterClaimedAt,
-    capacity: beastCapacityAt(state?.capacityLevel ?? 0),
+    warehouseCapacity: beastWarehouseCapacityAt(state?.capacityLevel ?? 0),
     capacityLevel: state?.capacityLevel ?? 0,
     capacityRevision: state?.capacityRevision ?? 0,
   };
@@ -104,10 +114,113 @@ export async function readBeastCapacity(cultivatorId: string, tx: DbExecutor) {
     .where(eq(cultivatorBeastLineups.cultivatorId, cultivatorId));
   const capacityLevel = state?.capacityLevel ?? 0;
   return {
-    capacity: beastCapacityAt(capacityLevel),
+    warehouseCapacity: beastWarehouseCapacityAt(capacityLevel),
     capacityLevel,
     capacityRevision: state?.capacityRevision ?? 0,
   };
+}
+
+async function countBeasts(where: SQL | undefined, tx: DbExecutor) {
+  const [row] = await tx
+    .select({ total: count() })
+    .from(cultivatorBeasts)
+    .where(where);
+  return Number(row?.total ?? 0);
+}
+
+export async function readBeastPickerPage(
+  cultivatorId: string,
+  query: { page: number; location: BeastPickerLocation; beast?: string },
+  tx: DbExecutor,
+): Promise<BeastPickerPage> {
+  const [state] = await tx
+    .select()
+    .from(cultivatorBeastLineups)
+    .where(eq(cultivatorBeastLineups.cultivatorId, cultivatorId));
+  const lineup = BeastLineupSchema.parse(
+    state?.lineup ?? { carriedBeastIds: [], revision: 0 },
+  );
+  const carried = lineup.carriedBeastIds;
+  const owned = eq(cultivatorBeasts.cultivatorId, cultivatorId);
+  const bagWhere = carried.length
+    ? and(owned, inArray(cultivatorBeasts.id, carried))
+    : undefined;
+  const warehouseWhere = carried.length
+    ? and(owned, notInArray(cultivatorBeasts.id, carried))
+    : owned;
+  const where =
+    query.location === 'bag'
+      ? bagWhere
+      : query.location === 'warehouse'
+        ? warehouseWhere
+        : owned;
+  const [bagCount, warehouseCount] = await Promise.all([
+    bagWhere ? countBeasts(bagWhere, tx) : Promise.resolve(0),
+    countBeasts(warehouseWhere, tx),
+  ]);
+  const idRows = where
+    ? await tx
+        .select({ id: cultivatorBeasts.id })
+        .from(cultivatorBeasts)
+        .where(where)
+        .orderBy(cultivatorBeasts.createdAt, cultivatorBeasts.id)
+    : [];
+  const total = idRows.length;
+  const pageCount = Math.max(1, Math.ceil(total / BEAST_PICKER_PAGE_SIZE));
+  let current = Math.min(query.page, pageCount);
+  if (query.beast) {
+    const index = idRows.findIndex((row) => row.id === query.beast);
+    if (index >= 0) current = Math.floor(index / BEAST_PICKER_PAGE_SIZE) + 1;
+  }
+  const slice = idRows
+    .slice(
+      (current - 1) * BEAST_PICKER_PAGE_SIZE,
+      current * BEAST_PICKER_PAGE_SIZE,
+    )
+    .map((row) => row.id);
+  const rows = slice.length
+    ? await tx
+        .select()
+        .from(cultivatorBeasts)
+        .where(inArray(cultivatorBeasts.id, slice))
+    : [];
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const { ownerLevel, spiritStones } = await readBeastOwner(cultivatorId, tx);
+  const warehouseCapacity = beastWarehouseCapacityAt(state?.capacityLevel ?? 0);
+  return {
+    beasts: slice.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [beastFromRow(row)] : [];
+    }),
+    page: current,
+    pageSize: BEAST_PICKER_PAGE_SIZE,
+    total,
+    ownerLevel,
+    spiritStones,
+    lineup,
+    bagCount,
+    warehouseCount,
+    warehouseCapacity,
+  };
+}
+
+export async function countBagBeasts(cultivatorId: string, tx: DbExecutor) {
+  const roster = await readBeastRoster(cultivatorId, tx);
+  return carriedBeastIds(roster.beasts, roster.lineup).length;
+}
+
+export async function saveBeastLineup(
+  cultivatorId: string,
+  lineup: BeastLineup,
+  tx: DbExecutor,
+) {
+  await tx
+    .insert(cultivatorBeastLineups)
+    .values({ cultivatorId, lineup })
+    .onConflictDoUpdate({
+      target: cultivatorBeastLineups.cultivatorId,
+      set: { lineup },
+    });
 }
 
 /** Caller claims the battle settlement and holds the character lock in this transaction. */
@@ -119,19 +232,42 @@ export async function settleBeastProgress(
   const captured = summary.capturedBeasts ?? [];
   if (
     captured.length &&
-    roster.beasts.length + captured.length > roster.capacity
+    roster.beasts.length + captured.length >
+      BEAST_BAG_CAPACITY + roster.warehouseCapacity
   )
     throw new Error('灵兽持有数量超限');
-  for (const individual of captured) {
+  const capturedBeasts = captured.map((individual) => {
     const beast = BeastSchema.parse(individual);
     if (beast.ownerCultivatorId !== summary.cultivatorId)
       throw new Error('捕获灵兽归属不符');
+    return beast;
+  });
+  const carried = carriedBeastIds(roster.beasts, roster.lineup);
+  const { bagIds, warehouseIds } = splitCapturedBeasts(
+    carried.length,
+    capturedBeasts.map((beast) => beast.id),
+  );
+  if (
+    warehouseBeastCount(roster.beasts, roster.lineup) + warehouseIds.length >
+    roster.warehouseCapacity
+  )
+    throw new Error('灵兽仓库已满');
+  for (const beast of capturedBeasts)
     await tx.insert(cultivatorBeasts).values({
       id: beast.id,
       cultivatorId: summary.cultivatorId,
       individual: beastIndividualData(beast),
     });
-  }
+  if (bagIds.length)
+    await saveBeastLineup(
+      summary.cultivatorId,
+      {
+        carriedBeastIds: [...carried, ...bagIds],
+        leadBeastId: roster.lineup.leadBeastId,
+        revision: roster.lineup.revision + 1,
+      },
+      tx,
+    );
   if (summary.beastExperience) {
     const reward = summary.beastExperience;
     const beast = roster.beasts.find((b) => b.id === reward.beastId);

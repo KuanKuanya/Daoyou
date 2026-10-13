@@ -1,8 +1,8 @@
-import { JournalChangeSchema } from '@daoyou/game-domain/journal/changes';
 import type {
   BreakthroughResult,
   CultivationResult,
 } from '@daoyou/game-domain/cultivation';
+import { JournalChangeSchema } from '@daoyou/game-domain/journal/changes';
 
 import { REALM_STAGE_VALUES, REALM_VALUES } from '@daoyou/constants/realms';
 
@@ -73,7 +73,7 @@ export const JOURNAL_ACTIVITIES = {
   black_market_purchase: '黑市购买',
   reputation_shop_buy: '声望兑换',
   bag_recycle: '回收道具',
-  beast_capacity_expand: '灵兽袋扩容',
+  beast_capacity_expand: '灵兽仓库扩容',
   alchemy_formula: '按方炼丹',
   alchemy_improvised: '即兴炼丹',
   forging: '炼器',
@@ -87,6 +87,7 @@ export const JOURNAL_ACTIVITIES = {
   sect_shop_purchase: '宗门兑换',
   sect_construction_donate: '宗门建设',
   sect_stipend_claim: '领取俸禄',
+  sponsorship_reputation: '功德声望',
 } as const;
 
 export type JournalActivity = keyof typeof JOURNAL_ACTIVITIES;

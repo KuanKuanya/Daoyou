@@ -109,7 +109,7 @@ export const manualAdapter: ItemAdapter = (item, def) => {
     summary: {
       icon: 'icon:item-manual-jade',
       color: tierColorMap[manual.realm],
-      tier: '',
+      tier: manual.realm,
       type: '功法玉简',
     },
     preview: (options) => ({

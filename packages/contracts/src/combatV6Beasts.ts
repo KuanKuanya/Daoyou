@@ -2,6 +2,8 @@ import type { Quality } from '@daoyou/constants/qualities';
 import type { createBeastAllocationSchema } from '@daoyou/game-domain/beasts';
 import {
   BeastLineupSchema,
+  BeastLocationSchema,
+  type BeastLineup,
   type BeastRoster,
   type SummonedBeast,
 } from '@daoyou/game-domain/beasts';
@@ -37,9 +39,9 @@ export type BeastCapacityExpandRequest = z.infer<
 export type BeastCapacityPreview = {
   capacityLevel: number;
   capacityRevision: number;
-  capacity: number;
+  warehouseCapacity: number;
   recipeVersion: number;
-  nextCapacity: number | null;
+  nextWarehouseCapacity: number | null;
   recipe: {
     rank: Quality;
     monster: number;
@@ -52,7 +54,7 @@ export type BeastCapacityPreview = {
 };
 export type BeastCapacityExpandResponse = {
   view: BeastManagementView;
-  capacity: number;
+  warehouseCapacity: number;
 };
 export const BeastClaimSchema = z
   .object({ speciesId: z.string().min(1).max(160) })
@@ -86,11 +88,32 @@ export type BeastFusionResponse = {
   view: BeastManagementView;
   result: SummonedBeast;
 };
+export const BEAST_PICKER_PAGE_SIZE = 15;
+export const BeastPickerLocationSchema = z.enum(['all', 'bag', 'warehouse']);
+export const BeastPickerQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  location: BeastPickerLocationSchema.default('all'),
+  beast: z.uuid().optional(),
+});
+export type BeastPickerLocation = z.infer<typeof BeastPickerLocationSchema>;
+export type BeastPickerPage = {
+  beasts: SummonedBeast[];
+  page: number;
+  pageSize: number;
+  total: number;
+  ownerLevel: number;
+  spiritStones: number;
+  lineup: BeastLineup;
+  bagCount: number;
+  warehouseCount: number;
+  warehouseCapacity: number;
+};
 export type BeastManagementView = BeastRoster & {
   starterClaimed: boolean;
   ownerLevel: number;
   spiritStones: number;
-  capacity: number;
+  /** Maximum number of beasts allowed in the warehouse. The carried bag is fixed at eight. */
+  warehouseCapacity: number;
   capacityLevel: number;
   capacityRevision: number;
 };
@@ -110,4 +133,7 @@ export const BeastNameSchema = z
   });
 export const BeastRenameSchema = BeastRestSchema.extend({
   name: BeastNameSchema,
+});
+export const BeastPlaceSchema = BeastRestSchema.extend({
+  location: BeastLocationSchema,
 });

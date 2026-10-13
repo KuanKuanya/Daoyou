@@ -6,7 +6,7 @@ it('validates bounded capacity, spending budget and immutable material reference
     requestId: '9c4f6c53-7afd-4d06-9f91-271130c09ca1',
     expectedCapacityLevel: 0,
     expectedCapacityRevision: 0,
-    recipeVersion: 1,
+    recipeVersion: 2,
     maxSpiritStones: 1000,
     materials: [{ id: 'material-a', expectedRevision: 5, quantity: 2 }],
   };

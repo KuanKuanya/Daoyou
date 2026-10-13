@@ -1,9 +1,13 @@
 import {
+  BEAST_CARRIED_CAPACITY,
   createBeastAllocationSchema,
+  type BeastLineup,
   type SummonedBeast,
 } from '@daoyou/game-domain/beasts';
-export const BeastAllocationSchema = createBeastAllocationSchema(BEAST_PROGRESSION.pointsPerLevel);
 import { z } from 'zod';
+export const BeastAllocationSchema = createBeastAllocationSchema(
+  BEAST_PROGRESSION.pointsPerLevel,
+);
 
 import type { BattleEvent } from '@daoyou/combat-core/types';
 
@@ -13,19 +17,74 @@ import { type BattleState, type SkillDef } from '@daoyou/combat-core/types';
 
 import { isStanding } from '@daoyou/combat-core/units';
 
-import { BEAST_PROGRESSION, BEAST_SPECIES } from '@daoyou/game-content/beasts';
+import {
+  BEAST_PROGRESSION,
+  BEAST_SPECIES,
+  BEAST_WAREHOUSE_CAPACITY_STAGES,
+} from '@daoyou/game-content/beasts';
 
 import { beastPointBudget } from './identity.js';
-
 
 import { BeastSchema } from './schema.js';
 
 export { generateCapturedBeast } from './generator.js';
 
+export const BEAST_BAG_CAPACITY = BEAST_CARRIED_CAPACITY;
 
-export const BEAST_CAPACITY = 24;
+/** Initial warehouse capacity; runtime callers pass the owner's expanded capacity. */
+export const BEAST_WAREHOUSE_CAPACITY = BEAST_WAREHOUSE_CAPACITY_STAGES[0];
+
+export const BEAST_BAG_FULL_CAPTURE_MESSAGE =
+  '灵兽袋已满，请先转存仓库，再继续捕捉。';
 
 export const CAPTURE_SKILL_ID = 'beast.capture';
+
+export function carriedBeastIds(
+  beasts: readonly { id: string }[],
+  lineup: Pick<BeastLineup, 'carriedBeastIds'>,
+) {
+  const owned = new Set(beasts.map((beast) => beast.id));
+  return lineup.carriedBeastIds.filter((id) => owned.has(id));
+}
+
+export function warehouseBeastCount(
+  beasts: readonly { id: string }[],
+  lineup: Pick<BeastLineup, 'carriedBeastIds'>,
+) {
+  return beasts.length - carriedBeastIds(beasts, lineup).length;
+}
+
+/**
+ * Settlement keeps every capture. Remaining bag slots join the lineup;
+ * the rest stay out of it so a full bag cannot roll the battle back.
+ */
+export function splitCapturedBeasts(
+  carriedCount: number,
+  capturedIds: readonly string[],
+) {
+  const room = Math.max(0, BEAST_BAG_CAPACITY - carriedCount);
+  return {
+    bagIds: capturedIds.slice(0, room),
+    warehouseIds: capturedIds.slice(room),
+  };
+}
+
+/** Newly received beasts prefer the bag. Fusion frees the removed parents first. */
+export function receivedBeastPlacement(
+  beasts: readonly { id: string }[],
+  lineup: Pick<BeastLineup, 'carriedBeastIds'>,
+  removedIds: readonly string[] = [],
+  warehouseCapacity: number = BEAST_WAREHOUSE_CAPACITY,
+): 'bag' | 'warehouse' | null {
+  const removed = new Set(removedIds);
+  const remaining = beasts.filter((beast) => !removed.has(beast.id));
+  const carried = carriedBeastIds(remaining, {
+    carriedBeastIds: lineup.carriedBeastIds.filter((id) => !removed.has(id)),
+  });
+  if (carried.length < BEAST_BAG_CAPACITY) return 'bag';
+  if (remaining.length - carried.length < warehouseCapacity) return 'warehouse';
+  return null;
+}
 
 export const BEAST_ATTRIBUTE_NAMES = {
   constitution: '体质',
@@ -57,7 +116,6 @@ export function beastRestCost(beast: SummonedBeast) {
   );
 }
 
-
 export function gainBeastExp(
   beast: SummonedBeast,
   amount: number,
@@ -84,11 +142,11 @@ export function gainBeastExp(
     exp: level === cap ? 0 : exp,
     unallocatedPoints:
       beast.unallocatedPoints +
-      beastPointBudget({ ...beast, level }) - beastPointBudget(beast),
+      beastPointBudget({ ...beast, level }) -
+      beastPointBudget(beast),
     revision: beast.revision + 1,
   });
 }
-
 
 export function allocateBeast(
   beast: SummonedBeast,
@@ -112,12 +170,12 @@ export function allocateBeast(
   });
 }
 
-
 export function captureSkill(
   targets: Array<{ unitId: string; speciesId: string }>,
   ownerLevel: number,
   ownedCount: number,
-  capacity: number = BEAST_CAPACITY,
+  capacity?: number,
+  bagCount?: number,
 ): SkillDef {
   const chance = BEAST_PROGRESSION.capture;
   return {
@@ -127,7 +185,14 @@ export function captureSkill(
     targeting: { side: TargetSide.Enemy, mode: TargetMode.Fill, count: 1 },
     effects: [],
     capture: {
-      capacity: Math.max(0, capacity - ownedCount),
+      capacity: Math.max(
+        0,
+        capacity === undefined
+          ? BEAST_BAG_CAPACITY - ownedCount
+          : bagCount === undefined
+            ? capacity - ownedCount
+            : Math.min(capacity - ownedCount, BEAST_BAG_CAPACITY - bagCount),
+      ),
       targetMpCosts: Object.fromEntries(
         targets.flatMap((target) => {
           const species = BEAST_SPECIES.find((s) => s.id === target.speciesId);
@@ -140,7 +205,6 @@ export function captureSkill(
     },
   };
 }
-
 
 export function beastVictoryExperience(
   state: BattleState,
@@ -162,7 +226,6 @@ export function beastVictoryExperience(
   return amount ? { beastId: pet.id.slice(6), amount } : undefined;
 }
 
-
 export function beastDeathIds(events: readonly BattleEvent[]): string[] {
   return [
     ...new Set(
@@ -174,7 +237,6 @@ export function beastDeathIds(events: readonly BattleEvent[]): string[] {
     ),
   ];
 }
-
 
 export function loseBeastLifespan(beast: SummonedBeast): SummonedBeast {
   return {

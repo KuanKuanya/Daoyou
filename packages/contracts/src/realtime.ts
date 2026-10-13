@@ -1,7 +1,10 @@
 import type { ArenaRoomStatusV1, ArenaRoomV1 } from './arena.js';
 import type { HuntTeamChatMessage } from './hunts.js';
 import type { ResourceChange, ResourceScope } from './resources/index.js';
-import type { WorldChatMessageDTO } from './world-chat-messages.js';
+import type {
+  RedPacketSummary,
+  WorldChatMessageDTO,
+} from './world-chat-messages.js';
 
 export const REALTIME_CHANNELS = [
   'world-chat',
@@ -37,6 +40,14 @@ export type RealtimeServerEvent =
       payload: WorldChatMessageDTO;
     }
   | {
+      type: 'world-chat.red-packet';
+      payload: {
+        channel: 'world' | 'sect';
+        sectId: string | null;
+        packet: RedPacketSummary;
+      };
+    }
+  | {
       type: 'player-state.events';
       payload: RealtimePlayerStatePayload;
     }
@@ -47,6 +58,10 @@ export type RealtimeServerEvent =
   | {
       type: 'hunt-team.chat';
       payload: HuntTeamChatMessage;
+    }
+  | {
+      type: 'hunt-team.started';
+      payload: { teamId: string };
     }
   | {
       type: 'ping';
