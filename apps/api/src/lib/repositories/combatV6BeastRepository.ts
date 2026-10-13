@@ -13,11 +13,13 @@ import {
 import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
 import type { WildSettlement } from '@daoyou/game-domain/wild';
 import {
-  beastCapacityAt,
+  BEAST_BAG_CAPACITY,
+  beastWarehouseCapacityAt,
   carriedBeastIds,
   gainBeastExp,
   loseBeastLifespan,
   splitCapturedBeasts,
+  warehouseBeastCount,
 } from '@daoyou/game-rules/beasts/growth';
 import { BeastSchema } from '@daoyou/game-rules/beasts/validation';
 import type { DbExecutor } from '@server/lib/drizzle/db.js';
@@ -73,7 +75,7 @@ export async function readBeastRoster(
     starterClaimed: boolean;
     ownerLevel: number;
     spiritStones: number;
-    capacity: number;
+    warehouseCapacity: number;
     capacityLevel: number;
     capacityRevision: number;
   }
@@ -96,7 +98,7 @@ export async function readBeastRoster(
       state?.lineup ?? { carriedBeastIds: [], revision: 0 },
     ),
     starterClaimed: !!state?.starterClaimedAt,
-    capacity: beastCapacityAt(state?.capacityLevel ?? 0),
+    warehouseCapacity: beastWarehouseCapacityAt(state?.capacityLevel ?? 0),
     capacityLevel: state?.capacityLevel ?? 0,
     capacityRevision: state?.capacityRevision ?? 0,
   };
@@ -112,7 +114,7 @@ export async function readBeastCapacity(cultivatorId: string, tx: DbExecutor) {
     .where(eq(cultivatorBeastLineups.cultivatorId, cultivatorId));
   const capacityLevel = state?.capacityLevel ?? 0;
   return {
-    capacity: beastCapacityAt(capacityLevel),
+    warehouseCapacity: beastWarehouseCapacityAt(capacityLevel),
     capacityLevel,
     capacityRevision: state?.capacityRevision ?? 0,
   };
@@ -184,6 +186,7 @@ export async function readBeastPickerPage(
     : [];
   const byId = new Map(rows.map((row) => [row.id, row]));
   const { ownerLevel, spiritStones } = await readBeastOwner(cultivatorId, tx);
+  const warehouseCapacity = beastWarehouseCapacityAt(state?.capacityLevel ?? 0);
   return {
     beasts: slice.flatMap((id) => {
       const row = byId.get(id);
@@ -197,6 +200,7 @@ export async function readBeastPickerPage(
     lineup,
     bagCount,
     warehouseCount,
+    warehouseCapacity,
   };
 }
 
@@ -228,7 +232,8 @@ export async function settleBeastProgress(
   const captured = summary.capturedBeasts ?? [];
   if (
     captured.length &&
-    roster.beasts.length + captured.length > roster.capacity
+    roster.beasts.length + captured.length >
+      BEAST_BAG_CAPACITY + roster.warehouseCapacity
   )
     throw new Error('灵兽持有数量超限');
   const capturedBeasts = captured.map((individual) => {
@@ -238,10 +243,15 @@ export async function settleBeastProgress(
     return beast;
   });
   const carried = carriedBeastIds(roster.beasts, roster.lineup);
-  const { bagIds } = splitCapturedBeasts(
+  const { bagIds, warehouseIds } = splitCapturedBeasts(
     carried.length,
     capturedBeasts.map((beast) => beast.id),
   );
+  if (
+    warehouseBeastCount(roster.beasts, roster.lineup) + warehouseIds.length >
+    roster.warehouseCapacity
+  )
+    throw new Error('灵兽仓库已满');
   for (const beast of capturedBeasts)
     await tx.insert(cultivatorBeasts).values({
       id: beast.id,

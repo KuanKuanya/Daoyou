@@ -17,11 +17,9 @@ import type { DbTransaction } from '@server/lib/drizzle/db.js';
 import { cultivatorBeasts } from '@server/lib/drizzle/schema.js';
 import {
   beastIndividualData,
-  readBeastCapacity,
   readBeastRoster,
   saveBeastLineup,
 } from '@server/lib/repositories/combatV6BeastRepository.js';
-import { count, eq } from 'drizzle-orm';
 
 function beastTransfers(attachments: MailAttachment[]) {
   return attachments
@@ -32,18 +30,11 @@ function beastTransfers(attachments: MailAttachment[]) {
     });
 }
 async function freeSlots(owner: string, tx: DbTransaction) {
-  const [row] = await tx
-    .select({ count: count() })
-    .from(cultivatorBeasts)
-    .where(eq(cultivatorBeasts.cultivatorId, owner));
-  const { capacity } = await readBeastCapacity(owner, tx);
   const roster = await readBeastRoster(owner, tx);
-  const totalFree = Math.max(0, capacity - row.count);
-  const bagFree = Math.max(
+  return Math.max(
     0,
-    BEAST_BAG_CAPACITY - carriedBeastIds(roster.beasts, roster.lineup).length,
+    BEAST_BAG_CAPACITY + roster.warehouseCapacity - roster.beasts.length,
   );
-  return Math.min(totalFree, bagFree);
 }
 
 /** Called while the owning player command holds the character lock and transaction. */
@@ -55,10 +46,17 @@ export async function deliverMailBeasts(
   const transfers = beastTransfers(attachments);
   if (!transfers.length) return [];
   await assertBeastIdle(owner, tx);
-  if (transfers.length > (await freeSlots(owner, tx)))
-    throw new BeastError('灵兽袋已满，请腾出位置后再领取；附件仍会保留');
   const roster = await readBeastRoster(owner, tx);
+  if (
+    transfers.length >
+    BEAST_BAG_CAPACITY + roster.warehouseCapacity - roster.beasts.length
+  )
+    throw new BeastError(
+      '灵兽袋与仓库空位不足，请腾出位置后再领取；附件仍会保留',
+    );
   const carried = carriedBeastIds(roster.beasts, roster.lineup);
+  const beforeBagCount = carried.length;
+  // Mail uses free bag slots first, then warehouse slots, without changing the lead.
   for (const transfer of transfers) {
     const beast = receiveTradedBeast(transfer, owner);
     await tx.insert(cultivatorBeasts).values({
@@ -67,17 +65,18 @@ export async function deliverMailBeasts(
       individual: beastIndividualData(beast),
       createdAt: new Date(transfer.createdAt),
     });
-    carried.push(beast.id);
+    if (carried.length < BEAST_BAG_CAPACITY) carried.push(beast.id);
   }
-  await saveBeastLineup(
-    owner,
-    {
-      carriedBeastIds: carried,
-      leadBeastId: roster.lineup.leadBeastId,
-      revision: roster.lineup.revision + 1,
-    },
-    tx,
-  );
+  if (carried.length !== beforeBagCount)
+    await saveBeastLineup(
+      owner,
+      {
+        carriedBeastIds: carried,
+        leadBeastId: roster.lineup.leadBeastId,
+        revision: roster.lineup.revision + 1,
+      },
+      tx,
+    );
   return ['beasts'];
 }
 

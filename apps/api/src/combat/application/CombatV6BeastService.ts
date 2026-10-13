@@ -18,7 +18,6 @@ import { generateStarterBeast } from '@daoyou/game-rules/beasts/generation';
 import {
   allocateBeast,
   BEAST_BAG_CAPACITY,
-  BEAST_WAREHOUSE_CAPACITY,
   beastRestCost,
   carriedBeastIds,
   receivedBeastPlacement,
@@ -129,10 +128,12 @@ export async function fuseOwnedBeasts(
       )
       .returning({ id: cultivatorBeasts.id });
     if (removed.length !== 2) throw new BeastError('融合材料已变化');
-    const placement = receivedBeastPlacement(roster.beasts, roster.lineup, [
-      a.id,
-      b.id,
-    ]);
+    const placement = receivedBeastPlacement(
+      roster.beasts,
+      roster.lineup,
+      [a.id, b.id],
+      roster.warehouseCapacity,
+    );
     if (!placement) throw new BeastError('灵兽袋与仓库都已满');
     await tx.insert(cultivatorBeasts).values({
       id: result.id,
@@ -223,7 +224,7 @@ export async function claimStarterBeast(
   const claimed = await mutate(cultivatorId, async (tx) => {
     const roster = await readBeastRoster(cultivatorId, tx);
     if (roster.starterClaimed) return { roster, state: null };
-    if (roster.beasts.length >= roster.capacity)
+    if (roster.beasts.length >= BEAST_BAG_CAPACITY + roster.warehouseCapacity)
       throw new BeastError('灵兽持有已满');
     if (
       carriedBeastIds(roster.beasts, roster.lineup).length >= BEAST_BAG_CAPACITY
@@ -285,7 +286,7 @@ export async function updateBeastLineup(
       )
     )
       throw new BeastError('只能携带自己的灵兽');
-    if (warehouseBeastCount(roster.beasts, lineup) > BEAST_WAREHOUSE_CAPACITY)
+    if (warehouseBeastCount(roster.beasts, lineup) > roster.warehouseCapacity)
       throw new BeastError('灵兽仓库已满');
     if (
       lineup.leadBeastId &&
@@ -460,7 +461,7 @@ export async function placeBeast(
     if (
       location === 'warehouse' &&
       warehouseBeastCount(roster.beasts, roster.lineup) >=
-        BEAST_WAREHOUSE_CAPACITY
+        roster.warehouseCapacity
     )
       throw new BeastError('灵兽仓库已满');
     await saveBeastLineup(

@@ -14,10 +14,7 @@ import { useCultivatorIdentity } from '@app/lib/resources/player';
 import type { BeastManagementView } from '@daoyou/contracts/beasts';
 import { BEAST_SPECIES } from '@daoyou/game-content/beasts';
 import type { SummonedBeast } from '@daoyou/game-domain/beasts';
-import {
-  BEAST_BAG_CAPACITY,
-  BEAST_WAREHOUSE_CAPACITY,
-} from '@daoyou/game-rules/beasts/growth';
+import { BEAST_BAG_CAPACITY } from '@daoyou/game-rules/beasts/growth';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { BeastActionDrawer, type BeastAction } from '../BeastActionDrawer';
@@ -125,8 +122,7 @@ export default function BeastWarehousePage() {
   }
 
   const stored = list.data?.beasts ?? [];
-  const fromPage =
-    stored.find((beast) => beast.id === selectedId) ?? stored[0];
+  const fromPage = stored.find((beast) => beast.id === selectedId) ?? stored[0];
   const selected =
     override &&
     fromPage &&
@@ -136,6 +132,7 @@ export default function BeastWarehousePage() {
       : fromPage;
   const bagFull = (list.data?.bagCount ?? 0) >= BEAST_BAG_CAPACITY;
   const warehouseCount = list.data?.warehouseCount ?? 0;
+  const warehouseCapacity = list.data?.warehouseCapacity ?? 0;
   function remember(beast: SummonedBeast) {
     setOverride(beast);
     setSelectedId(beast.id);
@@ -250,7 +247,7 @@ export default function BeastWarehousePage() {
               <span>
                 仓库{' '}
                 <span className="font-mono">
-                  {warehouseCount} / {BEAST_WAREHOUSE_CAPACITY}
+                  {warehouseCount} / {warehouseCapacity}
                 </span>
               </span>
             </div>
@@ -262,9 +259,7 @@ export default function BeastWarehousePage() {
                 融合
               </InkButton>
               <InkButton
-                disabled={
-                  pending || warehouseCount >= BEAST_WAREHOUSE_CAPACITY
-                }
+                disabled={pending || warehouseCount >= warehouseCapacity}
                 onClick={() => setStoring(true)}
               >
                 从灵兽袋存入

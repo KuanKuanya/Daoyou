@@ -5,7 +5,7 @@ import type {
 import {
   BEAST_CAPACITY_RECIPE_VERSION,
   BEAST_CAPACITY_RECIPES,
-  BEAST_CAPACITY_STAGES,
+  BEAST_WAREHOUSE_CAPACITY_STAGES,
 } from '@daoyou/game-content/beasts';
 import {
   selectBeastExpansionMaterials,
@@ -71,7 +71,8 @@ export async function readBeastCapacityPreview(
   return {
     ...state,
     recipeVersion: BEAST_CAPACITY_RECIPE_VERSION,
-    nextCapacity: BEAST_CAPACITY_STAGES[state.capacityLevel + 1] ?? null,
+    nextWarehouseCapacity:
+      BEAST_WAREHOUSE_CAPACITY_STAGES[state.capacityLevel + 1] ?? null,
     recipe,
     ...selectBeastExpansionMaterials(state.capacityLevel, items),
     spiritStones: owner.spiritStones,
@@ -112,7 +113,7 @@ export async function expandBeastCapacity(
       )
         throw new BeastError('扩容方案已变化，请重新查看');
       const recipe = BEAST_CAPACITY_RECIPES[state.capacityLevel];
-      if (!recipe) throw new BeastError('灵兽袋已扩至上限');
+      if (!recipe) throw new BeastError('灵兽仓库已扩至上限');
       const owner = await readBeastOwner(cultivatorId, tx);
       if (owner.userId !== userId) throw new BeastError('角色归属不符');
       if (recipe.spiritStones > input.maxSpiritStones)
@@ -187,7 +188,7 @@ export async function expandBeastCapacity(
       describeJournal(
         tx,
         cultivatorId,
-        `灵兽袋 ${state.capacity} → ${BEAST_CAPACITY_STAGES[state.capacityLevel + 1]} 格`,
+        `灵兽仓库 ${state.warehouseCapacity} → ${BEAST_WAREHOUSE_CAPACITY_STAGES[state.capacityLevel + 1]} 格`,
       );
       const spiritStones = await updateSpiritStones(
         userId,
@@ -211,7 +212,10 @@ export async function expandBeastCapacity(
           },
         });
       return {
-        result: { capacity: BEAST_CAPACITY_STAGES[state.capacityLevel + 1]! },
+        result: {
+          warehouseCapacity:
+            BEAST_WAREHOUSE_CAPACITY_STAGES[state.capacityLevel + 1]!,
+        },
         resourceChanges: [
           {
             resourceTopic: 'inventory.bag' as const,
@@ -228,12 +232,16 @@ export async function expandBeastCapacity(
       };
     },
   });
-  // Receipts keep the expansion result; refreshing the roster avoids replaying old ownership state.
+  // Keep prior receipts idempotent. Older receipts used `capacity`; the current
+  // roster supplies warehouse capacity without replaying their old ownership snapshot.
+  const view = await readBeastRoster(cultivatorId, db);
   return {
     ...committed,
     result: {
       ...committed.result,
-      view: await readBeastRoster(cultivatorId, db),
+      warehouseCapacity:
+        committed.result.warehouseCapacity ?? view.warehouseCapacity,
+      view,
     },
   };
 }

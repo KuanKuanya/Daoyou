@@ -17,21 +17,45 @@ export const BeastCapacityExpandSchema = z
     expectedCapacityRevision: z.number().int().nonnegative().max(2147483646),
     recipeVersion: z.number().int().positive().max(2147483647),
     maxSpiritStones: z.number().int().positive().max(2147483647),
-    materials: z.array(z.strictObject({
-      id: z.string().min(1).max(160),
-      expectedRevision: z.number().int().nonnegative().max(2147483646),
-      quantity: z.number().int().min(1).max(12),
-    })).min(1).max(12),
+    materials: z
+      .array(
+        z.strictObject({
+          id: z.string().min(1).max(160),
+          expectedRevision: z.number().int().nonnegative().max(2147483646),
+          quantity: z.number().int().min(1).max(12),
+        }),
+      )
+      .min(1)
+      .max(12),
   })
-  .refine(({ materials }) => new Set(materials.map((item) => item.id)).size === materials.length, '扩容材料不能重复选择');
-export type BeastCapacityExpandRequest = z.infer<typeof BeastCapacityExpandSchema>;
+  .refine(
+    ({ materials }) =>
+      new Set(materials.map((item) => item.id)).size === materials.length,
+    '扩容材料不能重复选择',
+  );
+export type BeastCapacityExpandRequest = z.infer<
+  typeof BeastCapacityExpandSchema
+>;
 export type BeastCapacityPreview = {
-  capacityLevel: number; capacityRevision: number; capacity: number; recipeVersion: number; nextCapacity: number | null;
-  recipe: { rank: Quality; monster: number; ore: number; spiritStones: number } | null;
+  capacityLevel: number;
+  capacityRevision: number;
+  warehouseCapacity: number;
+  recipeVersion: number;
+  nextWarehouseCapacity: number | null;
+  recipe: {
+    rank: Quality;
+    monster: number;
+    ore: number;
+    spiritStones: number;
+  } | null;
   materials: { item: InventoryItem; quantity: number }[];
-  missing: { monster: number; ore: number }; spiritStones: number;
+  missing: { monster: number; ore: number };
+  spiritStones: number;
 };
-export type BeastCapacityExpandResponse = { view: BeastManagementView; capacity: number };
+export type BeastCapacityExpandResponse = {
+  view: BeastManagementView;
+  warehouseCapacity: number;
+};
 export const BeastClaimSchema = z
   .object({ speciesId: z.string().min(1).max(160) })
   .strict();
@@ -82,12 +106,14 @@ export type BeastPickerPage = {
   lineup: BeastLineup;
   bagCount: number;
   warehouseCount: number;
+  warehouseCapacity: number;
 };
 export type BeastManagementView = BeastRoster & {
   starterClaimed: boolean;
   ownerLevel: number;
   spiritStones: number;
-  capacity: number;
+  /** Maximum number of beasts allowed in the warehouse. The carried bag is fixed at eight. */
+  warehouseCapacity: number;
   capacityLevel: number;
   capacityRevision: number;
 };

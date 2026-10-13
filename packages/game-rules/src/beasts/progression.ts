@@ -17,7 +17,11 @@ import { type BattleState, type SkillDef } from '@daoyou/combat-core/types';
 
 import { isStanding } from '@daoyou/combat-core/units';
 
-import { BEAST_PROGRESSION, BEAST_SPECIES } from '@daoyou/game-content/beasts';
+import {
+  BEAST_PROGRESSION,
+  BEAST_SPECIES,
+  BEAST_WAREHOUSE_CAPACITY_STAGES,
+} from '@daoyou/game-content/beasts';
 
 import { beastPointBudget } from './identity.js';
 
@@ -27,10 +31,11 @@ export { generateCapturedBeast } from './generator.js';
 
 export const BEAST_BAG_CAPACITY = BEAST_CARRIED_CAPACITY;
 
-export const BEAST_WAREHOUSE_CAPACITY = 50;
+/** Initial warehouse capacity; runtime callers pass the owner's expanded capacity. */
+export const BEAST_WAREHOUSE_CAPACITY = BEAST_WAREHOUSE_CAPACITY_STAGES[0];
 
 export const BEAST_BAG_FULL_CAPTURE_MESSAGE =
-  '灵兽袋已满，请先空出空间，再继续捕捉。';
+  '灵兽袋已满，请先转存仓库，再继续捕捉。';
 
 export const CAPTURE_SKILL_ID = 'beast.capture';
 
@@ -69,6 +74,7 @@ export function receivedBeastPlacement(
   beasts: readonly { id: string }[],
   lineup: Pick<BeastLineup, 'carriedBeastIds'>,
   removedIds: readonly string[] = [],
+  warehouseCapacity: number = BEAST_WAREHOUSE_CAPACITY,
 ): 'bag' | 'warehouse' | null {
   const removed = new Set(removedIds);
   const remaining = beasts.filter((beast) => !removed.has(beast.id));
@@ -76,8 +82,7 @@ export function receivedBeastPlacement(
     carriedBeastIds: lineup.carriedBeastIds.filter((id) => !removed.has(id)),
   });
   if (carried.length < BEAST_BAG_CAPACITY) return 'bag';
-  if (remaining.length - carried.length < BEAST_WAREHOUSE_CAPACITY)
-    return 'warehouse';
+  if (remaining.length - carried.length < warehouseCapacity) return 'warehouse';
   return null;
 }
 
@@ -186,10 +191,7 @@ export function captureSkill(
           ? BEAST_BAG_CAPACITY - ownedCount
           : bagCount === undefined
             ? capacity - ownedCount
-            : Math.min(
-                capacity - ownedCount,
-                BEAST_BAG_CAPACITY - bagCount,
-              ),
+            : Math.min(capacity - ownedCount, BEAST_BAG_CAPACITY - bagCount),
       ),
       targetMpCosts: Object.fromEntries(
         targets.flatMap((target) => {

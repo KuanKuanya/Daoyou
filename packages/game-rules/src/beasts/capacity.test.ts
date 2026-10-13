@@ -1,11 +1,15 @@
 import type { InventoryItem } from '@daoyou/game-domain/inventory';
 import { describe, expect, it } from 'vitest';
 import {
-  beastCapacityAt,
+  beastWarehouseCapacityAt,
   selectBeastExpansionMaterials,
   validateBeastExpansionMaterials,
 } from './capacity.js';
-import { captureSkill } from './progression.js';
+import {
+  BEAST_BAG_CAPACITY,
+  captureSkill,
+  receivedBeastPlacement,
+} from './progression.js';
 
 function material(
   id: string,
@@ -34,13 +38,44 @@ function material(
 }
 
 describe('beast capacity expansion', () => {
-  it('keeps initial capacity and resolves all paid stages without affecting carry slots', () => {
-    expect([0, 1, 2, 3, 4].map(beastCapacityAt)).toEqual([24, 40, 60, 80, 100]);
+  it('expands warehouse capacity without increasing capture room in the carried bag', () => {
+    expect([0, 1, 2, 3, 4].map(beastWarehouseCapacityAt)).toEqual([
+      50, 70, 90, 120, 160,
+    ]);
     for (const invalid of [-1, 1.5, 5, NaN])
-      expect(() => beastCapacityAt(invalid)).toThrow();
-    expect(captureSkill([], 30, 24, 40).capture?.capacity).toBe(16);
-    expect(captureSkill([], 30, 41, 40).capture?.capacity).toBe(0);
-    expect(captureSkill([], 30, 24).capture?.capacity).toBe(0);
+      expect(() => beastWarehouseCapacityAt(invalid)).toThrow();
+    const totalCapacity = BEAST_BAG_CAPACITY + beastWarehouseCapacityAt(1);
+    expect(captureSkill([], 30, 77, totalCapacity, 7).capture?.capacity).toBe(
+      1,
+    );
+    expect(captureSkill([], 30, 78, totalCapacity, 7).capture?.capacity).toBe(
+      0,
+    );
+    expect(captureSkill([], 30, 8, totalCapacity, 8).capture?.capacity).toBe(0);
+    expect(captureSkill([], 30, 7, totalCapacity, 7).capture?.capacity).toBe(1);
+  });
+  it('receives into the expanded warehouse and frees fusion parents before placement', () => {
+    const bag = Array.from({ length: BEAST_BAG_CAPACITY }, (_, i) => ({
+      id: `bag-${i}`,
+    }));
+    const stored = Array.from({ length: 70 }, (_, i) => ({
+      id: `stored-${i}`,
+    }));
+    const lineup = { carriedBeastIds: bag.map((beast) => beast.id) };
+    const beasts = [...bag, ...stored];
+    expect(receivedBeastPlacement(beasts.slice(0, -1), lineup, [], 70)).toBe(
+      'warehouse',
+    );
+    expect(receivedBeastPlacement(beasts, lineup, [], 70)).toBeNull();
+    expect(
+      receivedBeastPlacement(beasts, lineup, ['stored-0', 'stored-1'], 70),
+    ).toBe('warehouse');
+    expect(
+      receivedBeastPlacement(beasts, lineup, ['bag-0', 'stored-0'], 70),
+    ).toBe('bag');
+    expect(receivedBeastPlacement(beasts, lineup, [], 90)).toBe('warehouse');
+    expect(beasts).toHaveLength(78);
+    expect(lineup.carriedBeastIds).toHaveLength(8);
   });
   it('selects exact ranks from bag/storage and excludes favorite or equipped rows', () => {
     const monster = material('monster', 'monster', 500);

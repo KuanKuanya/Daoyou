@@ -93,6 +93,6 @@ export type BeastLocation = z.infer<typeof BeastLocationSchema>;
 export type BeastRoster = {
   beasts: SummonedBeast[];
   lineup: BeastLineup;
-  /** Total owned capacity from material expansion; carried bag remains capped separately. */
-  capacity?: number;
+  /** Maximum number of beasts held in the warehouse; the carried bag is fixed at eight. */
+  warehouseCapacity?: number;
 };

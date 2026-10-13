@@ -48,7 +48,7 @@ export function reasonText(reason: string) {
     'not-standing': '当前无法行动',
     'flee-failed': '逃离失败',
     'capture-failed': '捕捉失败',
-    'capture-capacity': '灵兽袋已满，请先空出空间，再继续捕捉。',
+    'capture-capacity': '灵兽袋已满，请先转存仓库，再继续捕捉。',
     'revive-blocked': '当前无法复起',
     'skill-not-known': '尚未掌握此技能',
     'passive-not-castable': '被动技能无法主动施展',

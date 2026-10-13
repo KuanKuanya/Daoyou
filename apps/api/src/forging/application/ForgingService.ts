@@ -37,6 +37,7 @@ import { parseMailAttachments } from '@daoyou/game-rules/mail';
 import { storyMarkForSignal } from '@daoyou/game-rules/story';
 import { QiService } from '@server/cultivator/application/QiService.js';
 import { addConsumableToInventoryInTransaction } from '@server/cultivator/application/readers/CultivatorInventoryRepository.js';
+import { readCultivatorName } from '@server/cultivator/facts.js';
 import { generateForgingNarrative } from '@server/forging/application/ForgingNarrativeService.js';
 import { mapConsumableRow } from '@server/inventory/application/consumablePersistence.js';
 import {
@@ -63,9 +64,9 @@ import { publishTransactionalMessageBestEffort } from '@server/lib/mq/transactio
 import { redisLockKeys, withRedisLock } from '@server/lib/redis/lock.js';
 import {
   beastIndividualData,
+  readBeastCapacity,
   readBeastOwner,
   readBeastRoster,
-  readBeastCapacity,
   saveBeastLineup,
 } from '@server/lib/repositories/combatV6BeastRepository.js';
 import {
@@ -77,7 +78,6 @@ import { playerCommandExecutor } from '@server/player/application/state/CommandE
 import { ResourceEventCommitter } from '@server/player/application/state/ResourceEventCommitter.js';
 import { publishResourceEvents } from '@server/realtime/infrastructure/playerStateBroadcaster.js';
 import { StoryService } from '@server/story/application/StoryService.js';
-import { readCultivatorName } from '@server/cultivator/facts.js';
 import { and, asc, count, eq, gte, ilike, inArray, or, sql } from 'drizzle-orm';
 import { randomInt, randomUUID } from 'node:crypto';
 import type { z } from 'zod';
@@ -572,8 +572,11 @@ export async function grantDevResources(input: DevGrant) {
           .select({ total: count() })
           .from(cultivatorBeasts)
           .where(eq(cultivatorBeasts.cultivatorId, input.cultivatorId));
-        const { capacity } = await readBeastCapacity(input.cultivatorId, tx);
-        if (held.total >= capacity)
+        const { warehouseCapacity } = await readBeastCapacity(
+          input.cultivatorId,
+          tx,
+        );
+        if (held.total >= BEAST_BAG_CAPACITY + warehouseCapacity)
           throw new InventoryError('灵兽持有数量已达上限');
         const roster = await readBeastRoster(input.cultivatorId, tx);
         const carried = carriedBeastIds(roster.beasts, roster.lineup);

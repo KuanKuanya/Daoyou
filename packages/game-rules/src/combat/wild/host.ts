@@ -6,7 +6,12 @@ import { BEAST_SKILLS, BEAST_STATUS_DEFS } from '@daoyou/game-content/beasts';
 
 import { projectBeastRoster } from '../../beasts/projection.js';
 
-import { captureSkill, carriedBeastIds } from '../../beasts/progression.js';
+import {
+  BEAST_BAG_CAPACITY,
+  BEAST_WAREHOUSE_CAPACITY,
+  captureSkill,
+  carriedBeastIds,
+} from '../../beasts/progression.js';
 
 import {
   activeBeastSkills,
@@ -151,10 +156,11 @@ export function createWildHost(
   const capture = captureSkill(
     combatants,
     projected.unit.level!,
+    player.beasts ? player.beasts.beasts.length : 0,
     player.beasts
-      ? player.beasts.beasts.length
-      : 0,
-    player.beasts?.capacity,
+      ? BEAST_BAG_CAPACITY +
+          (player.beasts.warehouseCapacity ?? BEAST_WAREHOUSE_CAPACITY)
+      : undefined,
     player.beasts
       ? carriedBeastIds(player.beasts.beasts, player.beasts.lineup).length
       : 0,

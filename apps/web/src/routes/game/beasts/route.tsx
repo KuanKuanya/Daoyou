@@ -17,7 +17,6 @@ import {
 } from '@daoyou/game-content/beasts';
 import {
   BEAST_BAG_CAPACITY,
-  BEAST_WAREHOUSE_CAPACITY,
   carriedBeastIds,
   warehouseBeastCount,
 } from '@daoyou/game-rules/beasts/growth';
@@ -230,7 +229,11 @@ export default function BeastsPage() {
             <span>
               灵兽袋{' '}
               <span className="font-mono">
-                {bagBeasts.length} / {BEAST_BAG_CAPACITY} · 持有 {view.beasts.length} / {view.capacity}
+                {bagBeasts.length} / {BEAST_BAG_CAPACITY}
+              </span>{' '}
+              · 仓库{' '}
+              <span className="font-mono">
+                {warehouseCount} / {view.warehouseCapacity}
               </span>
               <InkButton
                 disabled={
@@ -244,7 +247,7 @@ export default function BeastsPage() {
                   ? '查看扩容结果'
                   : view.capacityLevel >= 4
                     ? '已扩满'
-                    : '扩容'}
+                    : '仓库扩容'}
               </InkButton>
             </span>
             <span className="flex flex-wrap items-center justify-end gap-1">
@@ -277,7 +280,8 @@ export default function BeastsPage() {
                     disabled={
                       pending ||
                       bagBeasts.length >= BEAST_BAG_CAPACITY ||
-                      view.beasts.length >= view.capacity
+                      view.beasts.length >=
+                        BEAST_BAG_CAPACITY + view.warehouseCapacity
                     }
                     onClick={() => setClaimId(species.id)}
                   >
@@ -384,7 +388,7 @@ export default function BeastsPage() {
                       points,
                     })
                   }
-                  warehouseFull={warehouseCount >= BEAST_WAREHOUSE_CAPACITY}
+                  warehouseFull={warehouseCount >= view.warehouseCapacity}
                   fuse={() => openFusion(detail.id)}
                   store={() => {
                     const save = () =>
