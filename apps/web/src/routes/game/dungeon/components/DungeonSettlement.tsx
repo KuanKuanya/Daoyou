@@ -4,6 +4,7 @@ import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
 import { InkTag } from '@app/components/ui/InkTag';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { getResourceTypeInfo } from '@daoyou/game-content/presentation/concepts';
 import type { DungeonSettlement as DungeonSettlementType } from '@daoyou/game-domain/dungeon';
 import type { ResourceOperation } from '@daoyou/game-domain/resources';
@@ -110,8 +111,18 @@ export function DungeonSettlement({
                 {gain.info.label}
               </div>
               <div className="mt-1 text-lg font-semibold">
-                <GameIcon value={gain.info.icon} /> +
-                {gain.value.toLocaleString()}
+                {gain.type === 'spirit_stones' ? (
+                  <>
+                    +<SpiritStones amount={gain.value} />
+                  </>
+                ) : (
+                  <>
+                    <GameIcon value={gain.info.icon} /> +
+                    <span className="font-mono">
+                      {gain.value.toLocaleString()}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           ))

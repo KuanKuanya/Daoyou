@@ -1,3 +1,4 @@
+import { HuntMemberList } from '@app/components/feature/hunts/HuntMemberList';
 import { HuntTeamChat } from '@app/components/feature/hunts/HuntTeamChat';
 import {
   huntTargetLabel,
@@ -10,7 +11,6 @@ import {
   GameSceneLoading,
   GameSceneNote,
 } from '@app/components/game-shell';
-import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkSelect } from '@app/components/ui/InkSelect';
 import { REALM_VALUES, type RealmType } from '@daoyou/constants/realms';
@@ -153,7 +153,7 @@ export default function HuntTeamPage() {
           </InkButton>
         </form>
       ) : (
-        <div className="space-y-5 text-sm">
+        <div className="space-y-4 text-sm">
           <div className="flex items-center justify-between gap-3">
             <span>
               {huntTeamStatusLabel(team.status)}{' '}
@@ -163,28 +163,18 @@ export default function HuntTeamPage() {
               {team.minRealm}至{team.maxRealm}
             </span>
           </div>
-          <ul className="divide-ink/10 divide-y">
-            {team.members.map((member) => (
-              <li
-                key={member.cultivatorId}
-                className="flex items-center gap-2 py-3"
-              >
-                <GameIcon
-                  value="icon:cultivator-male-avatar"
-                  className="text-3xl"
-                />
-                <span className="min-w-0 flex-1">
-                  {member.name}
-                  {member.cultivatorId === team.leaderId ? ' · 队长' : ''}
-                  <span className="text-ink-secondary block text-xs">
-                    {member.realm}
-                    {member.assisting ? ' · 助战' : ''}
-                  </span>
-                </span>
-                <span>{member.ready ? '已准备' : '未准备'}</span>
-              </li>
-            ))}
-          </ul>
+          <HuntMemberList
+            team={team}
+            actorId={actorId ?? ''}
+            pending={pending}
+            onKick={(cultivatorId) =>
+              act(`/api/hunts/teams/${team.id}`, {
+                type: 'kick',
+                cultivatorId,
+                revision: team.revision,
+              })
+            }
+          />
           {leader && team.status === 'assembling' ? (
             <HuntTargetField
               team={team}
@@ -258,11 +248,6 @@ export default function HuntTeamPage() {
               </InkButton>
             </div>
           )}
-          {team.members.length < 2 ? (
-            <p className="text-ink-secondary leading-7">
-              再邀一位道友，准备妥当便可出战。
-            </p>
-          ) : null}
           {actorId ? (
             <HuntTeamChat key={team.id} team={team} actorId={actorId} />
           ) : null}

@@ -5,6 +5,7 @@ import { BeastTradeDetails } from '@app/components/feature/beasts/BeastTradePrev
 import { InkModal } from '@app/components/layout';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { InkButton, InkInput, InkNotice, InkSelect } from '@app/components/ui';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { apiFetch } from '@app/lib/api/fetch';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import { AuctionBeastListSchema } from '@daoyou/contracts/auction';
@@ -163,7 +164,7 @@ export function ListBeastModal({
                   <div key={entry.id}>
                     <BeastTradeCard
                       beast={entry}
-                      disabled={busy}
+                      disabled={busy || entry.isLocked}
                       onClick={() => setSelected(entry)}
                     />
                     {reason && (
@@ -207,10 +208,7 @@ export function ListBeastModal({
             />
             <p className="text-ink-secondary text-xs">
               单价上限{' '}
-              <span className="font-mono">
-                {AUCTION_MAX_UNIT_PRICE.toLocaleString()}
-              </span>{' '}
-              灵石
+              <SpiritStones amount={AUCTION_MAX_UNIT_PRICE} />
             </p>
             <InkSelect
               label="寄售范围"
@@ -243,14 +241,9 @@ export function ListBeastModal({
             )}
             <p>
               预计税费{' '}
-              <span className="font-mono">
-                {quote.feeAmount.toLocaleString()}
-              </span>
+              <SpiritStones amount={quote.feeAmount} />
               ，实得{' '}
-              <span className="font-mono">
-                {quote.sellerAmount.toLocaleString()}
-              </span>{' '}
-              灵石。
+              <SpiritStones amount={quote.sellerAmount} />。
             </p>
             <p className="text-ink-secondary text-xs">
               寄售48小时，每单一只。上架后暂离灵兽仓，成交款或退回灵兽通过邮件领取。

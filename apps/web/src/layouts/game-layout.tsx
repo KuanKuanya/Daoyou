@@ -9,6 +9,7 @@ import { RealtimeConnectionToasts } from '@app/components/game-shell/RealtimeCon
 import { useGameHudModel } from '@app/components/game-shell/useGameHudModel';
 import { BgmProvider } from '@app/components/providers/BgmProvider';
 import { InkButton } from '@app/components/ui/InkButton';
+import { TRANSFER_PENDING_NOTE, TRANSFERRED_NOTE } from '@daoyou/contracts/transfer';
 import { AuthProvider } from '@app/lib/auth/authContext';
 import { PlayerProvider } from '@app/lib/player/PlayerProvider';
 import { usePlayerSession } from '@app/lib/resources/player';
@@ -68,37 +69,39 @@ function PlayerShell() {
   }
 
   if (!hasActiveCultivator) {
-    const isDead = Boolean(note);
+    const isDead = note === '前世道途已尽';
+    const isTransferPending = note === TRANSFER_PENDING_NOTE;
+    const wasTransferred = note === TRANSFERRED_NOTE;
 
     return (
-      <div className="app-safe-area-page bg-paper flex min-h-[100svh] items-center justify-center">
+      <div className="app-safe-area-page bg-paper flex min-h-dvh items-center justify-center">
         <div className="w-full max-w-xl p-6">
           <h1 className="text-xl font-semibold tracking-wide">
-            {isDead ? '前世道途已尽' : '尚未凝聚真身'}
+            {isDead ? '前世道途已尽' : isTransferPending ? '道身转服审核中' : wasTransferred ? '道身已转出' : '尚未凝聚真身'}
           </h1>
           <p className="text-ink-secondary mt-3 text-sm leading-7">
             {note ||
-              '当前账号下还没有活跃角色。先完成角色创建，再进入万界修行主流程。'}
+              '当前账号下还没有活跃角色。可以创建新角色，也可以从其他服务器转入已有角色。'}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <InkButton
               variant="primary"
-              href={isDead ? '/game/reincarnate' : '/game/create'}
+              href={isTransferPending ? '/transfer' : isDead ? '/game/reincarnate' : '/game/create'}
             >
-              {isDead ? '前往转世重修' : '前往角色创建'}
+              {isTransferPending ? '查看转服进度' : isDead ? '前往转世重修' : '前往角色创建'}
             </InkButton>
             <InkButton href="/game">返回主界面</InkButton>
           </div>
+          {!isDead && !isTransferPending && !wasTransferred && <div className="mt-4 text-sm text-ink-secondary">
+            已有旧服道身？<InkButton href="/transfer?mode=import" variant="secondary">从其他服务器转入</InkButton>
+          </div>}
+          {(isTransferPending || wasTransferred) && <div className="mt-4"><InkButton href="/transfer" variant="secondary">查看跨服记录</InkButton></div>}
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="bg-paper min-h-screen">
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 }
 
 function resolveSpecialSceneDescriptor(
@@ -218,7 +221,7 @@ function SectVisitSceneChrome() {
   }
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between pt-[calc(env(safe-area-inset-top)+0.65rem)] pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.25rem)] md:pl-[max(env(safe-area-inset-left),1.25rem)]">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between pt-[calc(var(--app-safe-top)+0.65rem)] pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.25rem)] md:pl-[max(env(safe-area-inset-left),1.25rem)]">
       <div className="pointer-events-auto">
         <button
           type="button"
@@ -279,16 +282,16 @@ export function GameViewportLayout() {
         '--game-bottom-offset':
           bottomChromeHeight !== null
             ? `${bottomChromeHeight}px`
-            : 'calc(env(safe-area-inset-bottom) + 7rem)',
+            : 'calc(var(--app-bottom-reserve) + 7rem)',
       }) as CSSProperties,
     [bottomChromeHeight],
   );
 
   return (
-    <div data-game-viewport className="bg-paper min-h-[100svh]" style={viewportStyle}>
+    <div data-game-viewport className="bg-paper" style={viewportStyle}>
       <AuthProvider>
       <WorldChatFeedProvider>
-        <div className="flex min-h-[100svh] flex-col">
+        <div className="flex min-h-dvh flex-col">
           <div className="sticky top-0 z-30">
             <GameTopHud snapshot={hud} />
             <HuntTeamBar />
@@ -307,7 +310,7 @@ export function GameViewportLayout() {
         </div>
         <RealtimeConnectionToasts />
         <GuideOverlay />
-        <div data-game-bottom-chrome ref={bottomChromeRef} className="fixed inset-x-0 bottom-0 z-40">
+        <div data-game-bottom-chrome ref={bottomChromeRef} className="game-bottom-chrome">
           <WorldChatPreviewBar />
           <GameBottomDock
             sceneId={scene?.id ?? null}
@@ -328,7 +331,7 @@ export function GameViewportLayout() {
 
 function GameCombatLayoutBody() {
   return (
-    <div className="bg-paper h-screen overflow-hidden">
+    <div className="bg-paper h-dvh overflow-hidden">
       <main className="h-full overflow-hidden">
         <Outlet />
       </main>
@@ -356,11 +359,9 @@ export function GameActivityLayout() {
 
 export function GameNarrativeLayout() {
   return (
-    <div className="min-h-[100svh] overflow-hidden bg-[#111713]">
-      <main className="min-h-[100svh]">
-        <Outlet />
-      </main>
-    </div>
+    <main>
+      <Outlet />
+    </main>
   );
 }
 
@@ -429,10 +430,10 @@ function GameGenesisLayoutBody() {
   );
 
   return (
-    <div className="bg-paper h-screen overflow-hidden">
+    <div className="bg-paper h-dvh overflow-hidden">
       <div className="flex h-full flex-col overflow-hidden">
         <header className="border-battle-rule-strong border-b border-dashed bg-[rgba(248,243,230,0.92)]">
-          <div className="mx-auto flex max-w-6xl items-start justify-between gap-4 pt-[calc(env(safe-area-inset-top)+0.8rem)] pr-[max(env(safe-area-inset-right),0.75rem)] pb-3 pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
+          <div className="mx-auto flex max-w-6xl items-start justify-between gap-4 pt-[calc(var(--app-safe-top)+0.8rem)] pr-[max(env(safe-area-inset-right),0.75rem)] pb-3 pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
             <InkButton href={descriptor.backAction.href}>
               {descriptor.backAction.label}
             </InkButton>
@@ -464,7 +465,7 @@ export function GameGenesisLayout() {
 }
 
 const DUNGEON_SCENE_TOP_OFFSET_FALLBACK =
-  'calc(env(safe-area-inset-top) + 3.5rem)';
+  'calc(var(--app-safe-top) + 3.5rem)';
 
 function DungeonSceneChrome({
   chromeRef,
@@ -484,11 +485,11 @@ function DungeonSceneChrome({
       <div
         className={
           isScrolled
-            ? 'border-ink/10 pointer-events-auto border-b border-dashed backdrop-blur-sm'
+            ? 'border-ink/10 bg-paper pointer-events-auto border-b border-dashed'
             : 'pointer-events-auto'
         }
       >
-        <div className="mx-auto flex min-h-12 w-full max-w-5xl items-center gap-3 pt-[env(safe-area-inset-top)] pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
+        <div className="mx-auto flex min-h-12 w-full max-w-5xl items-center gap-3 pt-[var(--app-safe-top)] pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
           <button
             type="button"
             onClick={() => navigate(descriptor.backAction.href)}

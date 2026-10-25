@@ -6,5 +6,7 @@ export {
   auctionItemPriceCap,
   auctionItemQuality,
   auctionListingStackLimit,
+  auctionPurchaseQuantityLimit,
+  auctionSellerReceiptAllows,
 } from '../auction/items.js';
 export { calculateAuctionSettlement } from '../auction/settlement.js';

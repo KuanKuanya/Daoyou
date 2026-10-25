@@ -1,5 +1,37 @@
 /** GameIcon alone resolves these names; all icon files live in public/assets/icons. */
 export const iconRegistry: ReadonlyMap<string, string> = new Map([
+  [
+    'breakthrough-foundation_qi',
+    '/assets/icons/breakthrough-foundation_qi.webp',
+  ],
+  [
+    'breakthrough-core_condensation',
+    '/assets/icons/breakthrough-core_condensation.webp',
+  ],
+  [
+    'breakthrough-heart_demon_nascent',
+    '/assets/icons/breakthrough-heart_demon_nascent.webp',
+  ],
+  [
+    'breakthrough-tribulation_deity',
+    '/assets/icons/breakthrough-tribulation_deity.webp',
+  ],
+  [
+    'breakthrough-law_insight_void',
+    '/assets/icons/breakthrough-law_insight_void.webp',
+  ],
+  [
+    'breakthrough-tribulation_body',
+    '/assets/icons/breakthrough-tribulation_body.webp',
+  ],
+  [
+    'breakthrough-inner_demon_grand',
+    '/assets/icons/breakthrough-inner_demon_grand.webp',
+  ],
+  [
+    'breakthrough-heavenly_tribulation_final',
+    '/assets/icons/breakthrough-heavenly_tribulation_final.webp',
+  ],
   ['brand-ding', '/assets/icons/brand-ding-ink-v3.webp'],
   ['nav-world-map', '/assets/icons/nav-world-map-ink-v1.webp'],
   ['nav-fate-reshape', '/assets/icons/nav-fate-reshape-ink-v1.webp'],

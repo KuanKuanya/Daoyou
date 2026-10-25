@@ -9,6 +9,7 @@ import { GameImage } from '@app/components/ui/GameImage';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { useCraftStorage } from '@app/lib/resources/craftStorage';
 import {
   MAX_CRAFT_MATERIAL_QUANTITY,
@@ -581,10 +582,7 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                   本次消耗{' '}
                   <span className="font-mono">{session.result.cost.qi}</span>{' '}
                   天地灵气 ·{' '}
-                  <span className="font-mono">
-                    {session.result.cost.spiritStones}
-                  </span>{' '}
-                  灵石
+                  <SpiritStones amount={session.result.cost.spiritStones} />
                 </p>
                 <InkButton variant="primary" onClick={clear}>
                   继续
@@ -735,10 +733,7 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                           {input.expectedCost.qi}
                         </span>{' '}
                         天地灵气 ·{' '}
-                        <span className="font-mono">
-                          {input.expectedCost.spiritStones}
-                        </span>{' '}
-                        灵石
+                        <SpiritStones amount={input.expectedCost.spiritStones} />
                       </p>
                     )}
                     <p className="text-ink-secondary" role="status">
@@ -836,10 +831,7 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                   {confirmation.input.expectedCost.qi}
                 </span>{' '}
                 天地灵气 ·{' '}
-                <span className="font-mono">
-                  {confirmation.input.expectedCost.spiritStones}
-                </span>{' '}
-                灵石
+                <SpiritStones amount={confirmation.input.expectedCost.spiritStones} />
               </p>
               {confirmation.warning && (
                 <p className="text-crimson">{confirmation.warning}</p>

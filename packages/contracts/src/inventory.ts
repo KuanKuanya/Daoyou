@@ -25,6 +25,7 @@ export const InventoryQuerySchema = z
         'beast_book',
         'beast_refinement',
         'beast_rejuvenation',
+        'beast_lure',
         'equipment',
         'blueprint',
         'material',

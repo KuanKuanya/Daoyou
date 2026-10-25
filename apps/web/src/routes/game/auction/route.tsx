@@ -1,4 +1,3 @@
-import { apiFetch } from '@app/lib/api/fetch';
 import { AuctionListingActions } from '@app/components/auction/AuctionListingActions';
 import { AuctionListings } from '@app/components/auction/AuctionListings';
 import { ListBeastModal } from '@app/components/auction/ListBeastModal';
@@ -9,6 +8,7 @@ import {
   GameSceneTabs,
 } from '@app/components/game-shell';
 import { GameSceneHelpButton } from '@app/components/game-shell/GameSceneSection';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { useInkUI } from '@app/components/providers/InkUIProvider';
 import {
   InkButton,
@@ -19,31 +19,35 @@ import {
   InkNotice,
   InkSelect,
 } from '@app/components/ui';
+import { apiFetch } from '@app/lib/api/fetch';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import {
   useCultivatorCurrency,
   useCultivatorIdentity,
 } from '@app/lib/resources/player';
+import { QUALITY_VALUES } from '@daoyou/constants/qualities';
+import { type AuctionListingView } from '@daoyou/contracts/auction';
+import { BEAST_SPECIES } from '@daoyou/game-content/beasts';
 import {
-  AUCTION_MAX_PURCHASE_QUANTITY,
-  AUCTION_MAX_TRANSACTION_TOTAL,
   AUCTION_ITEM_TYPES,
+  AUCTION_MAX_ACTIVE_LISTINGS,
+  AUCTION_MAX_TRANSACTION_TOTAL,
   AUCTION_TYPE_NAMES,
   type AuctionAssetType,
   type AuctionItemType,
 } from '@daoyou/game-domain/auction';
-import { calculateAuctionSettlement } from '@daoyou/game-rules/auction';
+import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
+import { MATERIAL_TYPE_NAMES } from '@daoyou/game-domain/inventory';
+import { getRealmStageLevel } from '@daoyou/game-domain/progression';
+import {
+  auctionPurchaseQuantityLimit,
+  calculateAuctionSettlement,
+} from '@daoyou/game-rules/auction';
+import { canDeployBeast } from '@daoyou/game-rules/beasts/projection';
 import {
   hasReachedLateQiRefining,
   LATE_QI_AUCTION_DENIED,
 } from '@daoyou/game-rules/progression/realm-access';
-import { getRealmStageLevel } from '@daoyou/game-domain/progression';
-import { type AuctionListingView } from '@daoyou/contracts/auction';
-import { BEAST_SPECIES } from '@daoyou/game-content/beasts';
-import { canDeployBeast } from '@daoyou/game-rules/beasts/projection';
-import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
-import { MATERIAL_TYPE_NAMES } from '@daoyou/game-domain/inventory';
-import { QUALITY_VALUES } from '@daoyou/constants/qualities';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
@@ -51,6 +55,7 @@ type ItemTypeFilter = AuctionItemType | 'all';
 type ListingsPayload = {
   listings: AuctionListingView[];
   pagination: { page: number; total: number; totalPages: number };
+  slots?: { used: number; limit: number; items: number; beasts: number };
 };
 const ASSET_TABS = [
   { label: '道具', value: 'item' },
@@ -250,12 +255,15 @@ export default function AuctionPage() {
       pushToast({ message: '角色信息读取中，请稍后重试', tone: 'warning' });
       return false;
     }
-    if (
-      !Number.isInteger(quantity) ||
-      quantity < 1 ||
-      quantity >
-        Math.min(listing.remainingQuantity, AUCTION_MAX_PURCHASE_QUANTITY)
-    )
+    const maxQuantity =
+      listing.itemType === 'beast'
+        ? 1
+        : auctionPurchaseQuantityLimit({
+            definitionId: listing.item.definitionId,
+            remainingQuantity: listing.remainingQuantity,
+            unitPrice: listing.price,
+          });
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity)
       return false;
     const total = calculateAuctionSettlement(
       listing.price,
@@ -294,17 +302,11 @@ export default function AuctionPage() {
             </p>
             <p>
               单价{' '}
-              <span className="font-mono">
-                {listing.price.toLocaleString()}
-              </span>{' '}
-              灵石
+              <SpiritStones amount={listing.price} />
             </p>
             <p className="text-amber-800">
               合计{' '}
-              <span className="font-mono font-semibold">
-                {total.toLocaleString()}
-              </span>{' '}
-              灵石
+              <SpiritStones amount={total} className="font-semibold" />
             </p>
             {listing.itemType === 'beast' &&
               !canDeployBeast(listing.beast, ownerLevel) && (
@@ -446,7 +448,10 @@ export default function AuctionPage() {
               title: '拍卖行规则',
               content: (
                 <div className="space-y-2 text-sm leading-6">
-                  <p>道具与灵兽合计最多寄售5单，每单保留48小时。</p>
+                  <p>
+                    道具与灵兽合计最多寄售{AUCTION_MAX_ACTIVE_LISTINGS}
+                    单，每单保留48小时。
+                  </p>
                   <p>堆叠道具按件计价，可选择购买数量。灵兽每单1只。</p>
                   <p>
                     成交按单价适用3%～15%超额累进税率，成交款与退回物品通过邮件领取。
@@ -477,13 +482,30 @@ export default function AuctionPage() {
         >
           筛选{filterCount ? ` · ${filterCount}` : ''}
         </InkButton>
-        <div className="text-ink-secondary flex items-center gap-2 text-xs">
+        <div className="text-ink-secondary flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-xs">
           <p>
-            {mine ? '我的寄售' : '在售'}
-            {data && (
+            {mine && data?.slots ? (
               <>
-                {' '}
-                · <span className="font-mono">{data.pagination.total}</span> 单
+                寄售位{' '}
+                <span className="font-mono">
+                  {data.slots.used}/{data.slots.limit}
+                </span>
+                {' · 道具 '}
+                <span className="font-mono">{data.slots.items}</span>
+                {' · 灵兽 '}
+                <span className="font-mono">{data.slots.beasts}</span>
+              </>
+            ) : (
+              <>
+                {mine ? '我的寄售' : '在售'}
+                {data && (
+                  <>
+                    {' '}
+                    ·{' '}
+                    <span className="font-mono">{data.pagination.total}</span>{' '}
+                    单
+                  </>
+                )}
               </>
             )}
           </p>

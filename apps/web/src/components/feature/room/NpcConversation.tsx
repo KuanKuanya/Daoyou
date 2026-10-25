@@ -23,7 +23,7 @@ export interface NpcConversationMessage {
 
 export interface NpcConversationOption {
   id: string;
-  label: string;
+  label: ReactNode;
   tone?: 'normal' | 'primary' | 'muted';
   disabled?: boolean;
   guideAnchor?: string;

@@ -1,17 +1,19 @@
-import { describe, expect, it } from 'vitest';
-import { AUCTION_MAX_UNIT_PRICE } from '@daoyou/game-domain/auction';
-import { buildSpiritFruitSpec } from '../spirit-field/spiritFruit.js';
+import { AUCTION_CATALOG_UNIT_PRICE_CAP } from '@daoyou/game-content/auction/config';
 import { ITEM_DEFINITIONS } from '@daoyou/game-content/items';
+import { AUCTION_MAX_UNIT_PRICE } from '@daoyou/game-domain/auction';
+import { describe, expect, it } from 'vitest';
+import { buildSpiritFruitSpec } from '../spirit-field/spiritFruit.js';
 import {
   auctionBlockReason,
   auctionItemPriceCap,
   auctionItemQuality,
   auctionListingStackLimit,
+  auctionPurchaseQuantityLimit,
   AuctionSnapshotSchema,
 } from './items.js';
 
 describe('新版寄售规则', () => {
-  it('所有无品质品类开放寄售，不合成品质或按旧品质限价', () => {
+  it('无品质品类开放寄售，难估价货品与固定货品使用不同单价上限', () => {
     for (const definition of ITEM_DEFINITIONS.filter((d) =>
       [
         'equipment',
@@ -19,6 +21,9 @@ describe('新版寄售规则', () => {
         'manual_jade',
         'beast_book',
         'inscription',
+        'beast_refinement',
+        'beast_rejuvenation',
+        'beast_lure',
       ].includes(d.kind),
     )) {
       const item = {
@@ -26,10 +31,17 @@ describe('新版寄售规则', () => {
         instanceData: null,
         location: 'bag',
       };
+      const appraisal = ['equipment', 'manual_jade', 'beast_book'].includes(
+        definition.kind,
+      );
       expect(auctionItemQuality(item)).toBeNull();
-      expect(auctionItemPriceCap(item)).toBe(AUCTION_MAX_UNIT_PRICE);
+      expect(auctionItemPriceCap(item)).toBe(
+        appraisal ? AUCTION_MAX_UNIT_PRICE : AUCTION_CATALOG_UNIT_PRICE_CAP,
+      );
       expect(auctionBlockReason(item)).toBeNull();
     }
+    expect(AUCTION_MAX_UNIT_PRICE).toBe(99_990_000);
+    expect(AUCTION_CATALOG_UNIT_PRICE_CAP).toBe(9_999_999);
   });
   it('有品质材料仍执行玄品起售与品质价格上限', () => {
     const item = {
@@ -45,6 +57,12 @@ describe('新版寄售规则', () => {
     };
     expect(auctionBlockReason(item)).toBeNull();
     expect(auctionItemPriceCap(item)).toBe(100000);
+    expect(
+      auctionItemPriceCap({
+        ...item,
+        instanceData: { ...item.instanceData, rank: '神品' },
+      }),
+    ).toBe(AUCTION_CATALOG_UNIT_PRICE_CAP);
     expect(
       auctionBlockReason({
         ...item,
@@ -186,4 +204,50 @@ it('上架件数跟随背包堆叠上限', () => {
     }).success,
   ).toBe(false);
   expect(auctionListingStackLimit('equipment.v6')).toBe(1);
+});
+
+it('购买件数跟随同一堆叠上限，并受剩余数量与成交总额约束', () => {
+  const book = ITEM_DEFINITIONS.find((item) => item.kind === 'beast_book')!;
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'material.v1',
+      remainingQuantity: 999,
+      unitPrice: 1,
+    }),
+  ).toBe(999);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: book.id,
+      remainingQuantity: 99,
+      unitPrice: 1,
+    }),
+  ).toBe(99);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'equipment.v6',
+      remainingQuantity: 1,
+      unitPrice: 1,
+    }),
+  ).toBe(1);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'material.v1',
+      remainingQuantity: 40,
+      unitPrice: 100,
+    }),
+  ).toBe(40);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'material.v1',
+      remainingQuantity: 999,
+      unitPrice: 1_600_000,
+    }),
+  ).toBe(625);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: book.id,
+      remainingQuantity: 99,
+      unitPrice: AUCTION_MAX_UNIT_PRICE,
+    }),
+  ).toBe(1);
 });

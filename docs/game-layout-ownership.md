@@ -25,7 +25,7 @@
 - `/game/beasts/fusion` 为同壳独立融合页，从育兽室进入；灵兽袋与仓库在本页内打开同一套融合操作。左右灵兽位对照资质、成长与技能，中央水墨炉提供预览入口；移动端保持双列对照，融合操作移至下方。选择器每页向服务端读取 15 只，袋中与仓库中的灵兽都可直接作为材料。选择与确认使用辅助抽屉，结果原地展示；请求持久化至会话存储，刷新后可恢复同一次融合。查看新灵兽时，在袋中打开 `/game/beasts?beast=个体ID`，在仓库中打开 `/game/beasts/warehouse?beast=个体ID`。
 - 全局地图、野外与坊市选址入口统一进入 `/game/map-v2`；旧 `/game/map` 仅作为兼容地址，通过 replace 重定向保留查询参数，旧 DOM 页面及专属组件已删除；正式地图统一登记为 `map` 场景，兼容地址不再拥有独立场景。
 - `/game/map-v2` 是 Phaser 沉浸地图，接入世界总览与天南、慕兰草原、乱星海、大晋皇朝、南疆、北境冰原。地图路由拥有自身顶部控件，访宗专属 `SectVisitSceneChrome` 不参与世界地图绘制：左上角为“关闭地图 / 返回上层”，右上角采用紧凑单行工具条，合并区域名、直接可输入的地点搜索框与类型下拉，搜索结果和类型选项在下方就地展开。关闭固定返回洞府，上层返回人界总览；只保留一个非模态节点信息与操作面板，画布负责地形、镜头与标记。`types` 保存筛选，玩法历史项的 `mapReturnTo` 保留直接返回来源。
-- `/game/wild` 在 `CombatV6Layout` 中分为寻觅准备页和既有 V6 战斗页。准备页由节点配置驱动，使用统一 `InkButton`、`GameLoadingState`、`BeastIcon` 与语义配色；只展示本次物种、等级、成年／幼崽及两个动作。每次寻觅消耗 2 点天地灵气，捕捉在战斗中完成。灵兽袋已满时，开战前提示先空出空间。见 [野外寻觅](combat-v6-wild-seeking.md)。
+- `/game/wild` 在 `CombatV6Layout` 中分为寻觅准备页和既有 V6 战斗页。准备页由节点配置驱动，使用统一 `InkButton`、`GameLoadingState`、`BeastIcon` 与语义配色；只展示本次物种、等级、野生／宝宝及两个动作。变异只标「变异」。每次寻觅消耗 2 点天地灵气，捕捉在战斗中完成。灵兽袋已满时，开战前提示先空出空间。见 [野外寻觅](combat-v6-wild-seeking.md)。
 - `/game/tower` 使用主流程壳展示挑战、祝福和周榜；活动战斗跳转 `/game/tower/battle` 的既有沉浸壳，复用 v6 公共战斗组件。结算播放结束后返回幻境，不在入口正文嵌入旧战斗播放器。
 - `/game/rankings` 保留榜单主流程壳；`/game/battle/challenge` 使用 v6 公共回放播放器自动逐行动播放服务端已结算的挑战，播放完成后展示名次摘要。挑战请求 UUID 保留在 URL，刷新及失败后恢复同一结果，观看不占用角色。
 
@@ -37,7 +37,10 @@
 - 清扫与采掘共用的横屏、全屏进入和释放逻辑放在 `apps/web/src/lib/gameActivityImmersive.ts`；共享启动层和沉浸状态监听放在 `apps/web/src/components/feature/game-activity/`
 - 清扫摇杆使用 `phaser4-rex-plugins` 的 Virtual Joystick，并由清扫 Phaser runtime 持有、渲染和销毁；采掘放索按钮仍是玩法私有 DOM 控件。各玩法 runtime 与服务端重放规则保持独立
 - PWA 安装状态由应用根 Provider 统一持有；小游戏只在全屏失败时给出场景化安装提示，系统设置保留固定安装入口。展开菜单「下载游戏」进入 `/game/download`，按苹果手机、安卓手机和电脑以循环示意图说明如何添加到主屏幕；浏览器可以直接安装时，该页提供安装按钮
-- PWA 安全区由顶层布局和共享固定层分别负责：背景与画布可以铺满系统区域，HUD、导航、正文和模态交互必须避让 `safe-area-inset-*`；不得给 `body` 统一增加 padding
+- 根画布只画纯色，不给 `body` 增加安全区 padding。Provider 外壳不拥有高度或背景；普通完整场景使用 `min-height:100dvh`，画布与固定工作区使用 `height:100dvh`，保留各自滚动方式。
+- 系统顶部绘色层仅有 `index.html` 中 `#root` 外的 `.app-system-top`，由首帧的 iOS 独立运行标记启用；真实 fullscreen 关闭。屏幕顶部控件读取 `--app-safe-top`，左右及底部仍使用系统 inset。非纸色场景用 `AppViewportColor` 同步根底色和 theme-color，退出恢复纸色，不按 URL 另建主题注册表。
+- 主流程 bottom chrome 统一拥有不透明背景、最大底部安全区留白及定位；`GameBottomDock` 只负责业务间距。main 使用实测 `--game-bottom-offset`，不再额外叠加底部 inset；聊天键盘仍由场景独立处理。Portal 弹层保留自己的安全区；`InkModal`、`InkDetailDrawer` 与 `AdminDialog` 共享可视视口测量及计数式 body 滚动锁。
+- 跨平台审计、已实施的清理规则、本地验证及真机待验收项见 [PWA 视口梳理](pwa-viewport-audit.md)。
 - 冷启动壳由 `index.html` 提供首字节后的静态反馈，React Router 根路由使用同构的 `AppBootScreen` 承接懒加载与初始 loader 阶段
 - `routes/game/components/` 只保留真正属于某个页面的私有组件；跨两个以上路由族复用的组件不得继续放在 `routes/**`
 

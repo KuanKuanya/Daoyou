@@ -20,7 +20,7 @@ it('上架只接受引用且公私对象不能混用', () => {
     { beast: starter },
     { quantity: 1 },
     { price: 0 },
-    { price: 10000000 },
+    { price: 99_990_001 },
     { visibility: 'private' },
     { targetCultivatorId: buyer },
   ])

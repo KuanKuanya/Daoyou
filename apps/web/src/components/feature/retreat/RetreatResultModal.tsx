@@ -11,6 +11,7 @@ import type {
   BreakthroughResult,
   CultivationResult,
 } from '@daoyou/game-domain/cultivation';
+import { getNextMajorRealm } from '@daoyou/game-rules/consumables/breakthrough';
 import { format } from 'd3-format';
 import { useMemo } from 'react';
 import { BreakthroughChanceDetails } from './BreakthroughChanceDetails';
@@ -170,6 +171,10 @@ function BreakthroughResultContent({
     summary.success && summary.toRealm && summary.toStage
       ? `${summary.fromRealm}${summary.fromStage} → ${summary.toRealm}${summary.toStage}`
       : '';
+  const majorGateReady =
+    summary.success &&
+    summary.toStage === '圆满' &&
+    Boolean(summary.toRealm && getNextMajorRealm(summary.toRealm));
 
   const attributeGrowthText = useMemo(() => {
     if (!summary.attributeGrowth) return '';
@@ -209,6 +214,9 @@ function BreakthroughResultContent({
       </div>
 
       {realmChangeText ? <p>境界突破：{realmChangeText}</p> : null}
+      {majorGateReady ? (
+        <p>破境卷宗已送达。先按卷宗备妥，再回静室正式冲关。</p>
+      ) : null}
 
       {'naturalAttributeGrowth' in summary &&
       summary.naturalAttributeGrowth > 0 ? (

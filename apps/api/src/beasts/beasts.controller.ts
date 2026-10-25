@@ -3,6 +3,7 @@ import {
   BeastClaimSchema,
   BeastFusionRequestSchema,
   BeastLineupRequestSchema,
+  BeastLockSchema,
   BeastPickerQuerySchema,
   BeastPlaceSchema,
   BeastRenameSchema,
@@ -160,6 +161,16 @@ export class BeastsController {
     input: z.infer<typeof BeastPlaceSchema>,
   ) {
     return this.beasts.place(actor.cultivatorId, input);
+  }
+
+  @Post('lock')
+  @HttpCode(200)
+  lock(
+    @CurrentCultivator() actor: ActiveCultivatorRef,
+    @JsonBody(new ZodPipe(BeastLockSchema))
+    input: z.infer<typeof BeastLockSchema>,
+  ) {
+    return this.beasts.lock(actor.cultivatorId, input);
   }
 
   @Post('release')
