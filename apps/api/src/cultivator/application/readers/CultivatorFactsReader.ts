@@ -3,15 +3,21 @@ import {
   type DbExecutor,
   type DbTransaction,
 } from '@server/lib/drizzle/db.js';
-import { cultivators, spiritualRoots } from '@server/lib/drizzle/schema.js';
+import { cultivators } from '@server/lib/drizzle/schema.js';
 import type {
   CultivationProgress,
-  Cultivator,
 } from '@daoyou/game-domain/character';
-import type { CultivatorCondition } from '@daoyou/game-domain/condition';
 import type { RealmStage, RealmType } from '@daoyou/constants/realms';
-import { and, eq } from 'drizzle-orm';
-import { mapSpiritualRoots } from '@server/cultivator/application/readers/CultivatorProfileRepository.js';
+import { eq, inArray } from 'drizzle-orm';
+
+export async function readCultivatorTitles(ids: string[], executor?: DbExecutor) {
+  if (!ids.length) return new Map<string, string | null>();
+  const rows = await (executor ?? getExecutor())
+    .select({ id: cultivators.id, title: cultivators.title })
+    .from(cultivators)
+    .where(inArray(cultivators.id, ids));
+  return new Map(rows.map((row) => [row.id, row.title]));
+}
 
 async function requireFacts<T>(
   cultivatorId: string,
@@ -137,41 +143,4 @@ export function readCultivatorReputation(
       }),
     executor,
   );
-}
-
-export async function readMarrowWashFacts(
-  userId: string,
-  cultivatorId: string,
-  executor?: DbExecutor | DbTransaction,
-): Promise<{
-  realm: RealmType;
-  condition?: CultivatorCondition;
-  spiritualRoots: Cultivator['spiritual_roots'];
-} | null> {
-  const q = executor ?? getExecutor();
-  const [row] = await q
-    .select({
-      realm: cultivators.realm,
-      condition: cultivators.condition,
-    })
-    .from(cultivators)
-    .where(
-      and(
-        eq(cultivators.id, cultivatorId),
-        eq(cultivators.userId, userId),
-        eq(cultivators.status, 'active'),
-      ),
-    )
-    .limit(1);
-  if (!row) return null;
-  const roots = await q
-    .select()
-    .from(spiritualRoots)
-    .where(eq(spiritualRoots.cultivatorId, cultivatorId));
-  return {
-    realm: row.realm as RealmType,
-    condition:
-      (row.condition as CultivatorCondition | null | undefined) ?? undefined,
-    spiritualRoots: mapSpiritualRoots(roots),
-  };
 }

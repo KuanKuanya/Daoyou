@@ -11,6 +11,9 @@ allowBuilds:
 # pnpm 11+ fails installation when a dependency build is not listed. Keep the
 # previous behavior: only esbuild runs its scripts.
 strictDepBuilds: false
+overrides:
+  # cn-font-split's Koffi 2.10 aborts on exit after conversion on Node 24.
+  cn-font-split>koffi: 2.16.3
 # Do not set pmOnFail. EdgeOne only ships pnpm 11, and that binary must be
 # allowed to download the pinned 12.10.1 before installing. warn or ignore
 # would install with pnpm 11. Local Homebrew and Cloudflare already run
@@ -19,3 +22,11 @@ strictDepBuilds: false
 
 syncInjectedDepsAfterScripts:
   - build
+minimumReleaseAgeExclude:
+  - '@ai-sdk/alibaba@2.0.83'
+  - '@ai-sdk/deepseek@3.0.80'
+  - '@ai-sdk/gateway@4.0.136'
+  - '@ai-sdk/provider-utils@5.0.75'
+  - '@ai-sdk/provider@4.0.36'
+  - ai@7.0.163
+  - undici@7.30.2

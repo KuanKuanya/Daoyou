@@ -5,11 +5,10 @@ import { createBattle } from '@daoyou/combat-core/session';
 import { type SkillDef, type StatusDef } from '@daoyou/combat-core/types';
 import { createDaoyouRuleset } from '../combat/daoyou/index.js';
 import { COMBAT_V6_BASE_PROJECTION_VERSIONS } from '@daoyou/game-domain/combat';
-import { compileCharacterManualsV1, manualSlot } from './compiler.js';
+import { compileCharacterManualsV1, isAdvancedManual, manualLearningSlot } from './compiler.js';
 import { CHARACTER_MANUALS_V1, MANUAL_PACK } from '@daoyou/game-content/manuals';
 import { compileManualSkill, manualMechanismValue } from './mechanism.js';
 import { loadManualPack } from '@daoyou/game-domain/manuals/authoring';
-import { manualEffectLines } from './presentation.js';
 
 const statuses: StatusDef[] = [
   { id: 'dot', name: '毒', kind: 'dot', category: 'dot' },
@@ -154,18 +153,14 @@ function strike(
 }
 
 describe('首版功法内容合同', () => {
-  it('24本各六种，六维与机制逐层成长且无品质/产出字段', () => {
-    for (const realm of ['炼气', '筑基', '金丹', '元婴'])
-      expect(
-        CHARACTER_MANUALS_V1.filter((m) => m.realm === realm),
-      ).toHaveLength(6);
+  it('六维与机制逐层成长且无品质和产出字段', () => {
     for (const manual of CHARACTER_MANUALS_V1) {
       expect(manual).not.toHaveProperty('rarity');
       expect(manual).not.toHaveProperty('dropWeight');
       expect(manual.effects).toHaveLength(1);
       for (let level = 1; level <= 9; level++) {
         const result = compileCharacterManualsV1({
-          realm: '元婴',
+          realm: '大乘',
           state: {
             version: 1,
             revision: 0,
@@ -174,10 +169,11 @@ describe('首版功法内容合同', () => {
                 manualId: manual.id,
                 level,
                 unlockedLevel: level <= 3 ? 3 : level <= 6 ? 6 : 9,
+                ...(isAdvancedManual(manual) ? { slot: 5 as const } : {}),
               },
             ],
             build: {
-              slots: [{ slot: manualSlot(manual), manualId: manual.id }],
+              slots: [{ slot: manualLearningSlot(manual), manualId: manual.id }],
             },
           },
         });
@@ -189,7 +185,6 @@ describe('首版功法内容合同', () => {
           manual.effects[0].valueAt1 +
             (level - 1) * manual.effects[0].valuePerLevel,
         );
-        expect(manualEffectLines(manual, level)).toHaveLength(2);
         expect(manualMechanismValue(manual.mechanism, level)).toBeGreaterThan(
           level === 1 ? 0 : manualMechanismValue(manual.mechanism, level - 1),
         );

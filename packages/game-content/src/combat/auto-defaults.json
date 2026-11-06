@@ -116,12 +116,49 @@
       "version": 1,
       "rules": [
         {
-          "conditions": [{ "type": "selfHpBelow", "percent": 40 }],
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40 },
+            {
+              "type": "selfStatus",
+              "kind": "tianyan.status.mark",
+              "statusId": "tianyan.status.mark.metal",
+              "present": true
+            }
+          ],
           "action": { "type": "skill", "skillId": "tianyan.skill.water" },
           "target": "best"
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
+            { "type": "allyHpBelow", "percent": 40, "recoverySkillId": "tianyan.skill.water" },
+            {
+              "type": "selfStatus",
+              "kind": "tianyan.status.mark",
+              "statusId": "tianyan.status.mark.metal",
+              "present": true
+            }
+          ],
+          "action": { "type": "skill", "skillId": "tianyan.skill.water" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
+            { "type": "allyHpBelow", "percent": 40, "recoverySkillId": "tianyan.skill.water" },
+            {
+              "type": "selfStatus",
+              "kind": "tianyan.status.mark",
+              "statusId": "tianyan.status.mark.metal",
+              "present": false
+            }
+          ],
+          "action": { "type": "skill", "skillId": "tianyan.skill.metal" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -134,6 +171,7 @@
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -146,6 +184,7 @@
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -159,6 +198,7 @@
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -170,7 +210,10 @@
           "target": "best"
         },
         {
-          "conditions": [{ "type": "enemyHpBelow", "percent": 45 }],
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
+            { "type": "enemyHpBelow", "percent": 45 }
+          ],
           "action": { "type": "skill", "skillId": "tianyan.skill.metal" },
           "target": "lowestHpEnemy"
         }
@@ -180,12 +223,35 @@
       "version": 1,
       "rules": [
         {
-          "conditions": [{ "type": "selfHpBelow", "percent": 40 }],
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40 },
+            {
+              "type": "selfStatus",
+              "kind": "tianyan.status.mark",
+              "statusId": "tianyan.status.mark.water",
+              "present": true
+            }
+          ],
           "action": { "type": "skill", "skillId": "tianyan.skill.wood" },
           "target": "best"
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
+            { "type": "allyHpBelow", "percent": 40, "recoverySkillId": "tianyan.skill.water" },
+            {
+              "type": "selfStatus",
+              "kind": "tianyan.status.mark",
+              "statusId": "tianyan.status.mark.metal",
+              "present": false
+            }
+          ],
+          "action": { "type": "skill", "skillId": "tianyan.skill.metal" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -198,6 +264,7 @@
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -210,6 +277,7 @@
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -222,6 +290,7 @@
         },
         {
           "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
             {
               "type": "selfStatus",
               "kind": "tianyan.status.mark",
@@ -232,7 +301,10 @@
           "target": "best"
         },
         {
-          "conditions": [{ "type": "enemyHpBelow", "percent": 45 }],
+          "conditions": [
+            { "type": "selfHpBelow", "percent": 40, "comparison": "gte" },
+            { "type": "enemyHpBelow", "percent": 45 }
+          ],
           "action": { "type": "skill", "skillId": "tianyan.skill.metal" },
           "target": "lowestHpEnemy"
         }
@@ -256,6 +328,42 @@
         }
       ]
     },
+    "bailu.path.edict": {
+      "version": 1,
+      "rules": [
+        {
+          "conditions": [{ "type": "selfHpBelow", "percent": 30 }],
+          "action": { "type": "skill", "skillId": "bailu.skill.fuyuan" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "targetHpBelow", "percent": 15 },
+            { "type": "targetStatus", "kind": "bailu.seal", "present": false, "ownedBySelf": false }
+          ],
+          "action": { "type": "skill", "skillId": "bailu.skill.poxie" },
+          "target": "lowestHpEnemy"
+        }
+      ]
+    },
+    "bailu.path.song": {
+      "version": 1,
+      "rules": [
+        {
+          "conditions": [{ "type": "selfHpBelow", "percent": 20 }],
+          "action": { "type": "skill", "skillId": "bailu.skill.fuyuan" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "targetHpBelow", "percent": 20 },
+            { "type": "targetStatus", "kind": "bailu.seal", "present": false, "ownedBySelf": false }
+          ],
+          "action": { "type": "skill", "skillId": "bailu.skill.poxie" },
+          "target": "lowestHpEnemy"
+        }
+      ]
+    },
     "jiujie.path.thunder": {
       "version": 1,
       "rules": [
@@ -274,6 +382,225 @@
             "skillId": "jiujie.skill.thunder_slash"
           },
           "target": "best"
+        }
+      ]
+    },
+    "wanqiao.path.resonance": {
+      "version": 1,
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "selfHpBelow",
+              "percent": 35
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.rest"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            {
+              "type": "selfResourceAtLeast",
+              "resourceId": "wanqiao.resource.breath",
+              "amount": 3
+            },
+            {
+              "type": "enemyCountAtLeast",
+              "count": 2
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.resonate"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemyCountAtLeast",
+              "count": 2
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.chorus"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.pierce"
+          },
+          "target": "lowestHpEnemy"
+        }
+      ]
+    },
+    "wanqiao.path.subtlety": {
+      "version": 1,
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "selfHpBelow",
+              "percent": 35
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.rest"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            {
+              "type": "selfResourceAtLeast",
+              "resourceId": "wanqiao.resource.breath",
+              "amount": 3
+            },
+            {
+              "type": "targetStatus",
+              "kind": "wanqiao.mist",
+              "statusId": "wanqiao.status.echo",
+              "present": false,
+              "ownedBySelf": true
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.coda"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            {
+              "type": "targetStatus",
+              "kind": "wanqiao.mist",
+              "statusId": "wanqiao.status.echo",
+              "present": true,
+              "ownedBySelf": true
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.catalyze"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemyCountAtLeast",
+              "count": 2
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.undertone"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            {
+              "type": "targetStatus",
+              "kind": "wanqiao.mist",
+              "statusId": "wanqiao.status.echo",
+              "present": false,
+              "ownedBySelf": true
+            }
+          ],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.echo"
+          },
+          "target": "best"
+        },
+        {
+          "conditions": [],
+          "action": {
+            "type": "skill",
+            "skillId": "wanqiao.skill.pierce"
+          },
+          "target": "lowestHpEnemy"
+        }
+      ]
+    },
+    "xiaoyue.path.blood": {
+      "version": 1,
+      "rules": [
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": false }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.transform" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": true },
+            { "type": "targetHpBelow", "percent": 30 }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.chain_strike" },
+          "target": "lowestHpEnemy"
+        },
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": true },
+            { "type": "enemyCountAtLeast", "count": 2 }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.eagle_strike" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": true }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.lion_strike" },
+          "target": "lowestHpEnemy"
+        }
+      ]
+    },
+    "xiaoyue.path.bond": {
+      "version": 1,
+      "rules": [
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": false }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.transform" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": true },
+            { "type": "targetHpBelow", "percent": 30 }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.lion_strike" },
+          "target": "lowestHpEnemy"
+        },
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": true },
+            { "type": "enemyCountAtLeast", "count": 3 }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.eagle_strike" },
+          "target": "best"
+        },
+        {
+          "conditions": [
+            { "type": "selfStatus", "kind": "xiaoyue.status.transform", "statusId": "xiaoyue.status.transform", "present": true }
+          ],
+          "action": { "type": "skill", "skillId": "xiaoyue.skill.lion_strike" },
+          "target": "lowestHpEnemy"
         }
       ]
     }

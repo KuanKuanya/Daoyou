@@ -1,29 +1,17 @@
 @import 'tailwindcss';
-
-/* 引入本地字体 */
-@font-face {
-  font-family: 'LXGWWenKai';
-  src: url('https://lxd-waimao.oss-cn-hangzhou.aliyuncs.com/daoyou/fonts/LXGWWenKaiLite-Regular.ttf')
-    format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Ma Shan Zheng';
-  src: url('https://lxd-waimao.oss-cn-hangzhou.aliyuncs.com/daoyou/fonts/MaShanZheng-Regular.ttf')
-    format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+@import './assets/fonts/daoyou-emoji.css';
 
 @theme {
-  /* 色彩系统 */
+  --font-emoji: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji',
+    'Daoyou Emoji';
+  /* 四档底色。纸纹只由 PaperSurface 绘制。
+     sheet 纸底，paper / bgpaper 正文板，paper-2 凹槽，scene 画境页，scene-scrim 画上的深色条。 */
+  --color-sheet: #f3efe7;
   --color-bgpaper: #f8f3e6;
   --color-paper: #f8f3e6;
   --color-paper-2: #f1ead8;
+  --color-scene: #141918;
+  --color-scene-scrim: #1c1712;
   --color-ink: #2c1810;
   --color-ink-secondary: #5a4a42;
   --color-crimson: #c1121f;
@@ -39,7 +27,7 @@
   --color-battle-rule-strong: rgba(44, 24, 16, 0.3);
   --color-battle-muted: rgba(44, 24, 16, 0.48);
   --color-battle-faint: rgba(44, 24, 16, 0.08);
-  --color-battle-surface: rgba(248, 243, 230, 0.74);
+  --color-battle-surface: color-mix(in srgb, var(--color-paper) 74%, transparent);
   --color-battle-crimson-soft: rgba(193, 18, 31, 0.08);
   --color-battle-teal-soft: rgba(74, 124, 89, 0.08);
   --color-battle-gold-soft: rgba(239, 191, 4, 0.58);
@@ -71,22 +59,26 @@
   --color-tier-xuan: #1685a9;
   --color-tier-zhen: #b35c44;
   --color-tier-di: #003472;
-  --color-tier-tian: #efbf04;
+  --color-tier-tian: #e0b304;
   --color-tier-xian: #801dae;
   --color-tier-shen: #c1121f;
+  --color-realm-huashen: #5b58a6;
 }
 
 @theme inline {
   --color-background: var(--color-bgpaper);
   --color-foreground: var(--color-ink);
   --font-sans: var(--font-lxgwwenkai);
-  --font-heading: 'Ma Shan Zheng';
+  --font-heading: var(--font-ma-shan-zheng);
 }
 
 :root {
-  /* 字体变量 */
-  --font-lxgwwenkai: 'LXGWWenKai', serif;
-  --font-ma-shan-zheng: 'Ma Shan Zheng', cursive;
+  /* 正文先用中文字体，太极等已有符号保持文楷。系统表情排在雅黑之前，
+     避免中文回退字体把表情画成黑白。图标另用 --font-emoji。 */
+  --font-lxgwwenkai: 'LXGWWenKai', 'Segoe UI Emoji', 'Apple Color Emoji',
+    'Noto Color Emoji', 'STFangsong', FangSong, 'Songti SC', SimSun, serif;
+  --font-ma-shan-zheng: 'Ma Shan Zheng', 'Segoe UI Emoji', 'Apple Color Emoji',
+    'Noto Color Emoji', cursive;
 }
 
 .app-safe-area-page {
@@ -95,7 +87,7 @@
 
   box-sizing: border-box;
   padding-top: calc(
-    env(safe-area-inset-top, 0px) + var(--app-safe-area-block-space)
+    var(--app-safe-top) + var(--app-safe-area-block-space)
   );
   padding-right: calc(
     env(safe-area-inset-right, 0px) + var(--app-safe-area-inline-space)
@@ -109,23 +101,13 @@
 }
 
 body {
-  background-color: var(--color-bgpaper);
-  background-image: url('/assets/paper.webp');
-  background-size: 300px;
   color: var(--color-ink);
-  font-family: var(--font-lxgwwenkai), serif;
+  font-family: var(--font-lxgwwenkai);
 }
 
 /* 标题字体样式 */
 .font-heading {
   font-family: var(--font-ma-shan-zheng), cursive;
-}
-
-/* 宣纸背景 */
-.bg-paper {
-  background-color: var(--color-bgpaper);
-  background-image: url('/assets/paper.webp');
-  background-size: 300px;
 }
 
 .ink-overlay {
@@ -183,8 +165,22 @@ body {
 }
 
 .battle-dock {
-  background: rgba(248, 243, 230, 0.96);
   border-top: 1px dashed var(--color-battle-rule-strong);
+}
+
+/* One owner for dock background and system clearance. Reserve the maximum
+   inset so Chrome's moving system bar changes position instead of padding. */
+.game-bottom-chrome {
+  position: fixed;
+  z-index: 40;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) - var(--app-bottom-reserve));
+  left: 0;
+  padding-bottom: var(--app-bottom-reserve);
+}
+
+.game-bottom-chrome:empty {
+  display: none;
 }
 
 /* 移动端适配 */
@@ -196,7 +192,7 @@ body {
 
 /* 战报只定义字体环境；字号和行高由结构化日志组件按层级管理。 */
 .battle-report {
-  font-family: var(--font-lxgwwenkai), serif;
+  font-family: var(--font-lxgwwenkai);
   text-align: left;
 }
 

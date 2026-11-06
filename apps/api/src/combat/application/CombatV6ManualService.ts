@@ -1,5 +1,6 @@
 import { readCharacterManuals } from '@server/lib/repositories/characterLoadoutRepository.js';
 import { db, type DbExecutor } from '@server/lib/drizzle/db.js';
+import { publishTransactionalMessageBestEffort } from '@server/lib/mq/transactionalMessagePublisher.js';
 import {
   cultivatorManualSlots,
   cultivatorManualStates,
@@ -17,19 +18,27 @@ import {
   syncBottleneckState,
 } from '@daoyou/game-rules/cultivation';
 import type { ManualAction } from '@daoyou/game-domain/manuals';
+import { CHARACTER_MANUALS_V1, manualRule } from '@daoyou/game-content/manuals';
 import type { ManualView } from '@daoyou/contracts/manuals';
-import { manualJadeCost, previewManualAction } from '@daoyou/game-rules/manuals';
+import {
+  forgottenManualJade,
+  manualJadeCost,
+  previewManualAction,
+} from '@daoyou/game-rules/manuals';
+import { isAdvancedManual } from '@daoyou/game-rules/manuals/projection';
 import type { RealmStage, RealmType } from '@daoyou/constants/realms';
 import type { CultivationProgress } from '@daoyou/game-domain/character';
 import { and, eq } from 'drizzle-orm';
 import {
   assertInventoryIdle,
+  grantInventory,
   InventoryError,
   inventoryItemOf,
   saveInventoryPlan,
 } from '@server/inventory/operations.js';
 import { publishResourceEvents } from '@server/realtime/infrastructure/playerStateBroadcaster.js';
 import { ResourceEventCommitter } from '@server/player/application/state/ResourceEventCommitter.js';
+import { queueAchievementRumor } from '@server/social/application/achievementRumor.js';
 
 async function readManualFacts(owner: string, q: DbExecutor) {
   const character = await characterIdentityRow(owner, q);
@@ -79,7 +88,7 @@ export async function readManuals(owner: string): Promise<ManualView> {
 }
 
 export async function mutateManuals(owner: string, action: ManualAction) {
-  const committed = await withRedisLock(
+  const { rumorOutboxId, ...committed } = await withRedisLock(
     {
       key: redisLockKeys.cultivatorMutation(owner),
       context: 'manuals',
@@ -170,6 +179,11 @@ export async function mutateManuals(owner: string, action: ManualAction) {
             tx,
           );
         }
+        if (action.action === 'forget') {
+          const grant = forgottenManualJade(action.manualId);
+          if (!grant) throw new InventoryError('功法不存在');
+          await grantInventory(owner, [grant], tx);
+        }
         if (action.action === 'train') {
           progress.cultivation_exp -= result.cost.experience;
           progress.comprehension_insight -= result.cost.insight;
@@ -197,12 +211,42 @@ export async function mutateManuals(owner: string, action: ManualAction) {
               operation: 'invalidate',
               eventType: 'combat_v6.manuals.changed',
             },
+            ...(action.action === 'forget' || 'item' in action
+              ? [
+                  {
+                    resourceTopic: 'inventory.bag' as const,
+                    operation: 'invalidate' as const,
+                    eventType: 'combat_v6.manuals.changed',
+                  },
+                ]
+              : []),
           ],
         });
+        let rumorOutboxId: string | undefined;
+        if (action.action === 'train') {
+          const manual = CHARACTER_MANUALS_V1.find(
+            ({ id }) => id === action.manualId,
+          );
+          const learned = result.state.learned.find(
+            ({ manualId }) => manualId === action.manualId,
+          );
+          if (
+            manual &&
+            isAdvancedManual(manual) &&
+            learned?.level === manualRule(manual).maxLevel
+          ) {
+            rumorOutboxId = await queueAchievementRumor(tx, {
+              text: `道友「${character.name}」的${manual.realm}高阶功法《${manual.name}》已修至圆满。`,
+            });
+          }
+        }
         lease.assertHeld();
-        return { data: result.state, state };
+        return { data: result.state, state, rumorOutboxId };
       }),
   );
   publishResourceEvents(committed.state.changes);
+  publishTransactionalMessageBestEffort(rumorOutboxId, {
+    source: 'manual-mastery',
+  });
   return committed;
 }

@@ -1,5 +1,7 @@
 import { BeastPortrait } from '@app/components/feature/beasts/BeastPortrait';
+import { StatusMention } from '@app/components/feature/skills/SkillDescription';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
+import { combatPortraitValue } from './presentation';
 import type { CombatV6Session, CombatV6Unit } from './session';
 const attributeLabels: Record<string, string> = {
   physicalAtk: '物攻',
@@ -27,12 +29,7 @@ export function CombatV6Details({
         <span className="cv6-portrait">
           <BeastPortrait
             isMutant={appearance?.isMutant}
-            value={
-              appearance?.icon ??
-              (detailUnit.ownerId
-                ? 'icon:map-wild'
-                : 'icon:cultivator-male-avatar')
-            }
+            value={combatPortraitValue(detailUnit, appearance)}
           />
         </span>
         {appearance?.speciesName &&
@@ -89,7 +86,11 @@ export function CombatV6Details({
           <ul>
             {detailUnit.statuses.map((s, index) => (
               <li key={`${s.id}:${index}`}>
-                {s.name ?? display?.statuses[s.id] ?? '未知状态'} ·{' '}
+                <StatusMention
+                  id={s.id}
+                  name={s.name ?? display?.statuses[s.id] ?? '未知状态'}
+                />
+                {' · '}
                 {s.untilBattleEnd ? (
                   '本场持续'
                 ) : (

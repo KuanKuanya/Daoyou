@@ -8,10 +8,7 @@ import type {
   BodyCultivationRealm,
   BodyCultivationState,
 } from '@daoyou/game-domain/condition';
-import {
-  DAO_EQUIPMENT_GENERATOR_VERSION,
-  OPEN_EQUIPMENT_LEVELS,
-} from '@daoyou/game-domain/equipment';
+import { DAO_EQUIPMENT_GENERATOR_VERSION } from '@daoyou/game-domain/equipment';
 import { getRealmStageLevel } from '@daoyou/game-domain/progression';
 import { generateStarterBeast } from '../beasts/generator.js';
 import { allocateBeast, gainBeastExp } from '../beasts/progression.js';
@@ -50,7 +47,7 @@ export function towerReferenceBuild(
   const natural = getRealmStageNaturalAttributeValue(realm, stage);
   const budget = getRealmStageUnallocatedAttributeBudget(realm, stage);
   const weights =
-    sectId === 'lingxiao'
+    sectId === 'lingxiao' || sectId === 'xiaoyue'
       ? [40, 150, 0, 30, 30, 0]
       : sectId === 'jiujie' || sectId === 'tianyan'
         ? [40, 0, 150, 0, 30, 30]
@@ -62,7 +59,8 @@ export function towerReferenceBuild(
   );
   allocation[0] += budget - allocation.reduce((a, b) => a + b, 0);
   const attrs = allocation.map((points) => natural + points);
-  const equipmentLevel = [...OPEN_EQUIPMENT_LEVELS]
+  // 定标样本仍穿炼气至化神。铸造档已含炼虚至渡劫，不在这里改写既有战力。
+  const equipmentLevel = [10, 30, 50, 70, 90]
     .reverse()
     .find((n) => equipmentRealm(n).requiredLevel <= level)!;
   const owner = '00000000-0000-4000-8000-000000000001';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { manualSlot, validateManualStateV1 } from './compiler.js';
+import { manualLearningSlot, validateManualStateV1 } from './compiler.js';
 import { CHARACTER_MANUALS_V1 } from '@daoyou/game-content/manuals';
 import { changeManual } from './state.js';
 import type { CultivatorManualStateV1 } from '@daoyou/game-domain/manuals';
@@ -12,7 +12,7 @@ function learn(state: CultivatorManualStateV1, manual = manuals[0]) {
     state,
     action: 'learn',
     manualId: manual.id,
-    slot: manualSlot(manual),
+    slot: manualLearningSlot(manual),
     realm: '筑基',
     expectedRevision: state.revision,
     resources: { experience: 1000, insight: 100 },
@@ -70,13 +70,74 @@ describe('功法每境界六种学习上限', () => {
     expect(state.learned[0]).toMatchObject({ level: 3, unlockedLevel: 6 });
     expect(state.build.slots[0].manualId).toBe(manuals[1].id);
   });
+  it('遗忘去掉进度和激活，不退修为感悟，腾出位置后可重新从第一层学习', () => {
+    let state = fullSlot();
+    const active = changeManual({
+      state,
+      action: 'activate',
+      manualId: manuals[1].id,
+      slot: 1,
+      realm: '筑基',
+      expectedRevision: state.revision,
+      resources: { experience: 1000, insight: 100 },
+    });
+    expect(active.ok).toBe(true);
+    if (!active.ok) return;
+    state = active.state;
+    const resources = { experience: 1000, insight: 100 };
+    const forgotten = changeManual({
+      state,
+      action: 'forget',
+      manualId: manuals[0].id,
+      slot: 1,
+      realm: '筑基',
+      expectedRevision: state.revision,
+      resources,
+    });
+    expect(forgotten).toMatchObject({
+      ok: true,
+      cost: { experience: 0, insight: 0 },
+    });
+    if (!forgotten.ok) return;
+    expect(forgotten.state.learned).toHaveLength(5);
+    expect(forgotten.state.learned.map((entry) => entry.manualId)).not.toContain(
+      manuals[0].id,
+    );
+    expect(forgotten.state.build.slots).toEqual([
+      { slot: 1, manualId: manuals[1].id },
+    ]);
+    expect(resources).toEqual({ experience: 1000, insight: 100 });
+    expect(state.learned).toHaveLength(6);
+    const replacement = changeManual({
+      state: forgotten.state,
+      action: 'learn',
+      manualId: manuals[0].id,
+      slot: 1,
+      realm: '筑基',
+      expectedRevision: forgotten.state.revision,
+      resources,
+    });
+    expect(
+      replacement.ok &&
+        replacement.state.learned.find((entry) => entry.manualId === manuals[0].id),
+    ).toMatchObject({ level: 1, unlockedLevel: 3 });
+    expect(changeManual({
+      state: forgotten.state,
+      action: 'forget',
+      manualId: manuals[0].id,
+      slot: 1,
+      realm: '筑基',
+      expectedRevision: forgotten.state.revision,
+      resources,
+    }).ok).toBe(false);
+  });
   it('状态校验拒绝同境界超过六种功法', () => {
     const state = fullSlot();
     const extra = { ...manuals[0], id: 'character_manual.extra' };
     state.learned.push({ manualId: extra.id, level: 1, unlockedLevel: 3 });
     expect(validateManualStateV1(state, '筑基', [...CHARACTER_MANUALS_V1, extra])).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ message: '每个境界位最多学习六种功法' }),
+        expect.objectContaining({ message: '每个功法位最多学习六种功法' }),
       ]),
     );
   });

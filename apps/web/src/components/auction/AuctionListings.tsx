@@ -6,6 +6,8 @@ import {
 } from '@app/components/feature/items/ItemSlot';
 import { InkModal } from '@app/components/layout';
 import { InkButton } from '@app/components/ui';
+import { GameIcon } from '@app/components/ui/GameIcon';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import type { AuctionAssetType } from '@daoyou/game-domain/auction';
 import type { AuctionListingView } from '@daoyou/contracts/auction';
 import { useState, type ReactNode } from 'react';
@@ -94,13 +96,11 @@ export function AuctionListings({
                 {(close) => actions(listing, close)}
               </ItemSlot>
               <p
-                className="mt-1 flex flex-wrap items-baseline justify-center gap-x-1 text-xs text-amber-800"
+                className="mt-1 flex items-center justify-center gap-1 whitespace-nowrap text-xs"
                 aria-label={`单价 ${listing.price.toLocaleString()} 灵石`}
               >
-                <span className="font-mono whitespace-nowrap">
-                  {listing.price.toLocaleString()}
-                </span>
-                <span>灵石</span>
+                <GameIcon value="💰" className="-translate-y-px" />
+                <SpiritStones amount={listing.price} mode="compact" />
               </p>
             </div>
           ),

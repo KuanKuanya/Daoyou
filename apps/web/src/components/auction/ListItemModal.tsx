@@ -12,6 +12,7 @@ import {
   InkSelect,
 } from '@app/components/ui';
 import { InkDetailDrawer } from '@app/components/ui/InkDetailDrawer';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { useInventoryBag } from '@app/lib/resources/bag';
 import { useResourceMutation } from '@app/lib/resources/mutations';
 import {
@@ -259,10 +260,7 @@ export function ListItemModal({
           {selected ? (
             <p className="text-ink-secondary text-xs">
               单价上限{' '}
-              <span className="font-mono">
-                {auctionItemPriceCap(selected).toLocaleString()}
-              </span>{' '}
-              灵石
+              <SpiritStones amount={auctionItemPriceCap(selected)} />
             </p>
           ) : null}
           <InkSelect
@@ -297,14 +295,9 @@ export function ListItemModal({
           ) : null}
           <p className="text-ink-secondary text-sm">
             按本次数量整批成交预计税费{' '}
-            <span className="font-mono">
-              {quote.feeAmount.toLocaleString()}
-            </span>
+            <SpiritStones amount={quote.feeAmount} />
             ，实得{' '}
-            <span className="font-mono">
-              {quote.sellerAmount.toLocaleString()}
-            </span>{' '}
-            灵石。分次成交按每次交易计税。
+            <SpiritStones amount={quote.sellerAmount} />。分次成交按每次交易计税。
           </p>
           <p className="text-ink-secondary text-xs">
             寄售48小时；成交款与未售物品通过邮件收取。

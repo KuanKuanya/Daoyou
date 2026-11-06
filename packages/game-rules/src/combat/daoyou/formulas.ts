@@ -1,6 +1,7 @@
-import { DamageKind, FormulaFamily, UnitKind } from '@daoyou/combat-core/enums';
+import { DamageKind, DamageOrigin, FormulaFamily, UnitKind } from '@daoyou/combat-core/enums';
 import { type FormulaSet, type SchoolTerm, type SplashSpec, type StrikeFormulaInput, type Unit } from '@daoyou/combat-core/types';
 import { DaoyouRule } from "@daoyou/game-content/combat/tuning"
+import { cultivationModifiers } from './cultivation.js';
 
 function clamp(min: number, max: number, value: number): number {
   return Math.min(max, Math.max(min, value))
@@ -22,12 +23,8 @@ export function splashFactor(splash: SplashSpec | undefined, targetCount: number
 }
 
 export function applyCultivate(base: number, diff: number): number {
-  const effectiveDiff = clamp(
-    DaoyouRule.damageCultivateDiffMin,
-    DaoyouRule.damageCultivateDiffMax,
-    diff,
-  )
-  return base * (1 + effectiveDiff * DaoyouRule.cultivateRate) + effectiveDiff * DaoyouRule.cultivateFlat
+  const modifier = cultivationModifiers(diff)
+  return base * (1 + modifier.damageRate) + modifier.damageFlat
 }
 
 export function physicalBase(atk: number, def: number): number {
@@ -100,7 +97,11 @@ const families: Record<string, (input: StrikeFormulaInput) => number> = {
   [FormulaFamily.Spell]: magicStrike,
   [FormulaFamily.Dragon]: magicStrike,
   [FormulaFamily.Judge]: (input) => finish(input.power),
-  [FormulaFamily.Fixed]: (input) => finish(input.power),
+  [FormulaFamily.Fixed]: (input) => finish(
+    input.percentageDamage || (input.origin ?? DamageOrigin.ActionDirect) !== DamageOrigin.ActionDirect
+      ? input.power
+      : applyCultivate(input.power, input.source.attrs.spellCultivate - input.target.attrs.resistSpellCultivate),
+  ),
 }
 
 export function baseDamage(input: StrikeFormulaInput): number {
@@ -140,7 +141,7 @@ export const daoyouFormulas: FormulaSet = {
   spellHitChance() {
     return 1
   },
-  sealHitChance(source, target, skillLevel, sealBase, additiveChance = 0) {
+  sealHitChance(source, target, skillLevel, sealBase, additiveChance = 0, ceiling = DaoyouRule.sealChanceCeil) {
     const level = skillLevel ?? source.level
     const basePercent = (sealBase ?? DaoyouRule.sealChanceBase * 100)
     const combatLevel = Math.max(source.level, target.level)
@@ -151,20 +152,19 @@ export const daoyouFormulas: FormulaSet = {
     const percent =
       basePercent +
       (level - target.level) * DaoyouRule.sealLevelWeight +
-      DaoyouRule.sealCultivateWeight * Math.tanh(
-        (source.attrs.spellCultivate - target.attrs.resistSpellCultivate) / DaoyouRule.sealCultivateScale,
-      ) +
+      cultivationModifiers(source.attrs.spellCultivate - target.attrs.resistSpellCultivate).sealPercent +
       ((source.attrs.sealHit - target.attrs.sealResist) / pointScale) * 100 +
       additiveChance * 100
     const floor = DaoyouRule.sealChanceFloor * 100
-    const ceil = DaoyouRule.sealChanceCeil * 100
+    const ceil = clamp(DaoyouRule.sealChanceFloor, 1, ceiling) * 100
     if (percent < DaoyouRule.sealSoftFloorStart) {
       const span = DaoyouRule.sealSoftFloorStart - floor
-      return (floor + span * Math.exp((percent - DaoyouRule.sealSoftFloorStart) / span)) / 100
+      return Math.min(ceil, floor + span * Math.exp((percent - DaoyouRule.sealSoftFloorStart) / span)) / 100
     }
-    if (percent > DaoyouRule.sealSoftCeilStart) {
-      const span = ceil - DaoyouRule.sealSoftCeilStart
-      return (DaoyouRule.sealSoftCeilStart + span * (1 - Math.exp(-(percent - DaoyouRule.sealSoftCeilStart) / span))) / 100
+    const softCeilStart = Math.min(DaoyouRule.sealSoftCeilStart, ceil)
+    if (percent > softCeilStart) {
+      const span = ceil - softCeilStart
+      return span === 0 ? ceil / 100 : (softCeilStart + span * (1 - Math.exp(-(percent - softCeilStart) / span))) / 100
     }
     return percent / 100
   },

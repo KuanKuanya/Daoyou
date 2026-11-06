@@ -2,26 +2,49 @@
  * 战斗内钩子总线。被动技能在 bindDataHooks 里订阅。
  * cancelled / damage 是钩子回写通道（跳过出手、改最终伤害）。
  */
-import type { DamageKind, DamageOrigin, HookName } from "./enums.js"
-import type { BattleEvent, SkillId, Unit } from "./types.js"
+import type { DamageKind, DamageOrigin, HookName, StatusCategory, StatusFlag } from "./enums.js"
+import type { BattleEvent, SkillId, StatusApplyResult, Unit } from "./types.js"
 
 export type { HookName }
 
 export type HookContext = {
+  statusId?: string
+  statusKind?: string
+  statusCategory?: StatusCategory
+  statusHit?: import('./enums.js').StatusHit
+  statusResult?: StatusApplyResult
+  statusChance?: number
+  statusDuration?: number
+  statusReason?: string
   removedStatusKind?: string
+  removedStatusId?: string
+  removedStatusSourceId?: string
+  removedStatusRounds?: number
+  removedStatusSkillLevel?: number
+  removedStatusCategory?: StatusCategory
+  removedStatusDispellable?: boolean
+  removedStatusWasSeal?: boolean
+  removedStatusFlags?: StatusFlag[]
+  statusRemovedByAlly?: boolean
+  dotStatusId?: string
   statusRemoveReason?: string
   source?: Unit
   target?: Unit
+  petEntryKind?: 'initial' | 'switch'
   event?: BattleEvent
   cancelled?: boolean
   /** 钩子可改最终伤害 */
   damage?: number
+  /** Flat addition after all result multipliers. */
+  finalDamageAdd?: number
   /** 本次伤害实际扣除的气血，不包含过量部分。 */
   hpDamage?: number
   /** 钩子可改物理忽防比例，最终由伤害入口夹取到 0～1。 */
   defenseIgnore?: number
   /** 钩子可改治疗量 */
   heal?: number
+  /** 受疗倍率之前的治疗基数。 */
+  healBase?: number
   /** 钩子可改护盾量。 */
   barrier?: number
   /** 钩子可改疗伤量。 */
@@ -33,6 +56,7 @@ export type HookContext = {
   crit?: boolean
   chance?: number
   percentageDamage?: boolean
+  retaliationDamage?: boolean
 }
 
 export type HookFn = (ctx: HookContext) => void

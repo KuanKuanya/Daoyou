@@ -5,6 +5,6 @@ export {
   readCultivatorPublicIdentity,
   readCultivatorQi,
   readCultivatorRealm,
+  readCultivatorTitles,
   readCultivatorReputation,
-  readMarrowWashFacts,
 } from './application/readers/CultivatorFactsReader.js';

@@ -6,6 +6,7 @@ import { useSectIdentityDialog } from '@app/components/feature/sect/useSectIdent
 import Link from '@app/components/router/AppLink';
 import { InkHorizontalScroll } from '@app/components/ui';
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { getGameConceptInfo } from '@daoyou/game-content/presentation/concepts';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
@@ -15,7 +16,7 @@ import { useGameHudDialogs } from './useGameHudDialogs';
 import type { GameHudSnapshot } from './useGameHudModel';
 import { usePlayerMeritTier } from './usePlayerMeritTier';
 
-function formatSpiritStones(value: number): string {
+function formatReputation(value: number): string {
   if (value >= 50000) {
     return `${Math.floor(value / 10000)}万`;
   }
@@ -88,14 +89,14 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
       key: 'spirit-stones',
       label: spiritStonesInfo.label,
       icon: spiritStonesInfo.icon,
-      value: formatSpiritStones(snapshot.spiritStones),
+      value: <SpiritStones amount={snapshot.spiritStones} mode="compact" />,
       tone: 'wealth',
     },
     {
       key: 'reputation',
       label: reputationInfo.label,
       icon: reputationInfo.icon,
-      value: formatSpiritStones(snapshot.reputation),
+      value: formatReputation(snapshot.reputation),
       tone: 'wealth',
       onClick: () => {
         void navigate('/game/tianjiao-vault');
@@ -125,8 +126,8 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
   ];
 
   return (
-    <header className="border-ink/10 border-b border-dashed backdrop-blur-sm">
-      <div className="mx-auto block w-full max-w-5xl pt-[calc(env(safe-area-inset-top)+0.5rem)] pr-[max(env(safe-area-inset-right),0.625rem)] pb-2 pl-[max(env(safe-area-inset-left),0.625rem)] text-left sm:pr-[max(env(safe-area-inset-right),0.75rem)] sm:pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
+    <header className="border-ink/10 border-b border-dashed">
+      <div className="mx-auto block w-full max-w-5xl pt-[calc(var(--app-safe-top)+0.5rem)] pr-[max(env(safe-area-inset-right),0.625rem)] pb-2 pl-[max(env(safe-area-inset-left),0.625rem)] text-left sm:pr-[max(env(safe-area-inset-right),0.75rem)] sm:pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
         {combatNotice ? (
           <Link
             href={combatNotice.href}
@@ -140,7 +141,7 @@ export function GameTopHud({ snapshot }: { snapshot: GameHudSnapshot | null }) {
           <Link
             href="/game/cultivator"
             aria-label="查看角色"
-            className="border-ink/12 bg-bgpaper/85 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed md:h-16 md:w-16"
+            className="border-ink/12 bg-paper flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-dashed md:h-16 md:w-16"
           >
             <GameIcon
               purpose="interface"

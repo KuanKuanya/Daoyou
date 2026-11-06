@@ -97,7 +97,13 @@ export type StatusCategory =
   (typeof StatusCategory)[keyof typeof StatusCategory];
 
 export const HookName = {
+  /** 包括休息、控制及无指令的出手窗口。 */
+  BeforeActionWindow: 'beforeActionWindow',
+  AfterActionWindow: 'afterActionWindow',
+  AfterDefend: 'afterDefend',
   BeforeAction: 'beforeAction',
+  /** 自然气血DOT完成比例与封顶后、扣血前；不处理扣蓝。 */
+  OnDotCalc: 'onDotCalc',
   OnHitCalc: 'onHitCalc',
   /** 物理伤害公式前计算忽防比例。 */
   OnDefenseIgnoreCalc: 'onDefenseIgnoreCalc',
@@ -109,6 +115,8 @@ export const HookName = {
   AfterStrike: 'afterStrike',
   OnFatal: 'onFatal',
   OnStatusRemoved: 'onStatusRemoved',
+  OnStatusResolved: 'onStatusResolved',
+  OnHostileActionIntercepted: 'onHostileActionIntercepted',
   OnDeath: 'onDeath',
   OnRoundStart: 'onRoundStart',
   OnRoundEnd: 'onRoundEnd',
@@ -120,6 +128,8 @@ export const HookName = {
   OnHitRoll: 'onHitRoll',
   /** 治疗数字算出之后、入账之前。钩子可改 heal。 */
   OnHealCalc: 'onHealCalc',
+  AfterHeal: 'afterHeal',
+  OnPetSummoned: 'onPetSummoned',
   OnBarrierCalc: 'onBarrierCalc',
   OnWoundCalc: 'onWoundCalc',
 } as const;
@@ -127,6 +137,7 @@ export type HookName = (typeof HookName)[keyof typeof HookName];
 
 export const HookAim = {
   Self: 'self',
+  OwnedPet: 'ownedPet',
   HookTarget: 'hookTarget',
   HookSource: 'hookSource',
   /** 除本次目标外的其他敌人（风刃溅射） */
@@ -209,6 +220,7 @@ export const FormulaFamily = {
 export type FormulaFamily = (typeof FormulaFamily)[keyof typeof FormulaFamily];
 
 export const EffectType = {
+  InvokeSkill: 'invokeSkill',
   InvokeAttackSkills: 'invokeAttackSkills',
   Repeat: 'repeat',
   ModifyFact: 'modifyFact',
@@ -296,6 +308,7 @@ export const TickKind = {
 export type TickKind = (typeof TickKind)[keyof typeof TickKind];
 
 export const StatusFlag = {
+  BlocksDamagingSpells: 'blocksDamagingSpells',
   BlocksAction: 'blocksAction',
   BlocksSpell: 'blocksSpell',
   BlocksPhysical: 'blocksPhysical',

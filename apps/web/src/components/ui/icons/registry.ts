@@ -1,5 +1,62 @@
 /** GameIcon alone resolves these names; all icon files live in public/assets/icons. */
 export const iconRegistry: ReadonlyMap<string, string> = new Map([
+  ['portrait-abbot', '/assets/icons/portrait-abbot.webp'],
+  ['portrait-disciple-f', '/assets/icons/portrait-disciple-f.webp'],
+  ['portrait-disciple-m', '/assets/icons/portrait-disciple-m.webp'],
+  ['portrait-elder-f', '/assets/icons/portrait-elder-f.webp'],
+  ['portrait-elder-m', '/assets/icons/portrait-elder-m.webp'],
+  ['portrait-heretic', '/assets/icons/portrait-heretic.webp'],
+  ['portrait-manifest-corpse', '/assets/icons/portrait-manifest-corpse.webp'],
+  ['portrait-manifest-demonic', '/assets/icons/portrait-manifest-demonic.webp'],
+  ['portrait-manifest-earth', '/assets/icons/portrait-manifest-earth.webp'],
+  ['portrait-manifest-grass', '/assets/icons/portrait-manifest-grass.webp'],
+  ['portrait-manifest-water', '/assets/icons/portrait-manifest-water.webp'],
+  ['portrait-merchant-f', '/assets/icons/portrait-merchant-f.webp'],
+  ['portrait-merchant-m', '/assets/icons/portrait-merchant-m.webp'],
+  ['portrait-monk', '/assets/icons/portrait-monk.webp'],
+  ['portrait-noble-f', '/assets/icons/portrait-noble-f.webp'],
+  ['portrait-noble-m', '/assets/icons/portrait-noble-m.webp'],
+  ['portrait-puppet', '/assets/icons/portrait-puppet.webp'],
+  ['portrait-servant-f', '/assets/icons/portrait-servant-f.webp'],
+  ['portrait-servant-m', '/assets/icons/portrait-servant-m.webp'],
+  ['portrait-spirit', '/assets/icons/portrait-spirit.webp'],
+  ['portrait-training-dummy', '/assets/icons/portrait-training-dummy.webp'],
+  ['portrait-wanderer-f', '/assets/icons/portrait-wanderer-f.webp'],
+  ['portrait-wanderer-m', '/assets/icons/portrait-wanderer-m.webp'],
+  ['portrait-yaoguai', '/assets/icons/portrait-yaoguai-v2.webp'],
+
+  [
+    'breakthrough-foundation_qi',
+    '/assets/icons/breakthrough-foundation_qi.webp',
+  ],
+  [
+    'breakthrough-core_condensation',
+    '/assets/icons/breakthrough-core_condensation.webp',
+  ],
+  [
+    'breakthrough-heart_demon_nascent',
+    '/assets/icons/breakthrough-heart_demon_nascent.webp',
+  ],
+  [
+    'breakthrough-tribulation_deity',
+    '/assets/icons/breakthrough-tribulation_deity.webp',
+  ],
+  [
+    'breakthrough-law_insight_void',
+    '/assets/icons/breakthrough-law_insight_void.webp',
+  ],
+  [
+    'breakthrough-tribulation_body',
+    '/assets/icons/breakthrough-tribulation_body.webp',
+  ],
+  [
+    'breakthrough-inner_demon_grand',
+    '/assets/icons/breakthrough-inner_demon_grand.webp',
+  ],
+  [
+    'breakthrough-heavenly_tribulation_final',
+    '/assets/icons/breakthrough-heavenly_tribulation_final.webp',
+  ],
   ['brand-ding', '/assets/icons/brand-ding-ink-v3.webp'],
   ['nav-world-map', '/assets/icons/nav-world-map-ink-v1.webp'],
   ['nav-fate-reshape', '/assets/icons/nav-fate-reshape-ink-v1.webp'],

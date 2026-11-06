@@ -1,7 +1,7 @@
 .combat-v6-page {
   height: 100%;
   overflow: auto;
-  padding: max(env(safe-area-inset-top), 1rem)
+  padding: max(var(--app-safe-top), 1rem)
     max(env(safe-area-inset-right), 1rem) max(env(safe-area-inset-bottom), 1rem)
     max(env(safe-area-inset-left), 1rem);
   color: var(--color-ink);
@@ -440,7 +440,7 @@
 }
 @media (max-width: 899px) {
   .combat-v6-page {
-    padding: max(env(safe-area-inset-top), 0.65rem)
+    padding: max(var(--app-safe-top), 0.65rem)
       max(env(safe-area-inset-right), 0.65rem)
       max(env(safe-area-inset-bottom), 0.65rem)
       max(env(safe-area-inset-left), 0.65rem);
@@ -907,6 +907,21 @@
   white-space: pre-line;
   font-size: 0.9rem;
   line-height: 1.85;
+}
+.cv6-choice-current-effect {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-battle-faint);
+}
+.cv6-choice-current-mark {
+  color: var(--color-ink);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+.cv6-choice-next-mark {
+  color: var(--color-ink-secondary);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
 }
 .cv6-choice-costs {
   display: flex;

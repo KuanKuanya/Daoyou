@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { COMBAT_V6_SECT_DEFINITIONS } from '@daoyou/game-content/sects';
 import {
   balanceOptions,
   balancePlan,
@@ -49,8 +50,10 @@ describe('开发平衡模拟', () => {
       [43, true],
     ]);
     const matrix = balancePlan({ ...config, mode: 'matrix' });
-    expect(matrix.cases).toHaveLength(25);
-    expect(matrix.jobs).toHaveLength(100);
+    // The matrix pairs every sect with every other one, so it grows with the sect roster.
+    const sectCount = Object.keys(COMBAT_V6_SECT_DEFINITIONS).length;
+    expect(matrix.cases).toHaveLength(sectCount * sectCount);
+    expect(matrix.jobs).toHaveLength(sectCount * sectCount * config.trials * 2);
     expect(() => balancePlan({ ...config, trials: 21 })).toThrow();
     expect(() =>
       balancePlan({ ...config, mode: 'hunt', realm: '炼气' }),

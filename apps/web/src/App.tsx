@@ -4,6 +4,7 @@ import { PwaInstallProvider } from '@app/components/providers/PwaInstallProvider
 import Link from '@app/components/router/AppLink';
 import { RouteDocumentTitle } from '@app/components/router/RouteDocumentTitle';
 import { InkLoadingBar } from '@app/components/ui/InkLoadingBar';
+import { PaperSurface } from '@app/components/ui/PaperSurface';
 import {
   isDynamicImportError,
   reloadIntoLatestVersion,
@@ -29,7 +30,7 @@ function NavigationIndicator() {
     return (
       <div
         aria-hidden="true"
-        className={`bg-crimson pointer-events-none fixed top-[env(safe-area-inset-top)] right-0 left-0 z-200 h-0.5 transition-opacity duration-150 ${
+        className={`bg-crimson pointer-events-none fixed top-[var(--app-safe-top)] right-0 left-0 z-200 h-0.5 transition-opacity duration-150 ${
           isNavigating ? 'opacity-100' : 'opacity-0'
         }`}
       />
@@ -39,7 +40,7 @@ function NavigationIndicator() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed top-[env(safe-area-inset-top)] right-0 left-0 z-200 h-0.5"
+      className="pointer-events-none fixed top-[var(--app-safe-top)] right-0 left-0 z-200 h-0.5"
     >
       {isNavigating ? <InkLoadingBar tone="accent" size="navigation" /> : null}
     </div>
@@ -81,7 +82,7 @@ export function RootRouteErrorView({ error }: { error: unknown }) {
   const pageTitle = isVersionError ? '版本已更迭' : '道途异常';
 
   return (
-    <div className="app-safe-area-page bg-paper flex min-h-[100svh] items-center justify-center">
+    <PaperSurface className="app-safe-area-page flex min-h-dvh items-center justify-center">
       <title>{formatDocumentTitle(pageTitle)}</title>
       <div className="w-full max-w-xl p-6">
         <p className="text-ink-secondary text-xs tracking-[0.2em]">
@@ -133,6 +134,6 @@ export function RootRouteErrorView({ error }: { error: unknown }) {
           )}
         </div>
       </div>
-    </div>
+    </PaperSurface>
   );
 }

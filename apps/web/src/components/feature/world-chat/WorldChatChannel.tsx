@@ -4,7 +4,6 @@ import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkNotice } from '@app/components/ui/InkNotice';
-import { inkFieldVariants } from '@app/components/ui/inkFieldStyles';
 import { cn } from '@app/lib/cn';
 import {
   realtimeClient,
@@ -34,9 +33,9 @@ import {
   WorldChatRefundsDialog,
 } from './WorldChatRedPacketDialog';
 import { WorldChatShowcaseDialog } from './WorldChatShowcaseDialog';
+import { WorldChatTextComposer } from './WorldChatTextComposer';
 import { useWorldChatFeedModel } from './useWorldChatFeedModel';
 import { useWorldChatViewport } from './useWorldChatViewport';
-import { getWorldChatMessageBody } from './worldChatSummary';
 import './worldChatViewport.css';
 
 type Anchor = { id: string; offset: number };
@@ -96,7 +95,14 @@ function WorldChatChannelBody({
   sectId: string | null;
 }) {
   const feed = useWorldChatFeedModel();
-  const { markVisible, activeChannel, loading, messages, locateMessage } = feed;
+  const {
+    markVisible,
+    setFollowingLatest,
+    activeChannel,
+    loading,
+    messages,
+    locateMessage,
+  } = feed;
   const { pushToast } = useInkUI();
   const [views, setViews] = useState(() => {
     const saved = viewCache.get(actorId);
@@ -133,7 +139,6 @@ function WorldChatChannelBody({
   const [following, setFollowing] = useState(
     () => views[feed.activeChannel].following,
   );
-  const [editing, setEditing] = useState(false);
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [giveOpen, setGiveOpen] = useState(false);
   const [refundsOpen, setRefundsOpen] = useState(false);
@@ -146,9 +151,8 @@ function WorldChatChannelBody({
   );
   const [connection, setConnection] =
     useState<RealtimeConnectionState>('connecting');
-  const height = useWorldChatViewport(workspaceRef, editing);
+  const { height, keyboardViewport } = useWorldChatViewport(workspaceRef);
   const view = views[feed.activeChannel];
-  const charCount = Array.from(view.draft).length;
   const displayMessages = useMemo(
     () => [...feed.messages].reverse(),
     [feed.messages],
@@ -241,12 +245,20 @@ function WorldChatChannelBody({
     const row = Array.from(
       list?.querySelectorAll<HTMLElement>('[data-message-id]') ?? [],
     ).find((node) => node.dataset.messageId === anchor.id);
-    if (list && row)
-      list.scrollTop +=
+    if (list && row) {
+      const delta =
         row.getBoundingClientRect().top -
         list.getBoundingClientRect().top -
         anchor.offset;
+      if (Math.abs(delta) > 1) list.scrollTop += delta;
+    }
     return !!row;
+  }, []);
+  const stickToBottom = useCallback(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const bottom = Math.max(0, list.scrollHeight - list.clientHeight);
+    if (Math.abs(bottom - list.scrollTop) > 1) list.scrollTop = bottom;
   }, []);
 
   const reportVisible = useCallback(() => {
@@ -297,7 +309,7 @@ function WorldChatChannelBody({
       pending?.latest ||
       (!pending && current.following && !feed.hasNewer)
     ) {
-      list.scrollTop = list.scrollHeight;
+      stickToBottom();
       pendingPosition.current = null;
     } else if (pending?.anchor ?? current.anchor) {
       if (restoreAnchor((pending?.anchor ?? current.anchor)!))
@@ -321,10 +333,12 @@ function WorldChatChannelBody({
     feed.hasNewer,
     feed.pendingMessages,
     height,
+    keyboardViewport,
     scrollRevision,
     reportVisible,
     restoreAnchor,
     captureAnchor,
+    stickToBottom,
   ]);
 
   useEffect(() => {
@@ -333,8 +347,7 @@ function WorldChatChannelBody({
     if (!content || !list) return;
     const observer = new ResizeObserver(() => {
       const current = viewsRef.current[feed.activeChannel];
-      if (current.following && !feed.hasNewer)
-        list.scrollTop = list.scrollHeight;
+      if (current.following && !feed.hasNewer) stickToBottom();
       else if (current.anchor) restoreAnchor(current.anchor);
       reportVisible();
     });
@@ -345,7 +358,13 @@ function WorldChatChannelBody({
       observer.disconnect();
       document.removeEventListener('visibilitychange', visible);
     };
-  }, [feed.activeChannel, feed.hasNewer, reportVisible, restoreAnchor]);
+  }, [
+    feed.activeChannel,
+    feed.hasNewer,
+    reportVisible,
+    restoreAnchor,
+    stickToBottom,
+  ]);
 
   useLayoutEffect(() => {
     const input = inputRef.current;
@@ -361,13 +380,16 @@ function WorldChatChannelBody({
       [feed.activeChannel]: { ...current[feed.activeChannel], draft },
     }));
   }
-  const selectReply = useCallback((message: WorldChatMessageDTO) => {
-    setViews((current) => ({
-      ...current,
-      [activeChannel]: { ...current[activeChannel], reply: message },
-    }));
-    inputRef.current?.focus();
-  }, [activeChannel]);
+  const selectReply = useCallback(
+    (message: WorldChatMessageDTO) => {
+      setViews((current) => ({
+        ...current,
+        [activeChannel]: { ...current[activeChannel], reply: message },
+      }));
+      inputRef.current?.focus();
+    },
+    [activeChannel],
+  );
   function switchChannel(channel: Channel) {
     if (channel === feed.activeChannel) return;
     operationGeneration.current += 1;
@@ -409,6 +431,7 @@ function WorldChatChannelBody({
       following: isFollowing,
     };
     setFollowing(isFollowing);
+    setFollowingLatest(isFollowing);
     reportVisible();
     if (list.scrollTop < 200 && !feed.loadError) void older();
     if (
@@ -438,26 +461,29 @@ function WorldChatChannelBody({
     setFollowing(true);
     setScrollRevision((value) => value + 1);
   }
-  const locate = useCallback(async (id: string) => {
-    const channel = activeChannel;
-    const generation = ++operationGeneration.current;
-    const previous = captureAnchor();
-    if (previous) setReturnAnchor(previous);
-    const found = await locateMessage(id);
-    if (
-      !mounted.current ||
-      activeChannelRef.current !== channel ||
-      operationGeneration.current !== generation
-    )
-      return;
-    if (found) {
-      viewsRef.current[channel].following = false;
-      setFollowing(false);
-      setHighlight(id);
-      pendingPosition.current = { locateId: id };
-      setScrollRevision((value) => value + 1);
-    } else pushToast({ message: '原消息已过期或不可见', tone: 'warning' });
-  }, [activeChannel, captureAnchor, locateMessage, pushToast]);
+  const locate = useCallback(
+    async (id: string) => {
+      const channel = activeChannel;
+      const generation = ++operationGeneration.current;
+      const previous = captureAnchor();
+      if (previous) setReturnAnchor(previous);
+      const found = await locateMessage(id);
+      if (
+        !mounted.current ||
+        activeChannelRef.current !== channel ||
+        operationGeneration.current !== generation
+      )
+        return;
+      if (found) {
+        viewsRef.current[channel].following = false;
+        setFollowing(false);
+        setHighlight(id);
+        pendingPosition.current = { locateId: id };
+        setScrollRevision((value) => value + 1);
+      } else pushToast({ message: '原消息已过期或不可见', tone: 'warning' });
+    },
+    [activeChannel, captureAnchor, locateMessage, pushToast],
+  );
   async function returnToReading() {
     if (!returnAnchor) return;
     const channel = feed.activeChannel;
@@ -510,11 +536,19 @@ function WorldChatChannelBody({
           : '连接中';
 
   return (
-    <>
+    <div className="world-chat-slot" style={{ height }}>
       <div
         ref={workspaceRef}
         className="world-chat-workspace"
-        style={{ height }}
+        data-keyboard={keyboardViewport ? '' : undefined}
+        style={
+          keyboardViewport
+            ? {
+                top: keyboardViewport.top,
+                height: keyboardViewport.height,
+              }
+            : undefined
+        }
       >
         <nav
           aria-label="聊天频道"
@@ -619,17 +653,24 @@ function WorldChatChannelBody({
                 const date = dateLabel(message.createdAt);
                 const differentDate =
                   !previous || date !== dateLabel(previous.createdAt);
+                const elapsed = previous
+                  ? new Date(message.createdAt).getTime() -
+                    new Date(previous.createdAt).getTime()
+                  : Infinity;
                 const grouped =
                   !differentDate &&
                   message.id !== unreadStart &&
+                  !!message.senderCultivatorId &&
                   previous.senderCultivatorId === message.senderCultivatorId &&
+                  previous.senderName === message.senderName &&
+                  previous.senderRealm === message.senderRealm &&
+                  previous.senderRealmStage === message.senderRealmStage &&
                   previous.messageType === 'text' &&
                   message.messageType === 'text' &&
                   !message.reply &&
                   !previous.reply &&
-                  new Date(message.createdAt).getTime() -
-                    new Date(previous.createdAt).getTime() <
-                    120_000;
+                  elapsed >= 0 &&
+                  elapsed < 120_000;
                 const packet =
                   message.messageType === 'red_packet' &&
                   'packet' in message.payload
@@ -670,7 +711,7 @@ function WorldChatChannelBody({
               {feed.pendingMessages.map((message) => (
                 <div
                   key={message.clientMessageId}
-                  className="bg-teal/5 my-2 ml-10 px-3 py-2"
+                  className="bg-teal/5 my-1.5 ml-9 px-2.5 py-1.5 text-sm leading-6"
                 >
                   <p className="break-words whitespace-pre-wrap">
                     {message.text}
@@ -732,121 +773,62 @@ function WorldChatChannelBody({
           ) : null}
           {canSend ? (
             <div className="border-ink/15 shrink-0 border-t border-dashed pt-2">
-              {view.reply ? (
-                <div className="border-teal bg-ink/4 mb-2 flex min-w-0 items-center gap-2 border-l-2 px-3 py-1">
-                  <div className="min-w-0 flex-1 text-sm">
-                    <p className="text-teal">回复 {view.reply.senderName}</p>
-                    <p className="text-ink-secondary truncate">
-                      {getWorldChatMessageBody(view.reply)}
-                    </p>
-                  </div>
-                  <InkButton
-                    className="min-h-11"
-                    variant="secondary"
-                    onClick={() =>
-                      setViews((current) => ({
-                        ...current,
-                        [feed.activeChannel]: {
-                          ...current[feed.activeChannel],
-                          reply: null,
-                        },
-                      }))
-                    }
-                  >
-                    取消
-                  </InkButton>
-                </div>
-              ) : null}
-              <label className="sr-only" htmlFor="world-chat-input">
-                传音内容
-              </label>
-              <textarea
-                id="world-chat-input"
-                ref={inputRef}
-                rows={1}
-                value={view.draft}
+              <WorldChatTextComposer
+                inputId="world-chat-input"
+                inputRef={inputRef}
+                draft={view.draft}
+                maxChars={100}
                 placeholder="与道友说点什么……"
-                className={cn(
-                  inkFieldVariants({ variant: 'underlined', size: 'sm' }),
-                  'battle-scroll max-h-32 resize-none',
-                )}
-                onFocus={() => setEditing(true)}
-                onBlur={() => setEditing(false)}
-                onChange={(event) =>
-                  changeDraft(
-                    Array.from(event.target.value).slice(0, 100).join(''),
-                  )
+                label="传音内容"
+                posting={feed.posting}
+                cooldownRemaining={feed.cooldownRemaining}
+                sendDisabled={
+                  connection === 'offline' || connection === 'blocked'
                 }
-                onKeyDown={(event) => {
-                  if (
-                    event.key === 'Enter' &&
-                    !event.shiftKey &&
-                    !event.nativeEvent.isComposing &&
-                    !matchMedia('(pointer: coarse)').matches
-                  ) {
-                    event.preventDefault();
-                    void send();
-                  }
-                }}
+                reply={view.reply}
+                onDraftChange={changeDraft}
+                onClearReply={() =>
+                  setViews((current) => ({
+                    ...current,
+                    [feed.activeChannel]: {
+                      ...current[feed.activeChannel],
+                      reply: null,
+                    },
+                  }))
+                }
+                onSend={() => void send()}
+                leading={
+                  <>
+                    <InkButton
+                      disabled={feed.posting}
+                      className="min-h-11"
+                      variant="secondary"
+                      onClick={() => setShowcaseOpen(true)}
+                    >
+                      <GameIcon value="📦" className="mr-1" />
+                      展示
+                    </InkButton>
+                    <InkButton
+                      disabled={feed.posting}
+                      className="min-h-11"
+                      variant="secondary"
+                      onClick={() => setGiveOpen(true)}
+                    >
+                      <GameIcon value="🧧" className="mr-1" />
+                      红包
+                    </InkButton>
+                    <InkButton
+                      className="min-h-11 md:hidden"
+                      variant="secondary"
+                      onClick={() => setRefundsOpen(true)}
+                    >
+                      待退款
+                    </InkButton>
+                  </>
+                }
               />
-              <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
-                <div className="flex items-center gap-1">
-                  <InkButton
-                    disabled={feed.posting}
-                    className="min-h-11"
-                    variant="secondary"
-                    onClick={() => setShowcaseOpen(true)}
-                  >
-                    <GameIcon value="📦" className="mr-1" />
-                    展示
-                  </InkButton>
-                  <InkButton
-                    disabled={feed.posting}
-                    className="min-h-11"
-                    variant="secondary"
-                    onClick={() => setGiveOpen(true)}
-                  >
-                    <GameIcon value="🧧" className="mr-1" />
-                    红包
-                  </InkButton>
-                  <InkButton
-                    className="min-h-11 md:hidden"
-                    variant="secondary"
-                    onClick={() => setRefundsOpen(true)}
-                  >
-                    待退款
-                  </InkButton>
-                </div>
-                <div className="flex items-center gap-2">
-                  {charCount >= 80 ? (
-                    <span className="text-ink-secondary font-mono text-xs">
-                      {charCount}/100
-                    </span>
-                  ) : null}
-                  <InkButton
-                    variant="primary"
-                    className="min-h-11"
-                    onClick={() => void send()}
-                    disabled={
-                      !view.draft.trim() ||
-                      feed.posting ||
-                      feed.cooldownRemaining > 0 ||
-                      connection === 'offline' ||
-                      connection === 'blocked'
-                    }
-                  >
-                    {feed.cooldownRemaining > 0
-                      ? `${feed.cooldownRemaining}s`
-                      : '发送'}
-                  </InkButton>
-                </div>
-              </div>
             </div>
-          ) : (
-            <p className="border-ink/15 text-ink-secondary shrink-0 border-t border-dashed py-3 text-sm">
-              系统频道仅展示见闻
-            </p>
-          )}
+          ) : null}
         </div>
       </div>
       <FriendTargetModal
@@ -897,6 +879,6 @@ function WorldChatChannelBody({
       {refundsOpen ? (
         <WorldChatRefundsDialog onClose={() => setRefundsOpen(false)} />
       ) : null}
-    </>
+    </div>
   );
 }

@@ -1,12 +1,10 @@
-import type { CombatV6CommandOptions, Command, SkillDef, SkillEffect, StatusDef, Unit } from '@daoyou/combat-core/types';
+import type { CombatV6CommandOptions, Command, ExprEnv, SkillDef, SkillEffect, StatusDef, Unit } from '@daoyou/combat-core/types';
 import { evalExpr, skillLevelOf } from '@daoyou/combat-core/expr';
-import { isActiveAttackSkill } from '@daoyou/combat-core';
-import { FailReason } from '@daoyou/combat-core/enums';
-import { BUILTIN_SKILL_ID } from '@daoyou/combat-core/constants';
+import { injuredAllyTargets, isActiveAttackSkill, selectableAllyTargets } from '@daoyou/combat-core';
+import { FailReason, HookName } from '@daoyou/combat-core/enums';
 import { matchesWhen, targetStatusStacks } from '@daoyou/combat-core/when';
 import { daoyouRulesetV6 } from './daoyou/index.js';
 import type { AutoObservation } from './auto-observation.js';
-import { autoNormalAttackRepeat, autoSpellRepeat, autoStrikeOutcomes } from './auto-strike.js';
 import {
   ENEMY_EXECUTE_BONUS,
   ENEMY_EXECUTE_HP_RATIO,
@@ -59,6 +57,7 @@ export function rankAutoActions(
 ): AutoCandidate[] {
   const source = observation.units.find((unit) => unit.id === sourceId)!;
   const definitions = new Map(statusDefs.map((status) => [status.id, status]));
+  const skillDefinitions = new Map(skills.map((skill) => [skill.id, skill]));
   const weights = { offense: 1, survival: 1.2, control: 1, economy: 0.5 };
   const candidates: AutoCandidate[] = [];
   const formulas = daoyouRulesetV6.formulas;
@@ -69,6 +68,18 @@ export function rankAutoActions(
   };
   const planned = (target: Unit) =>
     intents.filter((intent) => intent.targetId === target.id);
+  function wakePenalty(target: Unit, largestHpHit: number): number {
+    if (target.side === source.side || largestHpHit <= 0 ||
+      !observation.units.some(unit => unit.id !== target.id && unit.side !== source.side && alive(unit))) return 0;
+    const sleeping = [
+      ...target.statuses.map(status => ({ definition: definitions.get(status.id), rounds: status.remainingRounds })),
+      ...planned(target).flatMap(intent => intent.statuses.map(id => ({ definition: definitions.get(id), rounds: 1 }))),
+    ];
+    const lostRounds = sleeping.reduce((rounds, { definition, rounds: remaining }) =>
+      definition?.blocksAction && definition.breakOnDamage && largestHpHit > (definition.breakOnDamageAbove ?? 0)
+        ? Math.max(rounds, Math.min(3, remaining)) : rounds, 0);
+    return lostRounds * 14;
+  }
   const taken = (
     target: Unit,
     key: 'damageTakenPhysical' | 'damageTakenSpell' | 'healTaken' | 'healDealt',
@@ -101,15 +112,55 @@ export function rankAutoActions(
     // Evaluate preparatory facts on a private actor copy, never on the observation.
     const actor = observation.units.find(unit => unit.id === sourceId)!;
     const source = { ...actor, combatFacts: { ...actor.combatFacts } };
-    // Direct damage includes known self modifiers; retaliation and future actions
-    // remain outside this bounded estimate.
+    // Model candidate target order only; other pre-hit/action history is not estimated.
+    const action = {
+      sourceId: source.id, skillId: skill.id, primaryTargetId: selected[0]?.id,
+      targetIds: selected.map(target => target.id),
+      resourceGains: {}, hpRestoreGains: {}, impactDamageByTarget: {},
+      initialStatusIdsByTarget: {}, initialStatusKindsByTarget: {},
+      failed: false,
+    };
+    const candidateContext = { ...context, skills: skillDefinitions, currentAction: action,
+      state: { ...context.state, units: observation.units.map(unit => unit.id === source.id ? source : unit) } };
+    function expressionEnv(target?: Unit, targets = selected.length): ExprEnv {
+      return { state: candidateContext.state, skills: skillDefinitions, statusDefs: definitions,
+        source, target, skillLevel: skillLevelOf(source, skill.id), targets, actionTargetIds: action.targetIds };
+    }
+    // Value the current spell's declared modifiers; passive hook chains remain outside this estimate.
     function modifiers(target: Unit, kind: 'physical' | 'spell' | 'fixed') {
       return (skill.modifiers ?? []).filter(m => {
         if (target.side !== source.side && typeof m.when?.expression === 'string' && expressionReadsHiddenTarget(m.when.expression)) return false;
-        return matchesWhen(context, m.when, { source, target, skill, skillId: skill.id, kind, origin: 'action-direct', isPrimary: target.id === selected[0]?.id });
+        return matchesWhen(candidateContext, m.when, { source, target, skill, skillId: skill.id, kind, origin: 'action-direct', isPrimary: target.id === action.primaryTargetId });
       });
     }
+    function sealChance(target: Unit, def: StatusDef | undefined, chanceFactor: number) {
+      if (target.statuses.some(status => definitions.get(status.id)?.immuneToSeal)) return 0;
+      const scope = { source, target, skill, skillId: skill.id, statusKind: def?.kind, statusHit: 'seal' as const };
+      const applicable = [
+        ...(skill.modifiers ?? []),
+        ...source.passives.flatMap(id => (source.skillOverrides[id] ?? skills.find(entry => entry.id === id))?.modifiers ?? []),
+        ...source.statuses.flatMap(status => definitions.get(status.id)?.modifiers ?? []),
+      ].filter(modifier => {
+        const when = modifier.when;
+        if (target.side !== source.side &&
+          ((typeof when?.expression === 'string' && expressionReadsHiddenTarget(when.expression)) ||
+            when?.targetSkillIds || when?.targetAbsentSkillIds || when?.targetHasNegativeSpellResistance !== undefined)) return false;
+        return matchesWhen(candidateContext, when, scope);
+      });
+      if (applicable.some(modifier => modifier.sealAlwaysHit)) return 1;
+      const env = expressionEnv(target);
+      const sum = (key: 'sealChanceCeilAdd' | 'sealChanceAdd' | 'sealHitAdd') => applicable.reduce((total, modifier) => total + evalExpr(modifier[key] ?? 0, env), 0);
+      const ceiling = Math.max(0, Math.min(1, (skill.sealChanceCeil ?? formulas.sealChanceCeil ?? 1) + sum('sealChanceCeilAdd')));
+      const actor = { ...source, attrs: { ...source.attrs, sealHit: source.attrs.sealHit + sum('sealHitAdd') } };
+      const base = target.side === source.side
+        ? formulas.sealHitChance(actor, target, env.skillLevel, skill.sealBase, sum('sealChanceAdd'), ceiling)
+        : visibleSealHitChance(actor, target.level, env.skillLevel, skill.sealBase, sum('sealChanceAdd'), ceiling);
+      const ownFactor = applicable.reduce((factor, modifier) => factor * evalExpr(modifier.sealChanceFactor ?? 1, env), 1);
+      const targetFactor = target.statuses.reduce((factor, status) => factor * (definitions.get(status.id)?.sealHitTakenFactor ?? 1), 1);
+      return Math.min(ceiling, Math.max(0, base * ownFactor * targetFactor)) * Math.max(0, Math.min(1, chanceFactor));
+    }
     const benefits = empty();
+    const wakingPenalties = new Map<string, number>();
     const intentions: AutoIntent[] = [];
     const notes = new Set<string>(['不可见的对方面板不进入估分；不推演被动连锁']);
     const skipsNextAction = skill.effects.some(
@@ -119,6 +170,7 @@ export function rankAutoActions(
       values: readonly SkillEffect[],
       initial: Unit[],
       probability = 1,
+      inheritedTargets = selected.length,
     ) {
       for (const effect of values) {
         let targets = initial;
@@ -138,6 +190,19 @@ export function rankAutoActions(
                     ? target.side !== source.side
                     : true),
           );
+          if (spec.preferInjured) {
+            const legalAllies = new Set(selectableAllyTargets(source, candidateContext.state.units, skillDefinitions, definitions).map(target => target.id));
+            targets = targets.filter(target =>
+              (target.side !== source.side || legalAllies.has(target.id)) &&
+              (!spec.excludeSelf || target.id !== source.id) &&
+              (!spec.requireKind || target.kind === spec.requireKind) &&
+              (!spec.requireKinds || spec.requireKinds.includes(target.kind)) &&
+              (!spec.requireOwnedPet || (target.kind === 'pet' && target.ownerId === source.id)) &&
+              (!spec.requireStatusIds?.length || target.statuses.some(status => spec.requireStatusIds!.includes(status.id))) &&
+              (!spec.requireStatusKinds?.length || target.statuses.some(status => spec.requireStatusKinds!.includes(status.kind))));
+            const injured = injuredAllyTargets(source, targets, skillDefinitions, definitions);
+            if (injured.length) targets = injured;
+          }
           if (spec.mode !== 'all' && spec.side !== 'self') {
             targets = targets
               .sort(
@@ -149,17 +214,13 @@ export function rankAutoActions(
                 0,
                 Math.max(
                   1,
-                  evalExpr(spec.count ?? 1, {
-                    source,
-                    skillLevel: skillLevelOf(source, skill.id),
-                    targets: initial.length,
-                  }),
+                  evalExpr(spec.count ?? 1, expressionEnv(undefined, initial.length)),
                 ),
               );
           }
         }
         targets = targets.filter((target) =>
-          matchesWhen(context, effect.when, {
+          matchesWhen(candidateContext, effect.when, {
             source,
             target,
             skill,
@@ -167,8 +228,9 @@ export function rankAutoActions(
             isPrimary: target.id === selected[0]?.id,
           }),
         );
+        const effectTargetCount = effect.targeting ? targets.length : inheritedTargets;
         if (effect.type === 'modifyFact') {
-          if (targets.length) source.combatFacts[effect.key] = evalExpr(effect.value, { state: context.state, source, target: targets[0], skillLevel: skillLevelOf(source, skill.id), targets: selected.length });
+          if (targets.length) source.combatFacts[effect.key] = evalExpr(effect.value, expressionEnv(targets[0], effectTargetCount));
           continue;
         }
         if (effect.type === 'invokeAttackSkills') {
@@ -202,7 +264,7 @@ export function rankAutoActions(
         }
         if (effect.type === 'repeat') {
           // Deterministic midpoint estimate; no RNG or actual damage is performed.
-          for (let i = 0; i < Math.round((effect.min + effect.max) / 2); i++) effects(effect.effects, targets, probability);
+          for (let i = 0; i < Math.round((effect.min + effect.max) / 2); i++) effects(effect.effects, targets, probability, effectTargetCount);
           continue;
         }
         if (effect.type === 'randomBranch') {
@@ -210,32 +272,22 @@ export function rankAutoActions(
             0,
             Math.min(
               1,
-              evalExpr(effect.chance, {
-                state: context.state,
-                source,
-                target: targets[0],
-                skillLevel: skillLevelOf(source, skill.id),
-                targets: selected.length,
-              }),
+              evalExpr(effect.chance, expressionEnv(targets[0], effectTargetCount)),
             ),
           );
           const before = { ...source.combatFacts };
-          effects(effect.successEffects, targets, probability * chance);
+          effects(effect.successEffects, targets, probability * chance, effectTargetCount);
           const success = source.combatFacts;
           source.combatFacts = { ...before };
-          effects(effect.failureEffects, targets, probability * (1 - chance));
+          effects(effect.failureEffects, targets, probability * (1 - chance), effectTargetCount);
           if (chance >= 0.5) source.combatFacts = success;
           continue;
         }
         for (const target of targets) {
           const env = {
-            state: context.state,
-            source,
-            target,
-            skillLevel: skillLevelOf(source, skill.id),
-            targets: selected.length,
+            ...expressionEnv(target, effectTargetCount),
             targetStatusStacks: targetStatusStacks(
-              context,
+              candidateContext,
               effect.when,
               target,
             ),
@@ -310,13 +362,16 @@ export function rankAutoActions(
               magicDef: kind === 'spell' ? target.attrs.magicDef * (1 - ignore) : target.attrs.magicDef,
             } };
             let damage = 0;
+            const strikeDamage: number[] = [];
             for (let hit = 0; hit < hits; hit++) {
               const coeff = Array.isArray(effect.coeff)
                 ? (effect.coeff[Math.min(hit, effect.coeff.length - 1)] ?? 1)
                 : (effect.coeff ?? 1);
               const resultFactor = effect.resultFactors?.[Math.min(hit, effect.resultFactors.length - 1)] ?? 1;
-              damage += (friendly
+              const amount = (friendly
                 ? formulas.baseDamage({
+                    percentageDamage: effect.type === 'fixedHit' ? effect.percentageDamage : undefined,
+                    origin: effect.type === 'fixedHit' ? effect.origin : undefined,
                     source,
                     target: defender,
                     kind,
@@ -330,6 +385,8 @@ export function rankAutoActions(
                     targetCount: selected.length,
                   })
                 : visibleOutgoingDamage({
+                    percentageDamage: effect.type === 'fixedHit' ? effect.percentageDamage : undefined,
+                    origin: effect.type === 'fixedHit' ? effect.origin : undefined,
                     source,
                     family,
                     coeff,
@@ -339,6 +396,8 @@ export function rankAutoActions(
                     splash: skill.splash,
                     targetCount: selected.length,
                   })) * resultFactor;
+              damage += amount;
+              strikeDamage.push(amount);
             }
             const chance = 'cannotMiss' in effect && effect.cannotMiss ? 1 :
               kind === 'physical'
@@ -365,44 +424,25 @@ export function rankAutoActions(
                 : kind === 'spell'
                   ? taken(target, 'damageTakenSpell')
                   : 1;
+            damage *= Math.max(0, 1 + modifier('damageBonus'));
             const barrier = target.barriers.reduce((sum, b) => sum + b.current, 0);
-            const outcomes = autoStrikeOutcomes(
-              observation, source, target, skill, kind, damage, skills,
-              statusDefs, target.id === selected[0]?.id,
-              effect.type === 'physicalHit' ? effect.critMultiplier : undefined,
-            ).map(outcome => ({ ...outcome, damage: outcome.damage * Math.max(0, 1 + modifier('damageBonus')) }));
             const barrierFactor = Math.max(1, 1 + modifier('barrierDamageBonus'));
-            const valueDamage = (amount: number) => {
-              const removedBarrier = Math.min(barrier, amount * barrierFactor);
-              const hpDamage = Math.max(0, amount - removedBarrier / barrierFactor);
-              return {
-                offense: (friendly ? -1 : 1) * (
-                  damageValue(target, hpDamage, effect.cannotKill) +
-                  removedBarrier / Math.max(1, target.attrs.maxHp) * 60
-                ),
-                damage: Math.min(target.attrs.hp, hpDamage),
-              };
-            };
-            const spellRepeat = effect.type === 'spellHit' ? autoSpellRepeat(skill, source, skills) : undefined;
-            const attackRepeat = skill.id === BUILTIN_SKILL_ID.Attack
-              ? autoNormalAttackRepeat(observation, source, target, skills)
-              : undefined;
-            const repeat = spellRepeat ?? attackRepeat;
-            for (const firstHit of outcomes) {
-              const first = valueDamage(firstHit.damage);
-              const firstProbability = firstHit.probability * chance;
-              const canRepeat = first.damage < target.attrs.hp && (spellRepeat || first.damage > 0);
-              const repeatChance = canRepeat ? (repeat?.chance ?? 0) * (attackRepeat ? chance : 1) : 0;
-              offense += first.offense * firstProbability * (1 - repeatChance);
-              intent.damage += first.damage * firstProbability * (1 - repeatChance) * probability;
-              if (!repeat || !repeatChance) continue;
-              for (const nextHit of outcomes) {
-                const repeated = valueDamage(firstHit.damage + nextHit.damage * repeat.factor);
-                const repeatedProbability = firstProbability * repeatChance * nextHit.probability;
-                offense += repeated.offense * repeatedProbability;
-                intent.damage += repeated.damage * repeatedProbability * probability;
-              }
+            const removedBarrier = Math.min(barrier, damage * barrierFactor);
+            const hpDamage = Math.max(0, damage - removedBarrier / barrierFactor);
+            const scale = damage / Math.max(1, strikeDamage.reduce((sum, amount) => sum + amount, 0));
+            let remainingBarrier = barrier;
+            let largestHpHit = 0;
+            for (const amount of strikeDamage) {
+              const scaled = amount * scale;
+              const absorbed = Math.min(remainingBarrier, scaled * barrierFactor);
+              remainingBarrier -= absorbed;
+              largestHpHit = Math.max(largestHpHit, scaled - absorbed / barrierFactor);
             }
+            const pool = friendly ? target.attrs.maxHp : source.attrs.maxHp;
+            offense = (friendly ? -1 : 1) * (damageValue(target, hpDamage * chance, effect.cannotKill) + removedBarrier / Math.max(1, pool) * 60 * chance);
+            wakingPenalties.set(target.id, Math.max(wakingPenalties.get(target.id) ?? 0,
+              wakePenalty(target, largestHpHit) * chance * probability));
+            intent.damage = hpDamage * chance * probability;
           } else if (
             effect.type === 'revive' ||
             (effect.type === 'restoreHp' && effect.revive && !alive(target))
@@ -436,7 +476,7 @@ export function rankAutoActions(
               );
               const power =
                 value(effect.power) +
-                (effect.type === 'heal' ? source.attrs.healPower : 0);
+                (effect.type === 'heal' && effect.includeHealPower !== false ? source.attrs.healPower : 0);
               const adjustedPower =
                 effect.type === 'heal'
                   ? power *
@@ -468,19 +508,7 @@ export function rankAutoActions(
               const duration = Math.max(0, Math.min(3, value(effect.duration)));
               const chance =
                 effect.hit === 'seal'
-                  ? friendly
-                    ? formulas.sealHitChance(
-                        source,
-                        target,
-                        env.skillLevel,
-                        skill.sealBase,
-                      )
-                    : visibleSealHitChance(
-                        source,
-                        target.level,
-                        env.skillLevel,
-                        skill.sealBase,
-                      )
+                  ? sealChance(target, def, value(effect.chanceFactor ?? 1))
                   : 1;
               const harmful =
                 def?.category === 'control' ||
@@ -488,13 +516,11 @@ export function rankAutoActions(
                 def?.category === 'dot' ||
                 def?.blocksAction ||
                 def?.blocksPhysical ||
-                def?.blocksSpell;
+                def?.blocksSpell ||
+                def?.blocksDamagingSpells;
               const sign = harmful ? (friendly ? -1 : 1) : friendly ? 1 : -1;
-              const coordination = planned(target).some((i) =>
-                i.statuses.includes(effect.statusId),
-              )
-                ? 0.25
-                : 1;
+              const coordination = planned(target).some(intent => intent.statuses.some(id =>
+                id === effect.statusId || (def && definitions.get(id)?.kind === def.kind))) ? 0.25 : 1;
               // A small panel buff is not worth the same as a full control turn.
               // Estimate its relative contribution using the recipient's panel.
               if (def?.healingPerRound !== undefined) {
@@ -520,9 +546,23 @@ export function rankAutoActions(
               control =
                 sign *
                 controlDuration *
-                (def?.protectsTarget ? Math.max(0, 1 - ratio(target)) * 8 : def?.blocksAction ? 14 : def?.blocksArts ? 2 : def?.blockedCommands?.length === 1 ? 4 : attributeValue) *
-                chance *
-                coordination;
+                (def?.interceptHostileAction ? 0 : def?.protectsTarget ? Math.max(0, 1 - ratio(target)) * 8 : def?.blocksAction ? 14 : def?.blocksArts ? 2 : def?.blockedCommands?.length === 1 ? 4 : attributeValue) *
+                chance * coordination;
+              if (!friendly && def?.blocksAction && def.breakOnDamage &&
+                !observation.units.some(unit => unit.id !== target.id && unit.side !== source.side && alive(unit) &&
+                  !unit.statuses.some(status => {
+                    const other = definitions.get(status.id);
+                    return other?.blocksAction && other.breakOnDamage;
+                  }) && !planned(unit).some(intent => intent.statuses.some(id => {
+                    const other = definitions.get(id);
+                    return other?.blocksAction && other.breakOnDamage;
+                  })))) control = 0;
+              if (def?.interceptHostileAction && friendly) {
+                const threats = observation.units.filter(unit => unit.side !== source.side && alive(unit) &&
+                  !unit.statuses.some(status => definitions.get(status.id)?.blocksAction)).length;
+                const rounds = Math.max(0, duration - Number(target.flags.hostileActionGuardRound === observation.round));
+                survival += rounds * (1 - ratio(target)) * Math.min(2, threats) * 10;
+              }
               // A buff's future benefit is less certain than damage or healing now.
               if (def?.category === 'buff' && friendly && !harmful)
                 control *= 0.1;
@@ -617,8 +657,10 @@ export function rankAutoActions(
     }
     if (skill.preparation) {
       effects(skill.preparation.effects, selected);
-      const count = Math.max(1, Math.floor(evalExpr(skill.preparation.targetCount, { state: context.state, source, target: selected[0], skillLevel: skillLevelOf(source, skill.id), targets: selected.length })));
+      const count = Math.max(1, Math.floor(evalExpr(skill.preparation.targetCount, expressionEnv(selected[0]))));
       selected = selected.slice(0, count);
+      action.targetIds = selected.map(target => target.id);
+      action.primaryTargetId = selected[0]?.id;
     }
     effects(skill.effects, selected);
     effects(skill.successEffects ?? [], selected);
@@ -632,8 +674,8 @@ export function rankAutoActions(
         for (const target of selected) {
           const kind = hit.type === 'physicalHit' ? 'physical' : 'spell';
           if (hook.requireKind && hook.requireKind !== kind) continue;
-          if (!matchesWhen(context, hook.when, { source, target, skill, skillId: skill.id, kind, isPrimary: target.id === selected[0]?.id })) continue;
-          const chance = Math.min(1, Math.max(0, evalExpr(hook.chance ?? 1, { state: context.state, source, target, skillLevel: skillLevelOf(source, skill.id), targets: selected.length })));
+          if (!matchesWhen(candidateContext, hook.when, { source, target, skill, skillId: skill.id, kind, isPrimary: target.id === action.primaryTargetId })) continue;
+          const chance = Math.min(1, Math.max(0, evalExpr(hook.chance ?? 1, expressionEnv(target))));
           const hitChance = kind === 'physical'
             ? target.side === source.side
               ? formulas.physicalHitChance(source, target)
@@ -643,6 +685,7 @@ export function rankAutoActions(
         }
       }
     }
+    benefits.control -= [...wakingPenalties.values()].reduce((sum, penalty) => sum + penalty, 0);
     return { benefits, notes: [...notes], intentions };
   }
   function add(
@@ -661,18 +704,37 @@ export function rankAutoActions(
   for (const id of options.attackTargetIds) {
     const target = observation.units.find((u) => u.id === id);
     if (!target) continue;
-    const { benefits, notes, intentions } = evaluate({
-      id: BUILTIN_SKILL_ID.Attack,
-      name: '普通攻击',
-      tags: ['physical'],
-      targeting: { side: 'enemy' },
-      effects: [{ type: 'physicalHit', coeff: 1 }],
-    }, [target]);
+    const chance = target.side === source.side
+      ? formulas.physicalHitChance(source, target)
+      : visiblePhysicalHitChance(source, target.level);
+    const damage =
+      (target.side === source.side
+        ? formulas.baseDamage({
+            source,
+            target,
+            kind: 'physical',
+            family: 'physical',
+            coeff: 1,
+            power: 0,
+            fury: false,
+          })
+        : visibleOutgoingDamage({
+            source,
+            family: 'physical',
+            coeff: 1,
+            power: 0,
+            skillLevel: source.level,
+            targetCount: 1,
+          })) *
+      taken(target, 'damageTakenPhysical');
+    const removedBarrier = Math.min(damage, target.barriers.reduce((sum, barrier) => sum + barrier.current, 0));
+    const hpDamage = Math.max(0, damage - removedBarrier);
     add(
       { type: 'attack', target: id },
-      benefits,
-      notes,
-      intentions,
+      { ...empty(), offense: damageValue(target, hpDamage * chance) + removedBarrier / Math.max(1, source.attrs.maxHp) * 60 * chance,
+        control: 0 - wakePenalty(target, hpDamage) * chance },
+      [],
+      [{ targetId: id, damage: hpDamage * chance, healing: 0, statuses: [], revive: false }],
     );
   }
   for (const option of options.skills) {
@@ -686,6 +748,11 @@ export function rankAutoActions(
       .sort(stable);
     if (!pool.length) continue;
     const count = Math.min(pool.length, option.targetCount);
+    const limitedFill = option.targetMode === 'fill' && skill.targeting.maxSelected !== undefined;
+    const marked = skill.targeting.secondaryOwnedStatusKind
+      ? pool.filter(target => target.statuses.some(status =>
+          status.kind === skill.targeting.secondaryOwnedStatusKind && status.sourceId === source.id))
+      : [];
     const ranked = pool
       .map((unit) => ({ unit, value: evaluate(skill, [unit]).benefits }))
       .sort(
@@ -697,7 +764,10 @@ export function rankAutoActions(
       );
     // Engine-selected modes cannot be optimized by naming a different first target.
     const groups =
-      option.targetMode === 'all'
+      limitedFill
+        ? pool.map(primary => [primary, ...marked.filter(target => target.id !== primary.id),
+            ...ranked.map(entry => entry.unit).filter(target => target.id !== primary.id && !marked.includes(target))].slice(0, count))
+        : option.targetMode === 'all'
         ? [pool]
         : option.targetMode === 'random' || option.targetMode === 'lowestDef'
           ? [pool]
@@ -712,6 +782,20 @@ export function rankAutoActions(
               : [ranked.slice(0, count).map((item) => item.unit)];
     for (const targets of groups) {
       const { benefits, notes, intentions } = evaluate(skill, targets);
+      if (limitedFill && count > 1) {
+        const primary = targets[0];
+        const known = new Set([primary.id, ...marked.filter(target => target.id !== primary.id).slice(0, count - 1).map(target => target.id)]);
+        if (known.size < count) {
+          const risk = pool.filter(target => !known.has(target.id)).reduce((worst, target) =>
+            Math.min(worst, evaluate(skill, [target]).benefits.control), 0);
+          benefits.control = Math.min(benefits.control, risk);
+          notes.push('补选按引擎规则处理；不读取敌方速度，以可见候选的唤醒风险保守估值');
+        }
+        for (let index = intentions.length - 1; index >= 0; index--) {
+          const target = observation.units.find(unit => unit.id === intentions[index].targetId);
+          if (target?.side !== source.side && !known.has(intentions[index].targetId)) intentions.splice(index, 1);
+        }
+      }
       if (option.targetMode === 'random' || option.targetMode === 'lowestDef') {
         const factor = count / pool.length;
         benefits.offense *= factor;
@@ -739,7 +823,7 @@ export function rankAutoActions(
         {
           type: 'skill',
           skillId: skill.id,
-          targets: targets.slice(0, count).map((target) => target.id),
+          targets: targets.slice(0, Math.min(count, skill.targeting.maxSelected ?? count)).map((target) => target.id),
         },
         benefits,
         notes,
@@ -747,10 +831,101 @@ export function rankAutoActions(
       );
     }
   }
-  if (options.canDefend)
+  if (options.canDefend) {
+    // Value immediate barriers and one explicit prepare -> attack -> weaken
+    // structure; no arbitrary passive chain or enemy panel is simulated.
+    const defender = { ...source, flags: { ...source.flags, defending: true } };
+    const barriers = new Map(source.barriers.map(barrier => [barrier.kind, barrier.current]));
+    const maxHp = Math.max(1, source.attrs.maxHp);
+    let uncovered = Math.max(0, maxHp - source.attrs.hp - source.barriers.reduce((sum, barrier) => sum + barrier.current, 0));
+    let barrierValue = 0;
+    const preparations = new Map<string, number>();
+    const recentDamage = [source.hpDamageThisRound, source.hpLossThisRound].find(
+      ledger => ledger && ledger.round >= observation.round - 1 && ledger.round <= observation.round,
+    )?.amount ?? 0;
+    for (const id of new Set(source.passives)) {
+      const passive = source.skillOverrides[id] ?? skills.find(skill => skill.id === id);
+      if (!passive || passive.conflicts?.some(other => source.passives.includes(other) || source.skills.includes(other))) continue;
+      for (const [hookIndex, hook] of (passive.hooks ?? []).entries()) {
+        if (hook.on !== HookName.AfterDefend || !hook.sourceIsSelf || hook.sourceIsEnemy || hook.sourceIsOwnedPet || hook.requireKind || hook.aim === 'others' || (hook.targeting && hook.targeting.side !== 'self')) continue;
+        const scope = { source: defender, target: defender, markKey: `${id}:${hookIndex}` };
+        if (!matchesWhen(context, hook.when, scope)) continue;
+        const env = { state: context.state, source: defender, target: defender, skillLevel: skillLevelOf(source, id), targets: 1 };
+        const chance = Math.max(0, Math.min(1, evalExpr(hook.chance ?? 1, env)));
+        for (const [effectIndex, effect] of hook.effects.entries()) {
+          if (effect.type === 'applyStatus' && (!effect.targeting || effect.targeting.side === 'self') && recentDamage > 0 && uncovered > 0 && !source.flags.skipNextAction && matchesWhen(context, effect.when, scope)) {
+            const ready = definitions.get(effect.statusId);
+            if (!ready || ready.category !== 'buff' || evalExpr(effect.duration, env) < 1 || source.statuses.some(status => status.id === ready.id || status.kind === ready.kind)) continue;
+            const prepared = { ...defender, flags: { ...defender.flags, defending: false }, combatFacts: { ...defender.combatFacts }, statuses: [...defender.statuses, {
+              id: ready.id, kind: ready.kind, remainingRounds: 1, stacks: 1, sourceId: source.id,
+              appliedRound: observation.round, speedMod: 0, attrMods: {},
+              damageTakenPhysical: 1, damageTakenSpell: 1, healTaken: 1, healDealt: 1,
+            }] };
+            // Only the direct preparation hook's declared facts are copied.
+            for (const fact of hook.effects) if (fact.type === 'modifyFact' && matchesWhen(context, fact.when, scope)) {
+              prepared.combatFacts[fact.key] = evalExpr(fact.value, { ...env, source: prepared });
+            }
+            const future = { ...context, state: { ...context.state, round: observation.round + 1 } };
+            let value = 0;
+            for (const followupOption of options.skills) {
+              const followup = source.skillOverrides[followupOption.skillId] ?? skills.find(entry => entry.id === followupOption.skillId);
+              if (!followup || !followupOption.ready || followupOption.reasons.length || followup.preparation || !isActiveAttackSkill(followup)) continue;
+              const hit = followup.effects.find(entry => entry.type === 'spellHit' || (entry.type === 'physicalHit' && !entry.healInstead));
+              if (!hit) continue;
+              const kind = hit.type === 'physicalHit' ? 'physical' : 'spell';
+              if (source.statuses.some(status => {
+                const def = definitions.get(status.id);
+                return def?.blocksAction || def?.blockedCommands?.includes('skill') ||
+                  (kind === 'physical' ? def?.blocksPhysical : def?.blocksSpell) ||
+                  (def?.blocksNonArtSkills && !followup.tags.includes('art')) ||
+                  (def?.blocksArts && followup.tags.includes('art'));
+              })) continue;
+              for (const targetId of followupOption.selectableTargetIds) {
+                const target = observation.units.find(unit => unit.id === targetId);
+                if (!target || target.side === source.side || !alive(target) || !evaluate(followup, [target]).intentions.some(intent => intent.targetId === target.id && intent.damage > 0)) continue;
+                for (const [followupIndex, followupHook] of (passive.hooks ?? []).entries()) {
+                  if (followupHook.on !== HookName.AfterHit || !followupHook.sourceIsSelf || followupHook.targeting || (followupHook.aim && followupHook.aim !== 'hookTarget') ||
+                    (followupHook.requireKind && followupHook.requireKind !== kind) || !followupHook.when?.requireStatusIds?.includes(ready.id)) continue;
+                  const hitScope: Parameters<typeof matchesWhen>[2] = { source: prepared, target, skill: followup, skillId: followup.id, kind, origin: 'action-direct', isPrimary: true, markKey: `${id}:${followupIndex}` };
+                  if ((typeof followupHook.when.expression === 'string' && expressionReadsHiddenTarget(followupHook.when.expression)) ||
+                    (typeof followupHook.chance === 'string' && expressionReadsHiddenTarget(followupHook.chance)) || !matchesWhen(future, followupHook.when, hitScope)) continue;
+                  const followupChance = Math.max(0, Math.min(1, evalExpr(followupHook.chance ?? 1, { state: future.state, source: prepared, target, skillLevel: skillLevelOf(source, id), targets: 1 })));
+                  for (const debuff of followupHook.effects) {
+                    if (debuff.type !== 'applyStatus' || debuff.self || debuff.hit || debuff.targeting ||
+                      (typeof debuff.when?.expression === 'string' && expressionReadsHiddenTarget(debuff.when.expression)) ||
+                      (typeof debuff.duration === 'string' && expressionReadsHiddenTarget(debuff.duration)) || !matchesWhen(future, debuff.when, hitScope)) continue;
+                    const def = definitions.get(debuff.statusId);
+                    if (!def?.consumeAfterDamagingAction || evalExpr(debuff.duration, { state: future.state, source: prepared, target, skillLevel: skillLevelOf(source, id), targets: 1 }) < 1 || target.statuses.some(status => status.id === def.id || status.kind === def.kind)) continue;
+                    const reduction = Math.max(0, Math.min(1, 1 - Math.max(def.damageDealtPhysical ?? 1, def.damageDealtSpell ?? 1)));
+                    // A delayed application may miss, be dispelled, or affect a
+                    // different attacker. Credit only 35% of visible recent loss.
+                    const hitChance = kind === 'physical' ? visiblePhysicalHitChance(source, target.level) : formulas.spellHitChance(source, target);
+                    value = Math.max(value, chance * followupChance * hitChance * Math.min(uncovered, recentDamage) * reduction * 0.35 / maxHp * 100);
+                  }
+                }
+              }
+            }
+            preparations.set(ready.id, Math.max(preparations.get(ready.id) ?? 0, value));
+            continue;
+          }
+          if (effect.type !== 'applyBarrier' || effect.stack || (effect.targeting && effect.targeting.side !== 'self') || !matchesWhen(context, effect.when, { ...scope, markKey: `${scope.markKey}:${effectIndex}` })) continue;
+          const amount = Math.max(0, Math.min(Math.floor(evalExpr(effect.power, env)), effect.maxPower === undefined ? Infinity : Math.floor(evalExpr(effect.maxPower, env))));
+          const previous = barriers.get(effect.kind) ?? 0;
+          const gain = chance * Math.min(uncovered, Math.max(0, amount - previous));
+          barriers.set(effect.kind, Math.max(previous, amount));
+          uncovered -= gain;
+          barrierValue += gain / maxHp * 60 * Math.max(0, 1 - ratio(source));
+        }
+      }
+    }
     add(
       { type: 'defend' },
-      { ...empty(), survival: 0.001 + Math.max(0, 0.25 - ratio(source)) * 20 },
+      { ...empty(), survival: 0.001 + Math.max(0, 0.25 - ratio(source)) * 20 + barrierValue + [...preparations.values()].reduce((sum, value) => sum + value, 0) },
+      [
+        ...(barrierValue > 0 ? ['防御附盾只按缺血、现盾与本次新增量估算，不推演后续连锁'] : []),
+        ...([...preparations.values()].some(value => value > 0) ? ['防御准备仅按可用攻击、近期可见承伤和下次出手减伤作保守估值'] : []),
+      ],
     );
+  }
   return candidates.sort((a, b) => b.score - a.score);
 }

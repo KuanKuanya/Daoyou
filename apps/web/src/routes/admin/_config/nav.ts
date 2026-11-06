@@ -21,6 +21,11 @@ export const adminNavItems: AdminNavItem[] = [
     href: '/admin/accounts',
   },
   {
+    title: '跨服转入审核',
+    description: '审核申请与维护来源服公钥白名单',
+    href: '/admin/transfers',
+  },
+  {
     title: '系统邮件',
     description: '按条件发布公告与奖励',
     href: '/admin/broadcast/game-mail',
@@ -74,6 +79,11 @@ export const adminNavItems: AdminNavItem[] = [
     title: '蜃楼敌人',
     description: '查看每周阵容、机制与战斗属性',
     href: '/admin/tower-enemy-sets',
+  },
+  {
+    title: '云游剧本',
+    description: '解谜副本剧本库存、剧本详情与生成任务',
+    href: '/admin/dungeon-scenarios',
   },
   {
     title: 'QQ交流群',

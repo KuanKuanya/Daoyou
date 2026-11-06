@@ -1,4 +1,5 @@
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { useCultivatorCurrency } from '@app/lib/resources/player';
 import type { ReactNode } from 'react';
 
@@ -23,15 +24,12 @@ export function InventoryHeader({
             aria-live="polite"
             aria-atomic="true"
           >
-            <span aria-hidden="true">
-              <GameIcon value="icon:ui-spirit-stones" />
-            </span>{' '}
-            <span className="font-mono">
-              {data?.spiritStones === undefined
-                ? '—'
-                : data.spiritStones.toLocaleString('zh-CN')}
-            </span>{' '}
-            灵石
+            <GameIcon value="icon:ui-spirit-stones" label="灵石" />{' '}
+            {data?.spiritStones === undefined ? (
+              '—'
+            ) : (
+              <SpiritStones amount={data.spiritStones} mode="compact" />
+            )}
           </span>
           <span className="font-mono whitespace-nowrap">{capacity}</span>
         </div>

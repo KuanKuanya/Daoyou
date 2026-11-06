@@ -4,6 +4,7 @@ import {
 } from '@app/components/feature/consumables';
 import { InkBadge, InkButton, type Tier } from '@app/components/ui';
 import { GameIcon } from '@app/components/ui/GameIcon';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { cn } from '@app/lib/cn';
 import type { RealmType } from '@daoyou/constants/realms';
 import type {
@@ -16,10 +17,7 @@ import { CONSUMABLE_TYPE_DISPLAY_MAP } from '@daoyou/game-content/presentation/c
 import type { Consumable } from '@daoyou/game-domain/character';
 import type { PillSpec } from '@daoyou/game-domain/consumables';
 import { isPillSpec } from '@daoyou/game-domain/consumables';
-import {
-  formatCompactGameNumber,
-  formatFullGameNumber,
-} from '@daoyou/game-rules/presentation/numbers';
+import { formatFullGameNumber } from '@daoyou/game-rules/presentation/numbers';
 import { memo } from 'react';
 
 interface BattleRankingCardProps {
@@ -310,7 +308,7 @@ function WealthRankingCardComponent({
   const rankTone = resolveBattleRankTone(item.rank);
   const origin = item.origin ?? '散修';
   const realmLabel = [item.realm, item.realm_stage].filter(Boolean).join(' · ');
-  const fullSpiritStones = `${formatFullGameNumber(item.spiritStones)} 灵石`;
+  const fullSpiritStones = `💰 ${formatFullGameNumber(item.spiritStones)}`;
 
   return (
     <article
@@ -348,12 +346,11 @@ function WealthRankingCardComponent({
         </div>
 
         <div className="mt-2 text-right lg:mt-0" title={fullSpiritStones}>
-          <div className="text-battle-muted text-xs leading-5">灵石</div>
-          <div className="text-wood text-lg leading-7 font-semibold">
-            {formatCompactGameNumber(item.spiritStones)}
-          </div>
           <div className="text-battle-muted text-xs leading-5">
-            {fullSpiritStones}
+            <GameIcon value="💰" label="灵石" />
+          </div>
+          <div className="text-lg leading-7 font-semibold">
+            <SpiritStones amount={item.spiritStones} mode="compact" />
           </div>
         </div>
       </div>

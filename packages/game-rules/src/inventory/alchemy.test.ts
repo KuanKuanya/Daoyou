@@ -7,7 +7,6 @@ import {
   BAG_CAPACITY,
   type InventoryItem,
 } from '@daoyou/game-domain/inventory';
-import { calculateAlchemyCost } from '../alchemy/alchemyCost.js';
 import {
   groupAlchemyBagMaterials,
   groupAlchemyStorageMaterials,
@@ -65,10 +64,6 @@ const material = (
   revision: 0,
 });
 describe('alchemy inventory migration', () => {
-  it('retains the existing price curve', () => {
-    expect(calculateAlchemyCost('凡品')).toBe(1600);
-    expect(calculateAlchemyCost('灵品')).toBe(3200);
-  });
   it('accepts herbs without expanding forging ingredient types', () => {
     expect(MaterialFactsSchema.parse(herb).type).toBe('herb');
     expect(FORGING_MATERIAL_TYPES).not.toContain('herb');
@@ -158,7 +153,7 @@ describe('alchemy inventory migration', () => {
         prompt: '另一段提示词',
       }),
     );
-    expect(inventoryStackIdentity('consumable.v1', pill)).not.toBe(
+    expect(inventoryStackIdentity('consumable.v1', pill)).toBe(
       inventoryStackIdentity('consumable.v1', {
         ...pill,
         score: pill.score + 1,
@@ -167,7 +162,7 @@ describe('alchemy inventory migration', () => {
     expect(inventoryStackIdentity('consumable.v1', pill)).not.toBe(
       inventoryStackIdentity('consumable.v1', { ...pill, name: '另一种丹药' }),
     );
-    expect(inventoryStackIdentity('consumable.v1', pill)).not.toBe(
+    expect(inventoryStackIdentity('consumable.v1', pill)).toBe(
       inventoryStackIdentity('consumable.v1', {
         ...pill,
         spec: {

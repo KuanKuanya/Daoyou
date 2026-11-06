@@ -4,20 +4,29 @@ import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkCard } from '@app/components/ui/InkCard';
 import { InkTag } from '@app/components/ui/InkTag';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { getResourceTypeInfo } from '@daoyou/game-content/presentation/concepts';
 import type { DungeonSettlement as DungeonSettlementType } from '@daoyou/game-domain/dungeon';
 import type { ResourceOperation } from '@daoyou/game-domain/resources';
 import { dungeonRewardItemName } from '@daoyou/game-rules/rewards/dungeon';
+import type { MysteryPlayerView } from '@daoyou/game-domain/dungeon/mystery';
+import { DungeonMysteryResult } from '@app/components/feature/dungeon/DungeonMysteryResult';
+import type { ExorcismRunState } from '@daoyou/game-domain/dungeon/exorcism';
+import { ExorcismResult } from './ExorcismResult';
 
 interface DungeonSettlementProps {
   settlement: DungeonSettlementType | undefined;
   realGains?: ResourceOperation[];
+  mysteryResult?: MysteryPlayerView['result'];
+  exorcism?: ExorcismRunState;
   onConfirm?: () => void;
 }
 
 export function DungeonSettlement({
   settlement,
   realGains = [],
+  mysteryResult,
+  exorcism,
   onConfirm,
 }: DungeonSettlementProps) {
   const handleConfirm = () => {
@@ -71,7 +80,16 @@ export function DungeonSettlement({
   }
 
   return (
-    <InkCard className="space-y-5 overflow-hidden p-4">
+    <InkCard
+      variant={exorcism ? 'plain' : undefined}
+      className="space-y-5 overflow-hidden p-4"
+    >
+      {exorcism ? (
+        <ExorcismResult
+          run={exorcism}
+          tags={settlement?.settlement?.performance_tags ?? []}
+        />
+      ) : (
       <div className="border-ink/15 border border-dashed p-4">
         <div className="text-ink-secondary text-xs tracking-[0.2em]">
           天机判词
@@ -94,10 +112,13 @@ export function DungeonSettlement({
           </div>
         </div>
       </div>
+      )}
 
       <p className="text-ink/80 leading-relaxed">
         {settlement?.ending_narrative || '探索已结束。'}
       </p>
+
+      {mysteryResult ? <DungeonMysteryResult result={mysteryResult} /> : null}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {keyResources.length > 0 ? (
@@ -110,8 +131,18 @@ export function DungeonSettlement({
                 {gain.info.label}
               </div>
               <div className="mt-1 text-lg font-semibold">
-                <GameIcon value={gain.info.icon} /> +
-                {gain.value.toLocaleString()}
+                {gain.type === 'spirit_stones' ? (
+                  <>
+                    +<SpiritStones amount={gain.value} />
+                  </>
+                ) : (
+                  <>
+                    <GameIcon value={gain.info.icon} /> +
+                    <span className="font-mono">
+                      {gain.value.toLocaleString()}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           ))

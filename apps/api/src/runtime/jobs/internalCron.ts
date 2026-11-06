@@ -1,10 +1,12 @@
-import { RANKING_REWARDS } from '@daoyou/game-content/economy';
 import { REALM_VALUES } from '@daoyou/constants/realms';
+import { RANKING_REWARDS } from '@daoyou/game-content/economy';
 import {
   generateDailyMarketMaterialLibraryEntries,
   ITEM_LIBRARY_SYSTEM_USER_ID,
 } from '@server/admin/application/MaterialLibraryService.js';
+import type { AuctionBuyOrderOperations } from '@server/auction/application/AuctionBuyOrderService.js';
 import type { AuctionOperations } from '@server/auction/application/AuctionService.js';
+import { isBackgroundLlmEnabled } from '@server/lib/config/environment.js';
 import { db, getExecutor } from '@server/lib/drizzle/db.js';
 import { cultivators } from '@server/lib/drizzle/schema.js';
 import { redis } from '@server/lib/redis/index.js';
@@ -228,12 +230,14 @@ async function withJobLock<T extends CronJobResult>(
 
 export async function runAuctionExpireJob(
   auction: AuctionOperations,
+  buyOrders: AuctionBuyOrderOperations,
 ): Promise<CronJobResult> {
   return withJobLock('auction-expire', async () => {
-    const processed = await auction.expireListings();
+    const listings = await auction.expireListings();
+    const orders = await buyOrders.expireBuyOrders();
     return {
       success: true,
-      processed,
+      processed: listings + orders,
       skipped: false,
     };
   });
@@ -342,6 +346,13 @@ export async function runMarketRefreshCronJob(): Promise<CronJobResult> {
 export async function runMaterialLibraryDailyGenerationJob(
   scheduledAt = new Date(),
 ): Promise<CronJobResult> {
+  if (!isBackgroundLlmEnabled())
+    return {
+      success: true,
+      processed: 0,
+      skipped: true,
+      reason: 'background-llm-off',
+    };
   return withJobLock(
     'material-library-daily-generation',
     async () => {
@@ -405,6 +416,7 @@ export async function runExpiredDataCleanupJob(): Promise<
           sectShopPurchases: new Date(now - SECT_SHOP_PURCHASE_RETENTION_MS),
           sectStipendClaims: new Date(now - SECT_STIPEND_CLAIM_RETENTION_MS),
           auctionListings: new Date(now - AUCTION_LISTING_RETENTION_MS),
+          auctionBuyOrders: new Date(now - AUCTION_LISTING_RETENTION_MS),
         },
         tx,
       )),

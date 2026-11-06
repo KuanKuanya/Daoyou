@@ -15,6 +15,11 @@ export function isActiveAttackSkill(skill: SkillDef): boolean {
     !hasEffect(effects, effect => effect.type === EffectType.InvokeAttackSkills)
 }
 
+export function isDamagingSpellSkill(skill: SkillDef): boolean {
+  return skill.tags.includes(SkillTag.Spell) && !skill.tags.includes(SkillTag.Physical) &&
+    !skill.tags.includes(SkillTag.Art) && isActiveAttackSkill(skill);
+}
+
 export function invokesAttackSkills(skill: SkillDef): boolean {
   return hasEffect([...skill.effects, ...(skill.successEffects ?? []), ...(skill.preparation?.effects ?? [])], effect => effect.type === EffectType.InvokeAttackSkills)
 }
@@ -27,7 +32,7 @@ function hasEffect(effects: SkillEffect[], matches: (effect: SkillEffect) => boo
 }
 
 export function skillOf(
-  skills: Map<SkillId, SkillDef>,
+  skills: ReadonlyMap<SkillId, SkillDef>,
   unit: Unit,
   id: SkillId,
 ): SkillDef | undefined {
@@ -42,7 +47,7 @@ export function overridesFrom(defs: SkillDef[] | undefined): Record<SkillId, Ski
 }
 
 /** Resolve active passive definitions consistently, including declared conflicts. */
-export function passiveSkills(skills: Map<SkillId, SkillDef>, unit: Unit): SkillDef[] {
+export function passiveSkills(skills: ReadonlyMap<SkillId, SkillDef>, unit: Unit): SkillDef[] {
   return unit.passives.flatMap(id => {
     const skill = skillOf(skills, unit, id)
     return skill && !skill.conflicts?.some(other => unit.passives.includes(other) || unit.skills.includes(other)) ? [skill] : []

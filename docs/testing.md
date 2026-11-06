@@ -37,7 +37,7 @@
 
 由 Codex 在当次开发任务中操作真实本地页面，不将操作固化为一次性仓库脚本。
 
-1. 从 `env/local.example.env` 准备 `env/local.env`（已有文件保留），执行 `pnpm run services up -d --wait` 和 `pnpm run db:migrate`。普通验证使用 `pnpm run dev`；长流程需关闭watch时，先执行`pnpm run build:server`，再在两个终端执行`APP_ENV=local NODE_ENV=development node --env-file=env/local.env apps/api/dist/main.js`和`pnpm run dev:web`。确认页面为 `127.0.0.1:5174`、服务指向专用本地数据；不得使用 `prd` 进行测试写入。
+1. 从 `env/local.example.env` 准备 `env/local.env`（已有文件保留），执行 `pnpm run services up -d --wait` 和 `pnpm run db:migrate`。普通验证使用 `pnpm run dev`；长流程需关闭watch时，先执行`pnpm run build:server`，再在两个终端执行`APP_ENV=local NODE_ENV=development node --env-file=env/local.env apps/api/dist/main.js`和`pnpm run dev:web`。确认页面为 `127.0.0.1:5174`、服务指向专用本地数据；不得使用 `prd` 进行测试写入。测试时不得设置 `BACKGROUND_LLM_JOBS=on`（默认关闭）；启动后在日志里确认没有 `sceneId=dungeon-case` 这类后台模型调用，页面操作中实际调用模型的步骤要向用户说明。
 2. 列出本次改动需要验证的用户行为、预期结果和准备条件。通过页面注册／登录，邮件验证使用 Mailpit；优先复用已有测试角色。缺少 LLM 或角色构筑等条件时如实说明，不通过假成功继续。
 3. 使用可用的 Codex 浏览器能力或 Playwright，按可访问名称和实际页面定位控件。操作后等待具体界面／网络状态，不依赖固定长时间 sleep。多人测试使用独立浏览器上下文或配置文件，每个角色有独立会话。
 4. 同时观察界面、控制台和网络：检查请求次数、错误、权限边界、提交结果及恢复过程。涉及布局时检查桌面和 360px；涉及性能时使用网络面板／Profiler，不维护一次性基准脚本。
@@ -83,9 +83,9 @@ Lint、TypeScript／构建、Prettier 是静态质量检查，不是额外一层
 
 新库存材料使用 `type: item`、`definitionId: material.v1`、`instanceData: { name, type, rank, element?, description? }`。传承灵印使用注册的定义 ID；随机道装使用 `{ "type": "equipment", "slot": "weapon", "level": 10 }`，法兵默认生成剑，可加 `weaponType` 指定 `axe/blade/spear/staff/sword/fan/bell/brush/banner`，非武器不得指定。全部定义在 `packages/game-content/src/items`，参数边界见 `packages/contracts/src/forging.ts`。
 
-旧丹药／消耗品验收可提交 `{ "type": "vault-consumable", "facts": { name, type, quality, description, prompt, score, spec }, "quantity": 2 }`，facts 须符合 `ConsumableFactsSchema`，quantity 为 1–3960；沿用历史消耗品发放入口写入洞府宝库，再通过正式取出操作转换。新版消耗品直接发放使用 `type: item`、`definitionId: consumable.v1` 及同一完整 facts 作为 instanceData。该能力仍只在纯本地开放。
+旧丹药／消耗品、旧材料和灵种的 `vault-consumable`、`vault-material`、`vault-seed` 发放仍接受原事实，但写入当前背包，不再进入洞府宝库。新版消耗品也可直接使用 `type: item`、`definitionId: consumable.v1` 及同一完整 facts 作为 instanceData。该能力仍只在纯本地开放。
 
-邮件附件验收可提交 `{ "type": "mail", "format": "historical" | "new_reward", "attachments": [...] }`。附件遵循共享 MailAttachmentsSchema，每次1–20个。format默认为new_reward，经过正式新奖励生产入口；historical原样保存合法附件协议，可构造新旧混合邮件。邮件固定使用本地验收标题与正文，返回邮件ID。该能力只创建样本，领取仍需真实角色通过正式邮件接口完成，不直接标记领取或绕过好友赠送成本。
+邮件附件验收可提交 `{ "type": "mail", "format": "historical" | "new_reward", "attachments": [...] }`。附件遵循共享 MailAttachmentsSchema，每次1–20个。format默认为new_reward，经过正式新奖励生产入口；historical原样保存合法附件协议，可构造新旧混合邮件。领取时材料与消耗品进入当前背包，旧法宝附件会拒绝入库。邮件固定使用本地验收标题与正文，返回邮件ID。该能力只创建样本，领取仍需真实角色通过正式邮件接口完成，不直接标记领取或绕过好友赠送成本。
 
 发放遵循正式背包容量、材料校验、资源上限和战斗占用规则，整批事务成功或整体回滚。不支持修改任意字段、账号创建或整库清空。测试前记录物资与资源基准，完成后只清理本次发放和生成的测试物品；保留其他测试已产生的角色进度及历史记录。
 
@@ -186,8 +186,7 @@ Lint、TypeScript／构建、Prettier 是静态质量检查，不是额外一层
   "cultivation": { "experience": 100000, "insight": 90 },
   "breakthroughPreparation": {
     "clearMind": true,
-    "protectMeridians": true,
-    "completedDungeonObjectiveIds": ["clear-archive"]
+    "protectMeridians": true
   }
 }
 ```
@@ -196,7 +195,7 @@ Lint、TypeScript／构建、Prettier 是静态质量检查，不是额外一层
 
 调整 realm、realmStage 或 breakthroughPreparation 时会同步当前破境任务，确保准备目标有对应任务。通过外部 dev 请求准备后应刷新浏览器再开始验收，避免页面沿用先前角色缓存。10F 实际运行记录及准备数据去向见 [阶段验收记录](./combat-v6-phase-10f-breakthrough-plan.md#73-解锁后的真实运行验收2026-09-08-至-09)。
 
-`completedDungeonObjectiveIds` 只接受当前大境界破境任务中 kind 为 complete_dungeon 的目标 ID，用于跳过验收准备所需的长秘境流程，不创建秘境通关记录或奖励。未知目标及 win_task_challenge 战斗目标返回 409，整笔联合调整回滚；不能用本接口直接制造试炼胜利。真实试炼胜负、灵兽消耗、任务推进和最终突破必须通过正式页面完成。准备前记录境界、六属性、资源、修为、感悟及任务目标基准；验收记录须区分 dev 准备目标和真实战斗完成目标，结束后恢复临时角色字段并移除 dev 状态，不把准备数据记作真实验收证据。
+破境任务不再要求秘境通关。此接口不能制造试炼胜利；真实试炼胜负、灵兽消耗、任务推进和最终突破必须通过正式页面完成。准备前记录境界、六属性、资源、修为、感悟及任务目标基准，结束后恢复临时角色字段并移除 dev 状态，不把准备数据记作真实验收证据。
 
 归元灵露洗炼验收：通过上述`type: item`发放`beast.refinement.origin-dew`或`beast.refinement.superior-origin-dew`，在灵兽详情「学习兽诀」旁选择「洗炼」。规则及示例见[洗炼文档](combat-v6-beast-refinement.md)。首版不配置掉落或商店。
 

@@ -4,11 +4,13 @@
  */
 import { combatModifiers, modifierValue, isReviveBlocked } from './modifiers.js';
 import { evalExpr } from './expr.js';
+import { recordHpLoss } from './hp-loss.js';
 import { skillOf, passiveSkills } from "./skills.js"
 import { MIN_DAMAGE, MIN_HP } from "./constants.js"
 import { absorbBarriers } from "./barriers.js"
 import type { BattleContext } from "./context.js"
-import { DamageKind, DamageOrigin, EventType, FailReason, FormulaFamily, HookName } from "./enums.js"
+import { DamageKind, DamageOrigin, EventType, FailReason, FormulaFamily, HookName, SkillTag } from "./enums.js"
+import { interceptHostileAction } from './action-guard.js';
 import { atLeast, floorAtLeast } from "./math.js"
 import { alliesOf, tryUnit } from "./unit-query.js"
 import { breakStatusesOnDamage, clearCombatStatuses } from "./status-removal.js"
@@ -42,6 +44,8 @@ export type StrikeInput = {
   cannotMiss?: boolean
   cannotKill?: boolean
   origin?: DamageOriginType
+  /** 同一次多段里的序号。贤影只拦截第 0 段。 */
+  segmentIndex?: number
 }
 
 export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
@@ -55,13 +59,21 @@ export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
 
   const skillId = input.skillId ?? ctx.currentAction?.skillId
   const skill = skillId ? skillOf(ctx.skills, source, skillId) : undefined
-  const modifiers = combatModifiers(ctx, source, { target, skill, skillId, kind: input.kind, origin })
+  const spellAttack = !silent && !ctx.invokingAttackSkills && !input.healInstead && source.side !== target.side &&
+    skill?.tags.includes(SkillTag.Spell) && !skill.tags.includes(SkillTag.Physical);
+  if (spellAttack) (target.combatFacts ??= {})[`spellAttackedRound:${source.id}`] = ctx.state.round;
+  if (!input.healInstead && (input.segmentIndex ?? 0) === 0 && interceptHostileAction(ctx, source, target, skillId, origin)) return
+  const modifiers = combatModifiers(ctx, source, { target, skill, skillId, kind: input.kind, origin, percentageDamage: input.percentageDamage })
+  const defenseModifiers = combatModifiers(ctx, target, { target: source, skill, skillId, kind: input.kind, origin, percentageDamage: input.percentageDamage })
   src.hit += modifierValue(modifiers, 'hitAdd', source, target, skill, ctx)
   src.physicalAtk += modifierValue(modifiers, 'physicalAttackAdd', source, target, skill, ctx)
+  dst.physicalDef += modifierValue(defenseModifiers, 'physicalDefenseAdd', target, source, skill, ctx)
+  dst.magicDef += modifierValue(defenseModifiers, 'magicDefenseAdd', target, source, skill, ctx)
   const protector = input.kind === DamageKind.Physical && !input.healInstead && !modifiers.some(m => m.ignoreProtection) ? findProtector(ctx, target) : undefined
   if (protector) ctx.emit({ type: EventType.ProtectTrigger, protectorId: protector.id, originalTargetId: target.id })
 
   if (!input.cannotMiss && input.kind !== DamageKind.Fixed && !rollHit(ctx, source, target, src, dst, input.kind)) return
+  if (spellAttack) (target.combatFacts ??= {})[`spellHitRound:${source.id}`] = ctx.state.round;
 
   const fury = input.kind === DamageKind.Physical && ctx.rng.chance(src.physicalFuryRate + modifierValue(modifiers, 'physicalFuryChanceAdd', source, target, skill, ctx))
   const isPrimary =
@@ -89,6 +101,7 @@ export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
   const crit = input.kind === DamageKind.Fixed || burstFactor !== 1 ? false : critRoll?.crit ?? ctx.rng.chance(Math.min(1, Math.max(0, critRoll?.chance ?? critChance)))
 
   const defenseIgnoreHook = ctx.hooks.emit(HookName.OnDefenseIgnoreCalc, {
+    percentageDamage: input.percentageDamage,
     source,
     target,
     kind: input.kind,
@@ -99,7 +112,7 @@ export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
       : 0),
     origin,
   })
-  const strikeInput = { ...input, defenseIgnore: defenseIgnoreHook.defenseIgnore }
+  const strikeInput = { ...input, origin, defenseIgnore: defenseIgnoreHook.defenseIgnore }
   let raw = computeBase(ctx, source, target, src, dst, strikeInput, fury)
   const critAdd = modifierValue(modifiers, 'critMultiplierAdd', source, target, skill, ctx)
   const extraTakenFactor = input.healInstead ? 1 : passiveSkills(ctx.skills, target).reduce((factor, passive) => factor * (passive.innate?.criticalExtraTakenFactor ?? 1), 1)
@@ -146,11 +159,10 @@ export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
     }
   }
   const sourceBoundFactor = target.statuses.reduce((factor, status) => factor * (status.sourceId === source.id ? ctx.statusDefs.get(status.id)?.damageTakenFromSource ?? 1 : 1), 1)
-  const defenseModifiers = combatModifiers(ctx, target, { target: source, skill, skillId, kind: input.kind, origin })
   const incomingFactor = Math.max(0, 1 + modifierValue(defenseModifiers, 'damageTakenBonus', target, source, skill, ctx))
   const incomingAdd = modifierValue(defenseModifiers, 'damageTakenAdd', target, source, skill, ctx)
-  const damageResultFactor = modifiers.reduce((factor, modifier) => factor * evalExpr(modifier.damageResultFactor ?? 1, { source, target, state: ctx.state, skillLevel: input.skillLevel ?? source.level, targets: input.targetCount ?? 1 }), 1)
-  const amount = floorAtLeast(MIN_DAMAGE, ((hooked.damage ?? raw) * (1 + modifierValue(modifiers, 'damageBonus', source, target, skill, ctx)) + modifierValue(modifiers, 'damageAdd', source, target, skill, ctx)) * repeatFactor * relationFactor * dealtFactor * sourceBoundFactor * (input.resultFactor ?? 1) * resultCritFactor * burstFactor * damageResultFactor * incomingFactor + incomingAdd)
+  const damageResultFactor = modifiers.reduce((factor, modifier) => factor * evalExpr(modifier.damageResultFactor ?? 1, { source, target, state: ctx.state, actionTargetIds: ctx.currentAction?.targetIds, skills: ctx.skills, statusDefs: ctx.statusDefs, skillLevel: input.skillLevel ?? source.level, targets: input.targetCount ?? 1 }), 1)
+  const amount = floorAtLeast(MIN_DAMAGE, ((hooked.damage ?? raw) * (1 + modifierValue(modifiers, 'damageBonus', source, target, skill, ctx)) + modifierValue(modifiers, 'damageAdd', source, target, skill, ctx)) * repeatFactor * relationFactor * dealtFactor * sourceBoundFactor * (input.resultFactor ?? 1) * resultCritFactor * burstFactor * damageResultFactor * incomingFactor + incomingAdd + (hooked.finalDamageAdd ?? 0))
 
   ctx.emit({
     type: EventType.Hit,
@@ -164,11 +176,19 @@ export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
   let targetAmount = amount
   if (protector) {
     const keep = ctx.rules.protectionTargetRatio ?? 0
-    applyDamage(ctx, source, protector, Math.floor(amount * (1 - keep)), input.kind, silent, origin, input.cannotKill)
+    applyDamage(ctx, source, protector, Math.floor(amount * (1 - keep)), input.kind, silent, origin, input.cannotKill, 1, input.percentageDamage)
     targetAmount = Math.floor(amount * keep * (1 + modifierValue(modifiers, 'protectedDamageBonus', source, target, skill, ctx)))
   }
   const barrierFactor = 1 + modifierValue(modifiers, 'barrierDamageBonus', source, target, skill, ctx)
-  const hpDamage = applyDamage(ctx, source, target, targetAmount, input.kind, silent, origin, input.cannotKill, barrierFactor)
+  const barrierDrainBonus = modifierValue(modifiers, 'barrierDrainBonus', source, target, skill, ctx)
+  const hpDamage = applyDamage(ctx, source, target, targetAmount, input.kind, silent, origin, input.cannotKill, barrierFactor, input.percentageDamage, barrierDrainBonus)
+  if (ctx.currentAction?.sourceId === source.id && origin === DamageOrigin.ActionDirect && !input.percentageDamage) {
+    if (isPrimary) ctx.currentAction.primaryHpDamage = (ctx.currentAction.primaryHpDamage ?? 0) + hpDamage;
+    if (input.kind !== DamageKind.Fixed && hpDamage > 0) {
+      const targets = (ctx.currentAction.incomingAttackTargetIds ??= []);
+      if (!targets.includes(target.id)) targets.push(target.id);
+    }
+  }
   if (!silent) {
     // 溅射继承本击的最终结果；不重新命中、暴击、减防或递归触发溅射。
     for (const modifier of modifiers) {
@@ -210,6 +230,7 @@ export function resolveStrike(ctx: BattleContext, input: StrikeInput): void {
       skillId,
       isPrimary,
       origin,
+      percentageDamage: input.percentageDamage,
     }
     ctx.hooks.emit(HookName.AfterStrike, { ...hit })
     if (hpDamage > 0) ctx.hooks.emit(HookName.AfterHit, hit)
@@ -290,6 +311,8 @@ function computeBase(
         })
       : withAttrs(target, targetAttrs)
   return ctx.rules.formulas.baseDamage({
+    percentageDamage: input.percentageDamage,
+    origin: input.origin,
     family,
     kind: input.kind,
     source: withAttrs(source, src),
@@ -326,6 +349,22 @@ function applyDefend(ctx: BattleContext, target: Unit, kind: DamageKindType, raw
   return floorAtLeast(MIN_DAMAGE, raw * (factor ?? ctx.rules.formulas.defendPhysicalFactor))
 }
 
+/** MP absorption funds a portion of post-barrier nominal damage, including overkill. */
+function absorbDamageWithMp(ctx: BattleContext, target: Unit, amount: number): number {
+  let ratio = 0
+  let statusId: string | undefined
+  for (const status of target.statuses) {
+    const candidate = ctx.statusDefs.get(status.id)?.mpShieldRatio ?? 0
+    if (candidate > ratio) { ratio = Math.min(1, candidate); statusId = status.id }
+  }
+  const absorbed = Math.min(Math.floor(Math.max(0, amount) * ratio), Math.max(0, Math.floor(target.attrs.mp)))
+  if (absorbed > 0) {
+    target.attrs.mp -= absorbed
+    ctx.emit({ type: EventType.MpCost, unitId: target.id, amount: absorbed, mpAfter: target.attrs.mp, absorbedDamage: absorbed, statusId })
+  }
+  return amount - absorbed
+}
+
 /** silent=true 表示来自钩子的二次打击，不再触发 onBeHit（避免反击/反震互爆）。 */
 export function applyDamage(
   ctx: BattleContext,
@@ -337,26 +376,34 @@ export function applyDamage(
   origin: DamageOriginType = silent ? DamageOrigin.HookDerived : DamageOrigin.ActionDirect,
   cannotKill = false,
   barrierDestructionFactor = 1,
+  percentageDamage = false,
+  barrierDrainBonus = 0,
 ): number {
   if (!isStanding(target) || target.flags.downed) return 0
 
   const skill = ctx.currentAction?.skillId ? skillOf(ctx.skills, source, ctx.currentAction.skillId) : undefined
-  const finalModifiers = combatModifiers(ctx, target, { target: source, skill, skillId: skill?.id, kind, origin })
+  const finalModifiers = combatModifiers(ctx, target, { target: source, skill, skillId: skill?.id, kind, origin, percentageDamage })
   const received = Math.max(0, Math.floor(amount * Math.max(0, 1 + modifierValue(finalModifiers, 'allDamageTakenBonus', target, source, skill, ctx))))
   const kept = redirectOverflow(ctx, source, target, received, kind, origin)
-  const enteringHp = origin === DamageOrigin.Status ? kept : absorbBarriers(ctx, target, kept, barrierDestructionFactor)
-  const barrierAbsorbed = kept - enteringHp
-  const appliedToHp = cannotKill
+  const afterBarriers = origin === DamageOrigin.Status ? kept : absorbBarriers(ctx, target, kept, barrierDestructionFactor, barrierDrainBonus)
+  const enteringHp = absorbDamageWithMp(ctx, target, afterBarriers)
+  const absorbedBeforeHp = kept - enteringHp
+  const deferFatal = !cannotKill && kind === DamageKind.Fixed && origin === DamageOrigin.HookDerived &&
+    (ctx.retaliationDepth ?? 0) > 0 && ctx.currentAction?.sourceId === target.id &&
+    enteringHp >= target.attrs.hp && finalModifiers.some(modifier => modifier.deferFatalRetaliation)
+  if (deferFatal && !target.pendingRetaliationFatal)
+    target.pendingRetaliationFatal = { sourceId: source.id, skillId: ctx.currentAction?.skillId }
+  const appliedToHp = deferFatal || cannotKill
     ? Math.min(enteringHp, Math.max(0, target.attrs.hp - MIN_HP))
     : enteringHp
   ctx.lastStrikeDamage = enteringHp
   if (origin === DamageOrigin.ActionDirect && ctx.currentAction?.sourceId === source.id &&
-    kind !== DamageKind.Fixed && (barrierAbsorbed > 0 || appliedToHp > 0)) {
+    kind !== DamageKind.Fixed && (absorbedBeforeHp > 0 || appliedToHp > 0)) {
     ctx.currentAction.hasPhysicalOrSpellImpact = true
   }
-  if (origin === DamageOrigin.ActionDirect && ctx.currentAction?.sourceId === source.id && barrierAbsorbed > 0) {
+  if (origin === DamageOrigin.ActionDirect && ctx.currentAction?.sourceId === source.id && absorbedBeforeHp > 0) {
     ctx.currentAction.impactDamageByTarget[target.id] =
-      (ctx.currentAction.impactDamageByTarget[target.id] ?? 0) + barrierAbsorbed
+      (ctx.currentAction.impactDamageByTarget[target.id] ?? 0) + absorbedBeforeHp
   }
   if (appliedToHp <= 0) return 0
   const hpBefore = target.attrs.hp
@@ -386,6 +433,8 @@ export function applyDamage(
       skillId: ctx.currentAction?.skillId,
       isPrimary: ctx.currentAction?.primaryTargetId === target.id,
       origin,
+      percentageDamage,
+      retaliationDamage: (ctx.retaliationDepth ?? 0) > 0,
     })
   }
   ctx.hooks.emit(HookName.AfterDamage, {
@@ -396,13 +445,30 @@ export function applyDamage(
     kind,
     skillId: ctx.currentAction?.skillId,
     origin,
+    percentageDamage,
+    retaliationDamage: (ctx.retaliationDepth ?? 0) > 0,
   })
-  breakStatusesOnDamage(ctx, target)
+  breakStatusesOnDamage(ctx, target, hpDamage)
   if (hp <= 0) ctx.applyHpZero(target, source, ctx.currentAction?.skillId, kind, origin)
   return hpDamage
 }
 
+/** Complete a previously deferred reflected fatal hit after the attacker's action. */
+export function settleDeferredRetaliationFatal(ctx: BattleContext, target: Unit): void {
+  const pending = target.pendingRetaliationFatal
+  if (!pending) return
+  target.pendingRetaliationFatal = undefined
+  if (target.flags.dead || target.flags.downed || target.flags.escaped || target.attrs.hp <= 0) return
+  const source = ctx.state.units.find(unit => unit.id === pending.sourceId)
+  const lost = target.attrs.hp
+  target.attrs.hp = 0
+  recordHpDamage(ctx, target, lost)
+  if (source) ctx.emit({ type: EventType.Damage, sourceId: source.id, targetId: target.id, amount: lost, hpAfter: 0, kind: DamageKind.Fixed })
+  ctx.applyHpZero(target, source, pending.skillId, DamageKind.Fixed, DamageOrigin.HookDerived)
+}
+
 function recordHpDamage(ctx: BattleContext, target: Unit, amount: number): void {
+  recordHpLoss(ctx, target, amount)
   const previous = target.hpDamageThisRound
   target.hpDamageThisRound = {
     round: ctx.state.round,
@@ -426,7 +492,8 @@ function redirectOverflow(
   const kept = atLeast(0, Math.floor(amount * spec.keep))
   const bounced = atLeast(0, Math.floor(amount * spec.toCaster))
   if (caster && isStanding(caster) && caster.id !== target.id && bounced > 0) {
-    const enteringHp = origin === DamageOrigin.Status ? bounced : absorbBarriers(ctx, caster, bounced)
+    const afterBarriers = origin === DamageOrigin.Status ? bounced : absorbBarriers(ctx, caster, bounced)
+    const enteringHp = absorbDamageWithMp(ctx, caster, afterBarriers)
     if (enteringHp <= 0) return kept
     const hp = atLeast(0, caster.attrs.hp - enteringHp)
     const hpDamage = caster.attrs.hp - hp
@@ -447,19 +514,23 @@ function redirectOverflow(
 }
 
 /** 倒地单位不受治疗，只能走 revive。 */
-export function applyHeal(ctx: BattleContext, source: Unit, target: Unit, power: number, healMaxHp = false, fixedBase = false, includeHealPower = true): void {
-  if (target.flags.dead || target.flags.escaped || target.flags.downed) return
-  if (passiveSkills(ctx.skills, target).some(s => s.innate?.rejectHpRecovery)) return
+export function applyHeal(ctx: BattleContext, source: Unit, target: Unit, power: number, healMaxHp = false, fixedBase = false, includeHealPower = true, origin: DamageOriginType = ctx.suppressHooks > 0 ? DamageOrigin.HookDerived : DamageOrigin.ActionDirect): boolean {
+  if (target.flags.dead || target.flags.escaped || target.flags.downed) return false
+  if (passiveSkills(ctx.skills, target).some(s => s.innate?.rejectHpRecovery)) return false
 
   if (healMaxHp) {
     const amount = floorAtLeast(MIN_DAMAGE, power + source.attrs.healPower)
     target.attrs.maxHp += amount
     ctx.emit({ type: EventType.Heal, sourceId: source.id, targetId: target.id, amount, hpAfter: target.attrs.hp })
-    return
+    return false
   }
 
   // 独立治疗公式可自行计入治疗能力，同时仍接受通用施疗与受疗修正。
-  const amount = floorAtLeast(MIN_DAMAGE, power + (fixedBase || !includeHealPower ? 0 : effectiveAttrs(source).healPower))
+  const rawAmount = floorAtLeast(MIN_DAMAGE, power + (fixedBase || !includeHealPower ? 0 : effectiveAttrs(source).healPower))
+  const dealtAdd = ctx.suppressHooks > 0
+    ? 0
+    : passiveSkills(ctx.skills, source).reduce((sum, skill) => sum + (skill.innate?.healDealtAdd ?? 0), 0)
+  const amount = rawAmount * (1 + dealtAdd)
   const isPrimary =
     ctx.currentAction?.primaryTargetId !== undefined && target.id === ctx.currentAction.primaryTargetId
   const taken = healTakenFactor(target) * (fixedBase ? 1 : healDealtFactor(source))
@@ -468,6 +539,7 @@ export function applyHeal(ctx: BattleContext, source: Unit, target: Unit, power:
     source,
     target,
     heal: amount * taken,
+    healBase: amount,
     skillId: ctx.currentAction?.skillId,
     isPrimary,
   })
@@ -477,7 +549,9 @@ export function applyHeal(ctx: BattleContext, source: Unit, target: Unit, power:
   target.attrs.hp = hp
   if (healed > 0) {
     ctx.emit({ type: EventType.Heal, sourceId: source.id, targetId: target.id, amount: healed, hpAfter: hp })
+    ctx.hooks.emit(HookName.AfterHeal, { source, target, heal: healed, skillId: ctx.currentAction?.skillId, isPrimary, origin })
   }
+  return finalHeal > 0
 }
 
 export function applyRevive(ctx: BattleContext, source: Unit, target: Unit, hp: number, natural = false): boolean {
@@ -497,6 +571,24 @@ export function applyRevive(ctx: BattleContext, source: Unit, target: Unit, hp: 
   ctx.emit({ type: EventType.UnitRevived, unitId: target.id, hp: restored })
   ctx.emit({ type: EventType.Heal, sourceId: source.id, targetId: target.id, amount: restored, hpAfter: restored })
   return true
+}
+
+/** Revive only after a standing owned pet can pay the full HP cost. */
+export function applyReviveWithOwnedPetHpCost(ctx: BattleContext, source: Unit, target: Unit, hp: number, ratio: number): boolean {
+  if (ratio <= 0 || ratio >= 1 || target.flags.escaped || !(target.flags.downed || target.flags.dead || target.attrs.hp <= 0)) return false
+  if (passiveSkills(ctx.skills, target).some(s => s.innate?.rejectHpRecovery)) return false
+  if (isReviveBlocked(ctx, target)) {
+    ctx.emit({ type: EventType.ActionFailed, unitId: source.id, reason: FailReason.ReviveBlocked })
+    return false
+  }
+  const pet = ctx.state.units.find(u => u.kind === 'pet' && u.ownerId === target.id && isStanding(u))
+  if (!pet) return false
+  const cost = Math.ceil(pet.attrs.maxHp * ratio)
+  if (pet.attrs.hp <= cost) return false
+  pet.attrs.hp -= cost
+  recordHpLoss(ctx, pet, cost)
+  ctx.emit({ type: EventType.HpCost, unitId: pet.id, amount: cost, hpAfter: pet.attrs.hp })
+  return applyRevive(ctx, source, target, hp)
 }
 
 /** 精确恢复气血：不读取 healPower 与施疗/受疗倍率。 */
@@ -529,6 +621,7 @@ export function applyHpRestore(
   if (restored <= 0) return 0
   target.attrs.hp += restored
   ctx.emit({ type: EventType.Heal, sourceId: source.id, targetId: target.id, amount: restored, hpAfter: target.attrs.hp })
+  ctx.hooks.emit(HookName.AfterHeal, { source, target, heal: restored, skillId: ctx.currentAction?.skillId, origin: ctx.suppressHooks > 0 ? DamageOrigin.HookDerived : DamageOrigin.ActionDirect })
   return restored
 }
 
@@ -551,7 +644,9 @@ export function changeWound(ctx: BattleContext, source: Unit, target: Unit, amou
   const before = target.wound
   target.wound = Math.max(0, Math.min(target.attrs.maxHp - MIN_HP, before + Math.floor(amount)))
   if (target.wound === before) return
+  const hpBefore = target.attrs.hp
   target.attrs.hp = Math.min(target.attrs.hp, recoverableHp(target))
+  recordHpLoss(ctx, target, hpBefore - target.attrs.hp)
   ctx.emit({ type: EventType.WoundChanged, sourceId: source.id, targetId: target.id, before, after: target.wound, hpAfter: target.attrs.hp, recoverableHpAfter: recoverableHp(target) })
 }
 

@@ -13,7 +13,10 @@ import { GameIcon } from '@app/components/ui/GameIcon';
 import { useTaskList } from '@app/lib/hooks/useTaskList';
 import { useCultivatorProgress } from '@app/lib/resources/player';
 import { useStory } from '@app/lib/story/useStory';
-import { findCurrentMajorBreakthroughTask } from '@app/lib/tasks/taskClient';
+import {
+  findCurrentMajorBreakthroughTask,
+  getBreakthroughNextStep,
+} from '@app/lib/tasks/taskClient';
 import { getBodyCultivationSummary } from '@daoyou/game-rules/body-cultivation/progress';
 import {
   getConditionStatusTemplate,
@@ -51,6 +54,7 @@ export function HomeView() {
     tasks,
     loading: tasksLoading,
     error: taskError,
+    reload: reloadTasks,
   } = useTaskList(cultivator?.id);
   const [yieldHours, setYieldHours] = useState(() =>
     calculateYieldHours(cultivator?.last_yield_at),
@@ -119,7 +123,7 @@ export function HomeView() {
   const story = useStory(Boolean(cultivator));
   const storyCue = story.story?.prompt ? story.story : null;
 
-  if (isLoading || tasksLoading || !tasks) {
+  if (isLoading || (!taskError && (tasksLoading || !tasks))) {
     return <GameSceneLoading message="正在进入洞府……" />;
   }
 
@@ -150,6 +154,18 @@ export function HomeView() {
     breakthrough?.nextStage &&
     breakthrough.nextStage.realm !== cultivator.realm,
   );
+  if (taskError && isMajorBreakthroughCandidate) {
+    urgentItems.push(
+      <HomeUrgentRow
+        key="breakthrough-refresh"
+        title="破境卷宗待核对"
+        summary="卷宗暂未读到，重新核对即可查看下一步准备。"
+        action={
+          <InkButton onClick={() => void reloadTasks()}>重新核对</InkButton>
+        }
+      />,
+    );
+  }
   if (storyCue) {
     urgentItems.push(
       <HomeUrgentRow
@@ -194,12 +210,12 @@ export function HomeView() {
   if (currentMajorTask) {
     const taskCompleted = currentMajorTask.status === 'completed';
     const summary = !taskCompleted
-      ? '破境任务尚未完成，先查看卷宗'
+      ? getBreakthroughNextStep(currentMajorTask)
       : !breakthrough?.canAttempt
         ? '破境任务已完成，仍需继续积累修为'
         : breakthrough.breakthroughType === 'forced'
           ? '破境任务已完成，强行突破风险较高，可继续积累'
-          : '破境任务已完成，可前往静室评估冲关';
+          : getBreakthroughNextStep(currentMajorTask);
     urgentItems.push(
       <HomeUrgentRow
         key="major-breakthrough-task"

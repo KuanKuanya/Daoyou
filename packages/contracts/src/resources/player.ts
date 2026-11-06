@@ -269,6 +269,7 @@ export const conditionStatusSchema = z
       'protect_meridians',
       'clear_mind',
       'cultivation_boost',
+      'beast_lure',
     ]),
     stacks: z.number(),
     source: z.enum(['battle', 'pill', 'event', 'system']),
@@ -400,10 +401,8 @@ const taskObjectiveProgressSchema = z
     id: z.string(),
     kind: z.enum([
       'auto_complete',
-      'craft_breakthrough_pill',
       'insight_at_least',
       'status_active',
-      'complete_dungeon',
       'win_task_challenge',
       'event_count',
     ]),
@@ -422,6 +421,7 @@ const taskStageProgressSchema = z
     completed: z.boolean(),
     current: z.boolean(),
     links: z.array(taskActionLinkSchema),
+    challengeId: z.string().optional(),
     objectives: z.array(taskObjectiveProgressSchema),
   })
   .strict();
@@ -523,7 +523,7 @@ export const PLAYER_RESOURCE_DATA_SCHEMAS = {
       revision: z.number().int().nonnegative(),
       membershipId: z.string().uuid().optional(),
       sectId: z
-        .enum(['lingxiao', 'youdu', 'wuxiang', 'tianyan', 'jiujie'])
+        .enum(['lingxiao', 'youdu', 'wuxiang', 'tianyan', 'jiujie', 'bailu', 'wanqiao', 'xiaoyue'])
         .optional(),
       sectName: z.string().optional(),
       activePathId: z.string().optional(),

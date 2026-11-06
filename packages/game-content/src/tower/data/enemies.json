@@ -38,7 +38,7 @@
   "archetypes": {
     "warrior": {
       "name": "负碑蜃卫",
-      "icon": "icon:ui-sword",
+      "icon": "icon:portrait-puppet",
       "multiply": {
         "hp": 1,
         "physicalDef": 1,
@@ -49,7 +49,7 @@
     },
     "mage": {
       "name": "照影镜主",
-      "icon": "icon:ui-divination",
+      "icon": "icon:portrait-elder-f",
       "multiply": {
         "hp": 1,
         "physicalDef": 1,
@@ -60,7 +60,7 @@
     },
     "binder": {
       "name": "缚梦幻师",
-      "icon": "icon:ui-merit-medal",
+      "icon": "icon:portrait-manifest-demonic",
       "multiply": {
         "hp": 1,
         "physicalDef": 1,
@@ -72,7 +72,7 @@
     },
     "attendant": {
       "name": "幻侍",
-      "icon": "icon:ui-mirror",
+      "icon": "icon:portrait-servant-m",
       "multiply": {
         "hp": 1,
         "physicalDef": 0.8125,
@@ -104,7 +104,7 @@
       "label": "铁甲",
       "group": "survival",
       "multiply": {
-        "physicalDef": 1.5625
+        "physicalDef": 2.1
       },
       "maxGuards": 1,
       "add": {},
@@ -116,7 +116,7 @@
       "label": "灵障",
       "group": "survival",
       "multiply": {
-        "magicDef": 1.5,
+        "magicDef": 1.9,
         "hp": 0.8
       },
       "add": {},
@@ -166,7 +166,7 @@
       "archetypes": ["warrior", "mage", "binder", "attendant"],
       "presentation": {
         "name": "执灯幻侍",
-        "icon": "icon:ui-lantern"
+        "icon": "icon:portrait-servant-f"
       }
     },
     "last_stand": {
@@ -191,7 +191,7 @@
       "archetypes": ["warrior", "mage", "binder", "attendant"],
       "presentation": {
         "name": "镜侍",
-        "icon": "icon:ui-mirror"
+        "icon": "icon:portrait-spirit"
       }
     }
   },

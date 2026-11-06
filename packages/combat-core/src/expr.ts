@@ -6,6 +6,7 @@ import { ATTR_NAMES } from "./constants.js"
 import { ExprFn, ExprVar } from "./enums.js"
 import type { Expr, ExprEnv, Unit } from "./types.js"
 import { effectiveAttrs, isStanding } from './units.js'
+import { injuredAllyTargets } from './unit-query.js'
 
 export function evalExpr(expr: Expr | undefined, env: ExprEnv): number {
   if (expr === undefined) return 0
@@ -23,7 +24,7 @@ export function skillLevelOf(unit: Unit, skillId: string): number {
 }
 
 function bindUnit(unit: Unit): Record<string, number> {
-  const out: Record<string, number> = { level: unit.level }
+  const out: Record<string, number> = { level: unit.level, wound: unit.wound }
   for (const key of ATTR_NAMES) out[key] = unit.attrs[key]
   return out
 }
@@ -175,6 +176,38 @@ class Parser {
   }
 
   private lookup(name: string): number {
+    if (name === 'actionTargetCount') return this.env.actionTargetIds?.length ?? 0
+    if (name === 'actionTargetIndex') return this.env.target ? this.env.actionTargetIds?.indexOf(this.env.target.id) ?? -1 : -1
+    if (name === 'injuredAllyCount') return injuredAllyTargets(this.env.source, this.env.state?.units ?? [], this.env.skills, this.env.statusDefs).length
+    if (name === 'combatEnded') return this.env.state?.result ? 1 : 0
+    if (name === 'guardUsedThisRound') return this.env.state && this.env.source.flags.hostileActionGuardRound === this.env.state.round ? 1 : 0
+    if (name === 'targetGuardUsedThisRound') return this.env.state && this.env.target?.flags.hostileActionGuardRound === this.env.state.round ? 1 : 0
+    if (name === 'statusChance') return this.env.statusChance ?? 0
+    if (name === 'statusDuration') return this.env.statusDuration ?? 0
+    if (name === 'removedStatusRounds') return this.env.removedStatusRounds ?? 0
+    if (name === 'removedStatusSkillLevel') return this.env.removedStatusSkillLevel ?? 0
+    if (name === 'reviveBlocked') return this.env.source.statuses.some(s => this.env.statusDefs?.get(s.id)?.blocksRevive) ? 1 : 0
+    if (name === 'sourceSpellBlocked') return this.env.source.statuses.some(s => {
+      const def = this.env.statusDefs?.get(s.id)
+      return def?.blocksAction || def?.blocksSpell || def?.blocksNonArtSkills || def?.blockedCommands?.includes('skill')
+    }) ? 1 : 0
+    if (name === 'targetDelayedRevival') return this.env.target?.passives.some(id => (this.env.target?.skillOverrides[id] ?? this.env.skills?.get(id))?.innate?.delayedRevivalRounds) ? 1 : 0
+    if (name.startsWith('knownSkillLevel.')) {
+      const id = name.slice('knownSkillLevel.'.length)
+      return this.env.source.skills.includes(id) || this.env.source.passives.includes(id) ? skillLevelOf(this.env.source, id) : 0
+    }
+    if (name === 'enemyPlayerCount') return this.env.state?.units.filter(u => u.side !== this.env.source.side && u.kind === 'player').length ?? 0
+    if (name.startsWith('ownedEnemyStatusCount.')) {
+      const kind = name.slice('ownedEnemyStatusCount.'.length)
+      return this.env.state?.units.filter(u => u.side !== this.env.source.side && u.kind === 'player' && u.statuses.some(s => s.kind === kind && s.sourceId === this.env.source.id)).length ?? 0
+    }
+    if (name.startsWith('targetStatusAge.')) {
+      const kind = name.slice('targetStatusAge.'.length)
+      const status = this.env.target?.statuses.find(s => s.kind === kind && s.sourceId === this.env.source.id)
+      return status && this.env.state ? Math.max(0, this.env.state.round - status.appliedRound) : 0
+    }
+    if (name === 'targetSpellAttackedBySourceThisRound') return this.env.state && this.env.target?.combatFacts?.[`spellAttackedRound:${this.env.source.id}`] === this.env.state.round ? 1 : 0
+    if (name === 'targetSpellHitBySourceThisRound') return this.env.state && this.env.target?.combatFacts?.[`spellHitRound:${this.env.source.id}`] === this.env.state.round ? 1 : 0
     if (name.startsWith('hasStatus.')) return this.env.source.statuses.some(s => s.id === name.slice(10)) ? 1 : 0
     if (name.startsWith('allyDistinctOtherTagCount.')) {
       const prefix = `${name.slice(26)}.`
@@ -183,6 +216,12 @@ class Parser {
         .flatMap(unit => unit.tags.filter(tag => tag.startsWith(prefix) && !own.has(tag))) ?? []).size
     }
     if (name === 'enemyCount') return this.env.state?.units.filter(u => u.side !== this.env.source.side && !u.flags.dead && !u.flags.downed && !u.flags.escaped && !u.flags.benched).length ?? 0
+    if (name === 'allyStandingPets') return this.env.state?.units.filter(u => u.side === this.env.source.side && u.kind === 'pet' && isStanding(u)).length ?? 0
+    if (name === 'ownStandingPet') return this.env.state?.units.some(u => u.kind === 'pet' && u.ownerId === this.env.source.id && isStanding(u)) ? 1 : 0
+    if (name === 'ownPetHp' || name === 'ownPetMaxHp') {
+      const pet = this.env.state?.units.find(u => u.kind === 'pet' && u.ownerId === this.env.source.id && isStanding(u))
+      return pet ? pet.attrs[name === 'ownPetHp' ? 'hp' : 'maxHp'] : 0
+    }
     if (name === 'actionKillsTarget') return this.env.target && this.env.killedTargetIds?.includes(this.env.target.id) ? 1 : 0
     if (name === 'normalTarget') return this.env.target && this.env.normalTargetIds?.includes(this.env.target.id) ? 1 : 0
     if (name === 'enemyPlayers') return this.env.state?.units.filter(u => u.side !== this.env.source.side && u.kind === 'player').length ?? 0
@@ -196,9 +235,20 @@ class Parser {
     if (name.startsWith('effective.')) return effectiveAttrs(this.env.source)[name.slice(10) as keyof Unit['attrs']] ?? 0
     if (name.startsWith('allyTagCount.')) return this.env.state?.units.filter(u => u.side === this.env.source.side && u.kind === 'player' && u.tags.includes(name.slice(13))).length ?? 0
     if (name.startsWith('known.')) return [...this.env.source.skills, ...this.env.source.passives].includes(name.slice(6)) ? 1 : 0
+    if (name.startsWith('statusAge.')) {
+      const status = this.env.source.statuses.find(s => s.kind === name.slice('statusAge.'.length) && s.sourceId === this.env.source.id)
+      return status && this.env.state ? Math.max(0, this.env.state.round - status.appliedRound) : 0
+    }
     if (name.startsWith('statusRounds.')) return this.env.source.statuses.find(s => s.kind === name.slice(13))?.remainingRounds ?? 0
     if (name.startsWith('targetStatusRounds.')) return this.env.target?.statuses.find(s => s.kind === name.slice(19))?.remainingRounds ?? 0
     if (name.startsWith('ownedTargetStatus.')) return this.env.target?.statuses.some(s => s.kind === name.slice(18) && s.sourceId === this.env.source.id) ? 1 : 0
+    if (name.startsWith('ownedTargetStatusStacks.')) return this.env.target?.statuses
+      .filter(s => s.kind === name.slice('ownedTargetStatusStacks.'.length) && s.sourceId === this.env.source.id)
+      .reduce((sum, status) => sum + status.stacks, 0) ?? 0
+    if (name.startsWith('ownedTargetStatusRounds.')) return this.env.target?.statuses
+      .find(s => s.kind === name.slice('ownedTargetStatusRounds.'.length) && s.sourceId === this.env.source.id)?.remainingRounds ?? 0
+    if (name.startsWith('ownedTargetStatusSkillLevel.')) return this.env.target?.statuses
+      .find(s => s.kind === name.slice('ownedTargetStatusSkillLevel.'.length) && s.sourceId === this.env.source.id)?.appliedSkillLevel ?? 0
     if (name === 'allyDownedPlayers') return this.env.state?.units.filter(u => u.side === this.env.source.side && u.kind === 'player' && u.flags.downed && !u.flags.escaped).length ?? 0
     if (name === 'allyMaxMagicAtk') return Math.max(0, ...(this.env.state?.units.filter(u => u.side === this.env.source.side && u.id !== this.env.source.id && u.kind === 'player').map(u => u.attrs.magicAtk) ?? []))
     if (name === 'targetDeployedPets') return this.env.state?.units.filter(u => u.kind === 'pet' && u.ownerId === this.env.target?.id && u.marks.includes('battle:deployed')).length ?? 0
@@ -212,6 +262,9 @@ class Parser {
       return this.env.state?.units.filter(u => (u.side !== this.env.source.side) === enemy && !u.flags.dead && !u.flags.escaped && !u.flags.benched && (!enemy || !u.flags.downed) && u.statuses.some(s => s.kind === kind)).length ?? 0
     }
     if (name === "originalResourceCost") return this.env.originalResourceCost ?? 0
+    if (name === "resourceCost") return this.env.resourceCost ?? 0
+    if (name === "heal") return this.env.heal ?? 0
+    if (name === "healBase") return this.env.healBase ?? 0
     if (name.startsWith("resource.")) return this.env.source.resources.find(r => r.id === name.slice(9))?.current ?? 0
     if (name.startsWith("fact.")) return this.env.source.combatFacts?.[name.slice(5)] ?? 0
     if (name.startsWith("uses.")) return this.env.source.skillUses?.[name.slice(5)] ?? 0
@@ -221,6 +274,10 @@ class Parser {
     if (name === ExprVar.HpDamage) return this.env.hpDamage ?? 0
     if (name === "roundHpDamage") {
       const loss = this.env.source.hpDamageThisRound
+      return loss && loss.round === this.env.state?.round ? loss.amount : 0
+    }
+    if (name === "roundHpLoss") {
+      const loss = this.env.source.hpLossThisRound
       return loss && loss.round === this.env.state?.round ? loss.amount : 0
     }
     if (name === ExprVar.ImpactDamage) return this.env.impactDamage ?? 0

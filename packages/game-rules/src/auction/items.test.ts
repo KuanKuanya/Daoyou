@@ -1,17 +1,58 @@
-import { describe, expect, it } from 'vitest';
-import { AUCTION_MAX_UNIT_PRICE } from '@daoyou/game-domain/auction';
-import { buildSpiritFruitSpec } from '../spirit-field/spiritFruit.js';
+import { AUCTION_CATALOG_UNIT_PRICE_CAP } from '@daoyou/game-content/auction/config';
 import { ITEM_DEFINITIONS } from '@daoyou/game-content/items';
+import { AUCTION_MAX_UNIT_PRICE } from '@daoyou/game-domain/auction';
+import { describe, expect, it } from 'vitest';
+import { buildSpiritFruitSpec } from '../spirit-field/spiritFruit.js';
 import {
   auctionBlockReason,
+  auctionBuyOrderMatchesItem,
+  auctionBuyOrderTargetBlockReason,
+  auctionBuyOrderTargetStackKey,
   auctionItemPriceCap,
   auctionItemQuality,
   auctionListingStackLimit,
+  auctionMaterialConditionBlockReason,
+  auctionMaterialConditionMatches,
+  auctionPurchaseQuantityLimit,
   AuctionSnapshotSchema,
 } from './items.js';
 
 describe('新版寄售规则', () => {
-  it('所有无品质品类开放寄售，不合成品质或按旧品质限价', () => {
+  it('货架灵种公开预览可读取品质与求购单价上限，但不能作为完整收购事实', () => {
+    const seed = {
+      definitionId: 'seed.v1',
+      instanceData: {
+        seedPreview: {
+          quality: '玄品',
+          element: '木',
+          minRealm: '炼气',
+          seedDescription: '一枚青色种籽。',
+          clueTexts: ['喜爱山间清气'],
+        },
+      },
+    };
+    expect(auctionItemQuality(seed)).toBe('玄品');
+    expect(auctionItemPriceCap(seed)).toBe(100_000);
+    expect(
+      auctionItemPriceCap({
+        ...seed,
+        instanceData: {
+          seedPreview: { ...seed.instanceData.seedPreview, quality: '天品' },
+        },
+      }),
+    ).toBe(800_000);
+    expect(auctionBuyOrderTargetBlockReason(seed)).toBe('灵种属性无效');
+    expect(() =>
+      auctionItemPriceCap({
+        ...seed,
+        instanceData: {
+          seedPreview: { ...seed.instanceData.seedPreview, quality: '未知' },
+        },
+      }),
+    ).toThrow();
+  });
+
+  it('无品质品类开放寄售，图纸与阵纹和难估价货品共用更高单价上限', () => {
     for (const definition of ITEM_DEFINITIONS.filter((d) =>
       [
         'equipment',
@@ -19,6 +60,9 @@ describe('新版寄售规则', () => {
         'manual_jade',
         'beast_book',
         'inscription',
+        'beast_refinement',
+        'beast_rejuvenation',
+        'beast_lure',
       ].includes(d.kind),
     )) {
       const item = {
@@ -26,10 +70,21 @@ describe('新版寄售规则', () => {
         instanceData: null,
         location: 'bag',
       };
+      const highPrice = [
+        'equipment',
+        'manual_jade',
+        'beast_book',
+        'blueprint',
+        'inscription',
+      ].includes(definition.kind);
       expect(auctionItemQuality(item)).toBeNull();
-      expect(auctionItemPriceCap(item)).toBe(AUCTION_MAX_UNIT_PRICE);
+      expect(auctionItemPriceCap(item)).toBe(
+        highPrice ? AUCTION_MAX_UNIT_PRICE : AUCTION_CATALOG_UNIT_PRICE_CAP,
+      );
       expect(auctionBlockReason(item)).toBeNull();
     }
+    expect(AUCTION_MAX_UNIT_PRICE).toBe(99_990_000);
+    expect(AUCTION_CATALOG_UNIT_PRICE_CAP).toBe(9_999_999);
   });
   it('有品质材料仍执行玄品起售与品质价格上限', () => {
     const item = {
@@ -45,6 +100,12 @@ describe('新版寄售规则', () => {
     };
     expect(auctionBlockReason(item)).toBeNull();
     expect(auctionItemPriceCap(item)).toBe(100000);
+    expect(
+      auctionItemPriceCap({
+        ...item,
+        instanceData: { ...item.instanceData, rank: '神品' },
+      }),
+    ).toBe(AUCTION_CATALOG_UNIT_PRICE_CAP);
     expect(
       auctionBlockReason({
         ...item,
@@ -186,4 +247,237 @@ it('上架件数跟随背包堆叠上限', () => {
     }).success,
   ).toBe(false);
   expect(auctionListingStackLimit('equipment.v6')).toBe(1);
+});
+
+describe('收购目标规则', () => {
+  const material = {
+    definitionId: 'material.v1',
+    instanceData: {
+      name: '玄铁',
+      type: 'ore',
+      rank: '玄品',
+      element: null,
+      description: '',
+    },
+  };
+
+  it('固定定义品类可以精确收购', () => {
+    for (const kind of [
+      'blueprint',
+      'manual_jade',
+      'inscription',
+      'beast_book',
+      'beast_refinement',
+      'beast_rejuvenation',
+      'beast_lure',
+    ]) {
+      const definition = ITEM_DEFINITIONS.find((item) => item.kind === kind)!;
+      const target = { definitionId: definition.id, instanceData: null };
+      expect(auctionBuyOrderTargetBlockReason(target)).toBeNull();
+      expect(auctionBuyOrderTargetStackKey(target)).toBe(
+        `definition.v1:${definition.id}`,
+      );
+    }
+  });
+
+  it('灵兽、道装与消耗品不开放收购', () => {
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        definitionId: 'equipment.v6',
+        instanceData: null,
+      }),
+    ).toBe('该物品不支持收购');
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        definitionId: 'consumable.v1',
+        instanceData: null,
+      }),
+    ).toBe('该物品不支持收购');
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        definitionId: 'legacy.artifact',
+        instanceData: null,
+      }),
+    ).toBe('该物品不支持收购');
+  });
+
+  it('材料与灵种要求完整事实，并沿用玄品门槛', () => {
+    expect(auctionBuyOrderTargetBlockReason(material)).toBeNull();
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        ...material,
+        instanceData: { ...material.instanceData, rank: '灵品' },
+      }),
+    ).toContain('玄品');
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        definitionId: 'material.v1',
+        instanceData: null,
+      }),
+    ).toBe('材料属性无效');
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        definitionId: 'seed.v1',
+        instanceData: null,
+      }),
+    ).toBe('灵种属性无效');
+    expect(
+      auctionBuyOrderTargetBlockReason({
+        definitionId: 'material.v1',
+        instanceData: { ...material.instanceData, extra: true },
+      }),
+    ).toBe('材料属性无效');
+  });
+
+  it('供货必须与目标堆叠身份完全一致', () => {
+    const stackKey = auctionBuyOrderTargetStackKey(material)!;
+    const order = { definitionId: 'material.v1', stackKey };
+    expect(auctionBuyOrderMatchesItem(order, material)).toBe(true);
+    expect(
+      auctionBuyOrderMatchesItem(order, {
+        ...material,
+        instanceData: { ...material.instanceData, rank: '真品' },
+      }),
+    ).toBe(false);
+    expect(
+      auctionBuyOrderMatchesItem(order, {
+        definitionId: 'seed.v1',
+        instanceData: material.instanceData,
+      }),
+    ).toBe(false);
+  });
+
+  it('条件收购只比较品质、类型与五行，忽略名称和描述', () => {
+    const condition = {
+      type: 'ore' as const,
+      quality: '玄品' as const,
+      element: 'any' as const,
+    };
+    expect(auctionMaterialConditionBlockReason(condition)).toBeNull();
+    expect(auctionMaterialConditionMatches(condition, material)).toBe(true);
+    expect(
+      auctionMaterialConditionMatches(condition, {
+        ...material,
+        instanceData: {
+          ...material.instanceData,
+          name: '庚金',
+          description: '另一段描述',
+        },
+      }),
+    ).toBe(true);
+    expect(
+      auctionMaterialConditionMatches(condition, {
+        ...material,
+        instanceData: { ...material.instanceData, name: '赤炎草', type: 'herb' },
+      }),
+    ).toBe(false);
+    expect(
+      auctionMaterialConditionMatches(condition, {
+        ...material,
+        instanceData: { ...material.instanceData, rank: '真品' },
+      }),
+    ).toBe(false);
+    expect(
+      auctionMaterialConditionMatches(condition, {
+        definitionId: 'seed.v1',
+        instanceData: material.instanceData,
+      }),
+    ).toBe(false);
+  });
+
+  it('条件类型可为任意材料，五行可限定属性或无属性', () => {
+    const anyType = {
+      type: null,
+      quality: '玄品' as const,
+      element: 'none' as const,
+    };
+    expect(auctionMaterialConditionMatches(anyType, material)).toBe(true);
+    expect(
+      auctionMaterialConditionMatches(anyType, {
+        ...material,
+        instanceData: { ...material.instanceData, element: '火' },
+      }),
+    ).toBe(false);
+    expect(
+      auctionMaterialConditionMatches(
+        { ...anyType, element: '火' },
+        {
+          ...material,
+          instanceData: { ...material.instanceData, element: '火', type: 'herb' },
+        },
+      ),
+    ).toBe(true);
+    expect(
+      auctionMaterialConditionMatches(
+        { ...anyType, element: '火' },
+        {
+          ...material,
+          instanceData: { ...material.instanceData, element: '水' },
+        },
+      ),
+    ).toBe(false);
+  });
+
+  it('条件品质不能低于玄品', () => {
+    expect(
+      auctionMaterialConditionBlockReason({
+        type: 'herb',
+        quality: '灵品',
+        element: 'any',
+      }),
+    ).toContain('玄品');
+    expect(
+      auctionMaterialConditionBlockReason({
+        type: null,
+        quality: '神品',
+        element: 'none',
+      }),
+    ).toBeNull();
+  });
+});
+
+it('购买件数跟随同一堆叠上限，并受剩余数量与成交总额约束', () => {
+  const book = ITEM_DEFINITIONS.find((item) => item.kind === 'beast_book')!;
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'material.v1',
+      remainingQuantity: 999,
+      unitPrice: 1,
+    }),
+  ).toBe(999);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: book.id,
+      remainingQuantity: 99,
+      unitPrice: 1,
+    }),
+  ).toBe(99);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'equipment.v6',
+      remainingQuantity: 1,
+      unitPrice: 1,
+    }),
+  ).toBe(1);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'material.v1',
+      remainingQuantity: 40,
+      unitPrice: 100,
+    }),
+  ).toBe(40);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: 'material.v1',
+      remainingQuantity: 999,
+      unitPrice: 1_600_000,
+    }),
+  ).toBe(625);
+  expect(
+    auctionPurchaseQuantityLimit({
+      definitionId: book.id,
+      remainingQuantity: 99,
+      unitPrice: AUCTION_MAX_UNIT_PRICE,
+    }),
+  ).toBe(1);
 });

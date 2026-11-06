@@ -1,4 +1,10 @@
-import type { CompiledTowerEncounter } from '@daoyou/game-domain/tower';
+import { UnitKind } from '@daoyou/combat-core/enums';
+import {
+  type CreateBattleInput,
+  type SkillDef,
+  type StatusDef,
+} from '@daoyou/combat-core/types';
+import type { RealmType } from '@daoyou/constants/realms';
 import {
   TOWER_ENCOUNTER_PACK as pack,
   TOWER_CATALOG,
@@ -6,16 +12,17 @@ import {
   TOWER_STATUS_DEFS,
   type TowerModifier,
 } from '@daoyou/game-content/tower';
-import type { RealmType } from '@daoyou/constants/realms';
-import { UnitKind } from '@daoyou/combat-core/enums';
-import { type CreateBattleInput, type SkillDef, type StatusDef } from '@daoyou/combat-core/types';
 import { getRealmStageLevel as combatCharacterLevel } from '@daoyou/game-domain/progression';
+import type { CompiledTowerEncounter } from '@daoyou/game-domain/tower';
 import {
-  type TowerNpcPlan,
   TOWER_STRATEGY_VERSION,
   type TowerFloorStrategy,
+  type TowerNpcPlan,
 } from '@daoyou/game-domain/tower';
-import { towerStrategyPreview, validateTowerFloorStrategy } from './strategy.js';
+import {
+  towerStrategyPreview,
+  validateTowerFloorStrategy,
+} from './strategy.js';
 
 /** Bind only matching reference strings; no mechanic names or slot assumptions. */
 function bindReferences<T>(value: T, refs: Map<string, string>): T {
@@ -28,6 +35,35 @@ function bindReferences<T>(value: T, refs: Map<string, string>): T {
     ) as T;
   return value;
 }
+
+function softenPreview(skills: SkillDef[]) {
+  for (const skill of skills) {
+    if (skill.id.startsWith('tower.heavy')) {
+      skill.effects = skill.effects.map((effect) =>
+        effect.type === 'physicalHit' && typeof effect.coeff === 'number'
+          ? { ...effect, coeff: Math.round(effect.coeff * 45) / 100 }
+          : effect,
+      );
+    }
+    if (skill.id.startsWith('tower.wave')) {
+      skill.effects = skill.effects.map((effect) =>
+        effect.type === 'spellHit' && typeof effect.power === 'number'
+          ? { ...effect, power: Math.round(effect.power * 0.45) }
+          : effect,
+      );
+    }
+    if (!skill.id.startsWith('tower.mirror-master') || !skill.hooks) continue;
+    skill.hooks = skill.hooks.map((hook) => ({
+      ...hook,
+      effects: hook.effects.map((effect) =>
+        effect.type === 'modifyStrike' && typeof effect.factor === 'string'
+          ? { ...effect, factor: effect.factor.replace('0.4', '0.2') }
+          : effect,
+      ),
+    }));
+  }
+}
+
 export function compileTowerStrategy(
   realm: RealmType,
   f: TowerFloorStrategy,
@@ -102,6 +138,7 @@ export function compileTowerStrategy(
       );
     const pool = Math.round(
       base.damagePerRound *
+        scaling.survivalScale *
         (1 + scaling.hpGrowth * (f.floor - 1)) *
         scaling.types[f.kind].rounds *
         f.budget.hpScale *
@@ -118,11 +155,13 @@ export function compileTowerStrategy(
               0,
             )
         : Math.round(pool * e.budgetShare.hp);
+    const pressure = f.kind === 'normal' ? 0.75 : 1;
     const output =
-      (1 + scaling.outputGrowth * (f.floor - 1)) *
+      ((1 + scaling.outputGrowth * (f.floor - 1)) *
         scaling.types[f.kind].output *
         scale('output') +
-      add('output');
+        add('output')) *
+      pressure;
     const id = `tower.enemy.${slot}`;
     plans[id] = { cycle: [...behavior.cycle], fallback: behavior.fallback };
     const mp = behavior.maxMp ?? TOWER_CATALOG.defaults.maxMp;
@@ -151,16 +190,18 @@ export function compileTowerStrategy(
               e.budgetShare.output,
         ),
         physicalDef: Math.round(
-          base.physicalDef *
+          (base.physicalDef *
             (1 + scaling.defenseGrowth * (f.floor - 1)) *
             scale('physicalDef') +
-            add('physicalDef'),
+            add('physicalDef')) *
+            (f.kind === 'normal' ? 0.75 : 1),
         ),
         magicDef: Math.round(
-          base.magicDef *
+          (base.magicDef *
             (1 + scaling.defenseGrowth * (f.floor - 1)) *
             scale('magicDef') +
-            add('magicDef'),
+            add('magicDef')) *
+            (f.kind === 'normal' ? 0.75 : 1),
         ),
         speed: Math.round(base.speed * scale('speed') + add('speed')),
         hit: base.hit,
@@ -171,10 +212,18 @@ export function compileTowerStrategy(
           TOWER_CATALOG.defaults.spellCritRate * scale('spellCritRate') +
           add('spellCritRate'),
         sealHit:
-          TOWER_CATALOG.defaults.sealHit * scale('sealHit') + add('sealHit'),
+          (e.archetype === 'binder'
+            ? base.sealHit
+            : TOWER_CATALOG.defaults.sealHit) *
+            scale('sealHit') +
+          add('sealHit'),
         sealResist:
           TOWER_CATALOG.defaults.sealResist * scale('sealResist') +
           add('sealResist'),
+        attackCultivate: base.cultivate,
+        spellCultivate: base.cultivate,
+        defenseCultivate: base.cultivate,
+        resistSpellCultivate: base.cultivate,
       },
       skills: [
         ...new Set(
@@ -184,10 +233,14 @@ export function compileTowerStrategy(
         ),
       ],
       passives: [...passives.get(e.id)!],
-      tags: [],
+      tags: [e.role === 'support' ? 'tower-support' : 'tower-leader'],
     };
   });
   if (units.some((u) => (u.attrs.maxHp ?? 0) < 1))
     throw new Error('幻境气血预算不足');
-  return { units, plans, skills, statusDefs };
+  if (f.kind === 'normal') softenPreview(skills);
+  const unitAppearances = Object.fromEntries(
+    preview.members.map(({ id, icon }) => [id, { icon }]),
+  );
+  return { units, unitAppearances, plans, skills, statusDefs };
 }

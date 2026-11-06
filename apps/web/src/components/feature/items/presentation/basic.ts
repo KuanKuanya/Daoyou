@@ -5,7 +5,10 @@ import {
   BEAST_SKILL_CONTENT,
   BEAST_SUPERIOR_BOOK_SKILL_IDS,
 } from '@daoyou/game-content/beasts';
-import { BEAST_REJUVENATION } from '@daoyou/game-content/items/beasts';
+import {
+  BEAST_LURE,
+  BEAST_REJUVENATION,
+} from '@daoyou/game-content/items/beasts';
 import { CHARACTER_MANUALS_V1 } from '@daoyou/game-content/manuals';
 import { EQUIPMENT_SLOT_NAMES } from '@daoyou/game-domain/equipment';
 import {
@@ -16,7 +19,12 @@ import {
 } from '@daoyou/game-domain/inventory';
 import { getLevelRealmStage } from '@daoyou/game-domain/progression';
 import { beastSkillPresentation } from '@daoyou/game-rules/beasts/presentation';
+import {
+  BEAST_LURE_RATE_MULTIPLIER,
+  BEAST_LURE_SEARCHES,
+} from '@daoyou/game-rules/combat/wild';
 import { manualEffectLines } from '@daoyou/game-rules/manuals/presentation';
+import { isAdvancedManual } from '@daoyou/game-rules/manuals/projection';
 import { field, lines, quantity } from './helpers';
 import type { ItemAdapter } from './types';
 
@@ -115,7 +123,8 @@ export const manualAdapter: ItemAdapter = (item, def) => {
     preview: (options) => ({
       header: [
         field('类型', '功法玉简'),
-        field('传承境界', manual.realm),
+        field('功法类别', isAdvancedManual(manual) ? '高阶功法' : '基础功法'),
+        field('要求', `${manual.realm}及以上`),
         quantity(item, options),
       ],
       sections: [
@@ -204,7 +213,7 @@ export const refinementAdapter: ItemAdapter = (item, def) => {
       ],
       description:
         dew.color === 'gold'
-          ? '元婴及以上灵兽须用此露。洗炼所得与普通归元灵露相同。'
+          ? '炼虚及以上灵兽须用此露。洗炼所得与普通归元灵露相同。'
           : '涤去后天积累。',
     }),
   };
@@ -225,9 +234,39 @@ export const rejuvenationAdapter: ItemAdapter = (item) => ({
     sections: [
       {
         title: '洗点效果',
-        entries: lines('修为归零，野生灵兽原有的点数亏损保留。'),
+        entries: lines(
+          '已分配属性点退回待分配，等级与修为不变。捕获时已有等级的野生，原有点数亏损保留。',
+        ),
       },
     ],
     description: BEAST_REJUVENATION.description,
+  }),
+});
+export const beastLureAdapter: ItemAdapter = (item) => ({
+  summary: {
+    icon: '🪔',
+    color: tierColorMap['仙品'],
+    tier: '',
+    type: '引妖香',
+  },
+  preview: (options) => ({
+    header: [field('功能', '寻觅提升'), quantity(item, options)],
+    sections: [
+      {
+        title: '效果',
+        tone: 'positive',
+        entries: lines(
+          `接下来${BEAST_LURE_SEARCHES}次寻觅，稀有与变异概率各变为${BEAST_LURE_RATE_MULTIPLIER}倍。`,
+        ),
+      },
+      {
+        title: '限制',
+        tone: 'warning',
+        entries: lines(
+          `没有稀有异兽的地区只提高变异。余效未尽时再次点燃，次数回到${BEAST_LURE_SEARCHES}。`,
+        ),
+      },
+    ],
+    description: BEAST_LURE.description,
   }),
 });

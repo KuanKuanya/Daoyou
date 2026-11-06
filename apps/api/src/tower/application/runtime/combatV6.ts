@@ -40,6 +40,7 @@ import { eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db } from '@server/lib/drizzle/db.js';
 import { cultivators } from '@server/lib/drizzle/schema.js';
+import { publishTransactionalMessageBestEffort } from '@server/lib/mq/transactionalMessagePublisher.js';
 import { redis } from '@server/lib/redis/index.js';
 import { parseRedisJson } from '@server/lib/redis/json.js';
 import {
@@ -68,6 +69,7 @@ import {
 } from '@server/inventory/operations.js';
 import { publishResourceEvents } from '@server/realtime/infrastructure/playerStateBroadcaster.js';
 import { ResourceEventCommitter } from '@server/player/application/state/ResourceEventCommitter.js';
+import { queueAchievementRumor } from '@server/social/application/achievementRumor.js';
 import { hasActiveTower, towerRunKey } from '@server/tower/application/runtime/occupancy.js';
 
 export class TowerV6Error extends Error {}
@@ -76,6 +78,7 @@ type Actor = { userId: string; cultivatorId: string };
 type Run = NonNullable<TowerView['state']> & {
   season: TowerView['season'];
   hasBeasts?: boolean;
+  loadout?: CombatV6TrainingPlayerInput;
   battle?: {
     id: string;
     revision: number;
@@ -301,6 +304,7 @@ export async function startTower(owner: string) {
       season,
 
       hasBeasts: hasBeasts(player),
+      loadout: player,
     };
     run.choices = buildTowerBlessingChoices({
       runId: run.runId,
@@ -358,11 +362,13 @@ export async function advanceTower(
         await save(owner, run, lease);
         return publicView(owner, run);
       }
-      run.hasBeasts = hasBeasts(player);
+      const fighter = run.loadout ?? player;
+      run.loadout = fighter;
+      run.hasBeasts = hasBeasts(fighter);
       const published = await readTowerPublishedWeek(run.season.seasonKey);
       if (!published) throw new TowerV6Error('幻境发布配置缺失');
       const host = createTowerHost(
-        player,
+        fighter,
         run.realm,
         run.floor,
         run.blessings,
@@ -547,15 +553,15 @@ export async function changeTowerBattle(
           await save(owner, run, lease);
         }
       }
-      const changes = await db.transaction(async (tx) => {
+      const { changes, rumorMessageId } = await db.transaction(async (tx) => {
         const changes: ResourceChange[] = [];
         lease.assertHeld();
         await lockCultivatorForStateMutation(tx, owner);
         // The archive commits with rewards. A failed Redis acknowledgement must
         // rebuild the run from this terminal snapshot without granting again.
-        if (await combatV6ReplayExists(id, tx)) return changes;
+        if (await combatV6ReplayExists(id, tx)) return { changes };
+        const unit = host.state.units.find((u) => u.id === host.playerId)!;
         {
-          const unit = host.state.units.find((u) => u.id === host.playerId)!;
           const [row] = await tx
             .select({ condition: cultivators.condition })
             .from(cultivators)
@@ -676,10 +682,19 @@ export async function changeTowerBattle(
             tx,
           );
         }
+        const rumorMessageId =
+          outcome === 'victory' && run.floor === TOWER_MAX_FLOOR
+            ? await queueAchievementRumor(tx, {
+                text: `「${unit.name}」闯过${run.realm}境蜃楼幻境第 ${TOWER_MAX_FLOOR} 层，登临楼顶。`,
+              })
+            : undefined;
         lease.assertHeld();
-        return changes;
+        return { changes, rumorMessageId };
       });
       publishResourceEvents(changes);
+      publishTransactionalMessageBestEffort(rumorMessageId, {
+        source: 'tower-v6',
+      });
       lease.assertHeld();
       receipt = await readTowerRewardState(owner);
       run.rewards = towerRewards(receipt, run.season.seasonKey);

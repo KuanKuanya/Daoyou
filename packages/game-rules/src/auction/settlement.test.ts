@@ -1,6 +1,6 @@
+import { seedFactsOf } from '@daoyou/game-domain/inventory';
 import { buildSpiritFieldSeedMaterialFromPlant } from '@daoyou/game-domain/spirit-field';
 import { auctionBlockReason, auctionItemPriceCap } from './items.js';
-import { seedFactsOf } from '@daoyou/game-domain/inventory';
 import {
   calculateAuctionSettlement,
   getAuctionUnitPriceCap,
@@ -19,6 +19,17 @@ describe('auctionConfig', () => {
     });
   });
 
+  it('超过200万的部分按12%计税', () => {
+    expect(calculateAuctionSettlement(3_000_000, 1)).toEqual({
+      unitPrice: 3_000_000,
+      quantity: 1,
+      grossAmount: 3_000_000,
+      feeAmount: 336_800,
+      sellerAmount: 2_663_200,
+      marginalRatePercent: 12,
+    });
+  });
+
   it('跨税档后卖家到手金额仍然递增', () => {
     const before = calculateAuctionSettlement(100_000, 1);
     const after = calculateAuctionSettlement(100_001, 1);
@@ -30,6 +41,7 @@ describe('auctionConfig', () => {
     const quote = calculateAuctionSettlement(unitPrice, 40);
     expect(unitPrice).toBe(800_000);
     expect(quote.grossAmount).toBe(32_000_000);
+    expect(getAuctionUnitPriceCap('神品')).toBe(9_999_999);
   });
 
   it('灵植种子同样只有玄品及以上可以寄售', () => {

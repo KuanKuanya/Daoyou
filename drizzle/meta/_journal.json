@@ -463,6 +463,76 @@
       "when": 1791884582274,
       "tag": "0065_channel_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1791942407861,
+      "tag": "0066_chat_sect_identifier",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1791959725140,
+      "tag": "0067_spirit_fruit_cultivation_boost",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1791960132857,
+      "tag": "0068_wanderer_book_sales",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792056360753,
+      "tag": "0069_strange_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792637821975,
+      "tag": "0070_sponsorship_order_recipients",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792904286108,
+      "tag": "0071_smiling_outlaw_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792922870739,
+      "tag": "0072_small_wrecking_crew",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792933686067,
+      "tag": "0073_manual_slot_code_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793614886892,
+      "tag": "0074_dungeon_scenario_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1793763146879,
+      "tag": "0075_dungeon_jobs_per_node_queue",
+      "breakpoints": true
     }
   ]
 }

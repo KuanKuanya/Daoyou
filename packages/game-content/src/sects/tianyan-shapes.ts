@@ -1,6 +1,15 @@
-import { z } from 'zod';
 import { ATTR_NAMES } from '@daoyou/combat-core/constants';
-import { DamageKind, DamageOrigin, EffectType, StatusCategory, StatusFlag, StatusHit, TargetMode, TargetSide } from '@daoyou/combat-core/enums';
+import {
+  DamageKind,
+  DamageOrigin,
+  EffectType,
+  StatusCategory,
+  StatusFlag,
+  StatusHit,
+  TargetMode,
+  TargetSide,
+} from '@daoyou/combat-core/enums';
+import { z } from 'zod';
 
 export const tyId = z.string().regex(/^tianyan\.[a-z][a-z0-9_.]*$/);
 export const tyExpr = z.union([
@@ -12,6 +21,7 @@ export const tyTarget = z.strictObject({
   side: z.enum(TargetSide),
   mode: z.enum(TargetMode).optional(),
   count: tyExpr.optional(),
+  preferInjured: z.boolean().optional(),
 });
 export const tyWhen = z.strictObject({
   expression: tyExpr.optional(),
@@ -37,6 +47,12 @@ export const tyModifier = z.strictObject({
 });
 const common = { when: tyWhen.optional(), targeting: tyTarget.optional() };
 export const tyEffect = z.discriminatedUnion('type', [
+  z.strictObject({
+    ...common,
+    type: z.literal(EffectType.ModifyFact),
+    key: z.string().regex(/^tianyan_[a-z0-9_]+$/),
+    value: tyExpr,
+  }),
   z.strictObject({
     ...common,
     type: z.literal(EffectType.SpellHit),
@@ -88,8 +104,10 @@ export const tyEffect = z.discriminatedUnion('type', [
 export const tyStatus = z.strictObject({
   id: tyId,
   name: z.string(),
+  description: z.string().min(1).max(1000).optional(),
   kind: tyId,
   category: z.enum(StatusCategory),
+  isSeal: z.boolean().optional(),
   school: z.literal('tianyan'),
   untilBattleEnd: z.boolean().optional(),
   persistWhenDowned: z.boolean().optional(),
@@ -98,6 +116,7 @@ export const tyStatus = z.strictObject({
   blocksSpell: z.boolean().optional(),
   consumeAfterDamagingAction: z.boolean().optional(),
   expireSameRound: z.boolean().optional(),
+  priority: tyExpr.optional(),
   attrMods: z.partialRecord(z.enum(ATTR_NAMES), tyExpr).optional(),
   speedMod: tyExpr.optional(),
   damageTakenPhysical: z.number().optional(),

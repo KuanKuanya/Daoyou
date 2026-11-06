@@ -53,7 +53,7 @@ export function AtlasMobileToolbar({
     <>
       <header
         ref={toolbarRef}
-        className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 pt-[calc(env(safe-area-inset-top)+0.5rem)] pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)]"
+        className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 pt-[calc(var(--app-safe-top)+0.5rem)] pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)]"
       >
         <nav
           aria-label="地图导航"
@@ -170,7 +170,7 @@ export function AtlasMobileToolbar({
         title="查找地点"
         onClose={onDismiss}
         closeLabel="完成"
-        className="max-h-[70dvh]"
+        className="max-h-[calc(var(--overlay-viewport-height,100dvh)*0.7)]"
         size="sm"
       >
         <label className="block">

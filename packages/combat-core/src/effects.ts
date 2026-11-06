@@ -5,11 +5,13 @@ import { combatModifiers, modifierValue, sealHitTakenFactor } from './modifiers.
 import { DEFAULT_HITS } from "./constants.js"
 import type { BattleContext } from "./context.js"
 import { applyBarrier } from "./barriers.js"
-import { applyDamage, applyHeal, applyHpRestore, applyMpDamage, applyRevive, applyWound, changeWound, resolveStrike } from "./damage.js"
+import { applyDamage, applyHeal, applyHpRestore, applyMpDamage, applyRevive, applyReviveWithOwnedPetHpCost, applyWound, changeWound, resolveStrike } from "./damage.js"
 import { DamageKind, DamageOrigin, EffectType, EventType, FailReason, FormulaFamily, StatusCategory, StatusHit, StatusRemoveReason } from "./enums.js"
 import { evalExpr } from "./expr.js"
 import { atLeast, floorAtLeast } from "./math.js"
 import { applyStatus, copyStatusInstance, envFor } from './status.js';
+import { interceptHostileAction } from './action-guard.js';
+import { reportStatusResult } from './status-result.js';
 import { removeStatus } from './status-removal.js';
 import { resolveSkillTargets } from "./targeting.js"
 import type { ExprEnv, SkillDef, SkillEffect, Unit } from "./types.js"
@@ -26,6 +28,9 @@ type EffectHandler<T extends SkillEffect = SkillEffect> = (
 ) => void
 
 const handlers: { [K in SkillEffect["type"]]?: EffectHandler<Extract<SkillEffect, { type: K }>> } = {
+  [EffectType.InvokeSkill]: (ctx, source, _skill, effect, targets) => {
+    ctx.invokeSkill?.(source, effect.skillId, targets);
+  },
   [EffectType.InvokeAttackSkills]: (ctx, source, skill, _effect, targets) => {
     ctx.invokeAttackSkills(source, skill, targets)
   },
@@ -74,7 +79,14 @@ const handlers: { [K in SkillEffect["type"]]?: EffectHandler<Extract<SkillEffect
   },
   [EffectType.Dispel]: handleDispel,
   [EffectType.Heal]: (ctx, source, _skill, effect, targets, env) => {
-    for (const t of targets) applyHeal(ctx, source, t, evalExpr(effect.power, { ...env, target: t }), effect.healMaxHp, effect.fixedBase, effect.includeHealPower)
+    for (const t of targets) {
+      const valid = applyHeal(ctx, source, t, evalExpr(effect.power, { ...env, target: t }), effect.healMaxHp, effect.fixedBase, effect.includeHealPower)
+      const action = ctx.currentAction
+      if (valid && action?.sourceId === source.id && ctx.suppressHooks === 0 && !ctx.invokingAttackSkills) {
+        const healed = action.healedTargetIds ??= []
+        if (!healed.includes(t.id)) healed.push(t.id)
+      }
+    }
   },
   [EffectType.RestoreHp]: handleRestoreHp,
   [EffectType.RestoreMp]: handleRestoreMp,
@@ -187,15 +199,28 @@ function handleRestoreHp(
     const cap = atLeast(0, Math.floor(evalExpr(effect.maxGainPerAction, env)))
     power = Math.min(power, Math.max(0, cap - (action.hpRestoreGains[gainKey] ?? 0)))
   }
+  let totalRestored = 0;
   for (const target of targets) {
-    const restored = applyHpRestore(ctx, source, target, power, {
+    const roundKey = `hpRestoreRound:${ctx.state.round}:${source.id}:${skill.id}:${target.id}`
+    const roundCap = effect.maxGainPerRound === undefined ? undefined
+      : atLeast(0, Math.floor(evalExpr(effect.maxGainPerRound, { ...env, target })))
+    const targetPower = roundCap === undefined ? power
+      : Math.min(power, Math.max(0, roundCap - (source.combatFacts?.[roundKey] ?? 0)))
+    const restored = applyHpRestore(ctx, source, target, targetPower, {
       revive: effect.revive,
       allowFatal: effect.allowFatal,
       clearStatuses: effect.clearStatuses,
     })
+    totalRestored += restored;
+    if (roundCap !== undefined && restored > 0)
+      (source.combatFacts ??= {})[roundKey] = (source.combatFacts?.[roundKey] ?? 0) + restored
     if (action && restored > 0) {
       action.hpRestoreGains[gainKey] = (action.hpRestoreGains[gainKey] ?? 0) + restored
     }
+  }
+  if (effect.gainCounter && totalRestored > 0) {
+    const facts = source.combatFacts ??= {};
+    facts[effect.gainCounter] = (facts[effect.gainCounter] ?? 0) + 1;
   }
 }
 
@@ -208,7 +233,13 @@ export function applyEffect(
   env: ExprEnv,
 ): void {
   // 休息、给自己上状态、驱散可以没有敌方目标。
-  env = { ...env, state: ctx.state, allyPetSkillUnused: ctx.currentAction?.sourceId === source.id ? ctx.currentAction.allyPetSkillUnused : false, normalTargetIds: ctx.currentAction?.normalTargetIds, killedTargetIds: ctx.currentAction?.killedTargetIds }
+  env = { ...env, state: ctx.state, skills: ctx.skills, statusDefs: ctx.statusDefs, actionTargetIds: ctx.currentAction?.targetIds, allyPetSkillUnused: ctx.currentAction?.sourceId === source.id ? ctx.currentAction.allyPetSkillUnused : false, normalTargetIds: ctx.currentAction?.normalTargetIds, killedTargetIds: ctx.currentAction?.killedTargetIds }
+  const hostile = effect.type === EffectType.DamageMp || effect.type === EffectType.Wound ||
+    effect.type === EffectType.Dispel || (effect.type === EffectType.RemoveStatus && !effect.ownedOnly);
+  if (hostile && targets.length) {
+    targets = targets.filter(target => !interceptHostileAction(ctx, source, target, skill.id));
+    if (!targets.length) return;
+  }
   if (
     effect.type !== EffectType.SkipNextAction &&
     effect.type !== EffectType.RandomBranch &&
@@ -254,7 +285,7 @@ function handleRemoveStatus(
   for (const target of targets) {
     const max = effect.maxCount === undefined ? Number.POSITIVE_INFINITY : Math.max(0, Math.floor(evalExpr(effect.maxCount, { ...env, target })))
     for (const status of matchingStatuses(target, effect).filter(s => !effect.ownedOnly || s.sourceId === source.id).slice(0, max)) {
-      removeStatus(ctx, target, status.id, StatusRemoveReason.Consumed, effect.ownedOnly ? source.id : undefined)
+      removeStatus(ctx, target, status.id, StatusRemoveReason.Consumed, status.sourceId, source)
     }
   }
 }
@@ -326,36 +357,56 @@ function handleApplyStatus(
   const dest = effect.self ? [source] : targets
   const duration = floorAtLeast(1, evalExpr(effect.duration, env))
   for (const t of dest) {
-    if ((t.flags.downed || t.flags.dead) && !(effect.targeting?.includeDowned ?? skill.targeting.includeDowned)) continue
+    const resolution = { skillId: skill.id, hit: effect.hit ?? StatusHit.Always, duration };
+    if ((t.flags.downed || t.flags.dead) && !(effect.targeting?.includeDowned ?? skill.targeting.includeDowned)) {
+      reportStatusResult(ctx, t, effect.statusId, source.id, 'rejected', { ...resolution, reason: 'invalid-target' });
+      continue;
+    }
     const modifiers = combatModifiers(ctx, source, { target: t, skill, skillId: skill.id })
     const durationAdd = modifiers.reduce((sum, m) => sum + (m.statusDurationAdd?.statusId === effect.statusId ? evalExpr(m.statusDurationAdd.amount, { ...env, target: t, state: ctx.state }) : 0), 0)
+    resolution.duration = Math.max(1, Math.floor(duration + durationAdd));
     const def = ctx.statusDefs.get(effect.statusId)
+    if (def && def.category !== StatusCategory.Buff && interceptHostileAction(ctx, source, t, skill.id)) {
+      reportStatusResult(ctx, t, effect.statusId, source.id, 'intercepted', resolution);
+      continue;
+    }
     const actionSkill = ctx.currentAction?.sourceId === source.id ? (source.skillOverrides[ctx.currentAction.skillId] ?? ctx.skills.get(ctx.currentAction.skillId)) : undefined
     // Resist hostile negative spell statuses, never damage or self-imposed costs/rest.
     if (source.side !== t.side && def?.category && def.category !== StatusCategory.Buff &&
-        ((actionSkill ?? skill).tags.includes('spell') || (actionSkill ?? skill).tags.includes('seal'))) {
+        ((actionSkill ?? skill).tags.includes('spell') || (actionSkill ?? skill).tags.includes('seal')) &&
+        !modifiers.some(modifier => modifier.bypassNegativeSpellResistance)) {
       const resistance = Math.min(0.25, t.passives.reduce((sum, id) => sum + ((t.skillOverrides[id] ?? ctx.skills.get(id))?.innate?.negativeSpellResistance ?? 0), 0))
       if (resistance > 0 && ctx.rng.chance(resistance)) {
         ctx.emit({ type: EventType.Miss, sourceId: source.id, targetId: t.id, kind: StatusHit.Seal })
+        reportStatusResult(ctx, t, effect.statusId, source.id, 'immune', { ...resolution, reason: 'negative-spell-resistance' });
         continue
       }
     }
     const hit = effect.hit ?? StatusHit.Always
+    let chance: number | undefined;
     if (hit === StatusHit.Seal) {
       const targetModifiers = combatModifiers(ctx, t, { target: source, skill, skillId: skill.id })
       const additiveChance = modifierValue(modifiers, 'sealChanceAdd', source, t, skill, ctx) - modifierValue(targetModifiers, 'sealResistanceAdd', t, source, skill, ctx)
-      const baseChance = ctx.rules.formulas.sealHitChance({ ...source, attrs: effectiveAttrs(source) }, { ...t, attrs: effectiveAttrs(t) }, env.skillLevel, skill.sealBase, additiveChance)
+      const ceiling = Math.min(1, Math.max(0, (skill.sealChanceCeil ?? ctx.rules.formulas.sealChanceCeil ?? 1) + modifierValue(modifiers, 'sealChanceCeilAdd', source, t, skill, ctx) + modifierValue(targetModifiers, 'sealChanceCeilTakenAdd', t, source, skill, ctx)));
+      const sourceAttrs = effectiveAttrs(source);
+      sourceAttrs.sealHit += modifierValue(modifiers, 'sealHitAdd', source, t, skill, ctx);
+      const baseChance = ctx.rules.formulas.sealHitChance({ ...source, attrs: sourceAttrs }, { ...t, attrs: effectiveAttrs(t) }, env.skillLevel, skill.sealBase, additiveChance, ceiling)
       const sourceFactor = modifiers.reduce((factor, m) => factor * evalExpr(m.sealChanceFactor ?? 1, env), 1)
       const targetFactor = sealHitTakenFactor(ctx, t, modifiers.flatMap(m => m.ignoreSealStatusKinds ?? []))
-      const chance = Math.min(ctx.rules.formulas.sealChanceCeil ?? 1, Math.max(0, baseChance * sourceFactor * targetFactor))
-      if (t.statuses.some(status => ctx.statusDefs.get(status.id)?.immuneToSeal) || !ctx.rng.chance(chance)) {
+      chance = Math.min(ceiling, Math.max(0, baseChance * sourceFactor * targetFactor)) * Math.min(1, Math.max(0, evalExpr(effect.chanceFactor ?? 1, { ...env, target: t })));
+      const forced = modifiers.some(modifier => modifier.sealAlwaysHit);
+      if (forced) chance = 1;
+      const immune = t.statuses.some(status => ctx.statusDefs.get(status.id)?.immuneToSeal);
+      if (immune || (!forced && !ctx.rng.chance(chance))) {
         ctx.emit({ type: EventType.Miss, sourceId: source.id, targetId: t.id, kind: StatusHit.Seal })
+        reportStatusResult(ctx, t, effect.statusId, source.id, immune ? 'immune' : 'miss', { ...resolution, chance });
         continue
       }
     }
     applyStatus(ctx, t, effect.statusId, Math.max(1, Math.floor(duration + durationAdd)), source.id, {
       storedTargetId: effect.storeTarget ? (t.id === source.id ? env.target?.id : t.id) : undefined,
       env: { ...env, target: t },
+      resolution: { ...resolution, chance },
     })
   }
 }
@@ -376,12 +427,15 @@ function handleDispel(
     const candidates = t.statuses
       .filter((status) => {
         const def = ctx.statusDefs.get(status.id)
+        if (effect.enemyAppliedOnly && !ctx.state.units.some(unit => unit.id === status.sourceId && unit.side !== t.side)) return false
         if (def?.dispellable === false) return false
+        if (effect.requireCategories && (!def?.category || !effect.requireCategories.includes(def.category))) return false
         if (effect.schoolOnly && !def?.school) return false
         if (effect.includeStatusFlags?.length && !effect.includeStatusFlags.some((flag) => Boolean(def?.[flag]))) return false
         if (effect.excludeStatusFlags?.some((flag) => Boolean(def?.[flag]))) return false
         return effect.statusIds?.includes(status.id) === true ||
           effect.kinds?.includes(status.kind) === true ||
+          (def?.dispelClass !== undefined && effect.dispelClasses?.includes(def.dispelClass) === true) ||
           (def?.category !== undefined && effect.categories?.includes(def.category) === true)
       })
       .sort((a, b) => {
@@ -406,7 +460,7 @@ function handleDispel(
         ctx.emit({ type: EventType.ChanceResolved, branchId: `${skill.id}.dispel.${status.id}`, sourceId: source.id, targetId: t.id, chance, success });
         if (!success) continue;
       }
-      removeStatus(ctx, t, status.id, StatusRemoveReason.Dispel)
+      removeStatus(ctx, t, status.id, StatusRemoveReason.Dispel, status.sourceId, source)
       if (effect.preventReapplyThisRound || effect.immunityRounds) (t.flags.statusImmunityThroughRound ??= {})[status.kind] = ctx.state.round + (effect.immunityRounds ?? 0)
     }
   }
@@ -444,7 +498,10 @@ function handleRevive(
       effect.hpRatio !== undefined
         ? t.attrs.maxHp * evalExpr(effect.hpRatio, { ...env, target: t })
         : evalExpr(effect.hp, { ...env, target: t })
-    applyRevive(ctx, source, t, effect.respectHealTaken ? Math.floor(hp) * healTakenFactor(t) : hp)
+    const restore = effect.respectHealTaken ? Math.floor(hp) * healTakenFactor(t) : hp
+    if (effect.ownedPetHpCostRatio !== undefined)
+      applyReviveWithOwnedPetHpCost(ctx, source, t, restore, evalExpr(effect.ownedPetHpCostRatio, { ...env, target: t }))
+    else applyRevive(ctx, source, t, restore)
   }
 }
 
@@ -503,6 +560,7 @@ function handleHit(
         skillId: skill.id,
         isPrimary: ctx.currentAction?.primaryTargetId === t.id,
         origin: effect.type === EffectType.FixedHit ? effect.origin : undefined,
+        segmentIndex: i,
       })
     }
   }

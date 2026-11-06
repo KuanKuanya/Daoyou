@@ -1,38 +1,46 @@
 import { InkButton } from '@app/components/ui/InkButton';
 import { useInventoryBag } from '@app/lib/resources/bag';
-import type {
-  ManualAction,
-  CharacterManualDefV1,
-} from '@daoyou/game-domain/manuals';
-import type { ManualView } from '@daoyou/contracts/manuals';
 import type { InventoryView } from '@daoyou/contracts/inventory';
-import {
-  manualAttributeValue,
-  manualSlot,
-} from '@daoyou/game-rules/manuals/projection';
-import {
-  CHARACTER_MANUALS_V1,
-  manualRule,
-} from '@daoyou/game-content/manuals';
-import { manualEffectLines } from '@daoyou/game-rules/manuals/presentation';
-import { itemDefinition } from '@daoyou/game-rules/inventory';
+import type { ManualView } from '@daoyou/contracts/manuals';
+import { CHARACTER_MANUALS_V1, manualRule } from '@daoyou/game-content/manuals';
 import { CHARACTER_ATTRIBUTE_LABELS } from '@daoyou/game-domain/character';
-import { manualJadeCost, previewManualAction } from '@daoyou/game-rules/manuals';
+import type {
+  CharacterManualDefV1,
+  ManualAction,
+  ManualSlotV1,
+} from '@daoyou/game-domain/manuals';
+import { itemDefinition } from '@daoyou/game-rules/inventory';
+import {
+  manualJadeCost,
+  previewManualAction,
+} from '@daoyou/game-rules/manuals';
+import {
+  manualEffectLines,
+  manualMechanismDescription,
+} from '@daoyou/game-rules/manuals/presentation';
+import {
+  isAdvancedManual,
+  manualAttributeValue,
+} from '@daoyou/game-rules/manuals/projection';
 import { ManualProgress } from './ManualProgress';
 import { manualMechanismSummary } from './manualPresentation';
 
 export function ManualDetail({
   manual,
+  slot,
   view,
   pending,
   itemChoice,
   onSubmit,
+  onForget,
 }: {
   manual: CharacterManualDefV1;
+  slot: ManualSlotV1;
   view: ManualView;
   pending: boolean;
   itemChoice?: InventoryView['items'][number];
   onSubmit: (action: ManualAction) => void;
+  onForget?: () => void;
 }) {
   const bag = useInventoryBag();
   const state = view.state;
@@ -48,10 +56,8 @@ export function ManualDetail({
     manual,
     Math.min(level + 1, rule.maxLevel),
   );
-  const equipped = CHARACTER_MANUALS_V1.find(
-    (m) =>
-      m.realm === manual.realm &&
-      state?.build.slots.some((s) => s.manualId === m.id),
+  const equipped = CHARACTER_MANUALS_V1.find((m) =>
+    state?.build.slots.some((s) => s.slot === slot && s.manualId === m.id),
   );
   const active = equipped?.id === manual.id;
   const equippedProgress = state?.learned.find(
@@ -73,7 +79,7 @@ export function ManualDetail({
   const target = state
     ? {
         expectedRevision: state.revision,
-        slot: manualSlot(manual),
+        slot,
         manualId: manual.id,
       }
     : undefined;
@@ -91,6 +97,15 @@ export function ManualDetail({
   const preview =
     state && action
       ? previewManualAction(state, view.realm, action, view.resources, jade)
+      : undefined;
+  const activatePreview =
+    state && target
+      ? previewManualAction(
+          state,
+          view.realm,
+          { ...target, action: 'activate' },
+          view.resources,
+        )
       : undefined;
   const cost =
     progress && !complete && !bottleneck
@@ -117,12 +132,15 @@ export function ManualDetail({
             </span>
           </div>
           <p className="text-ink-secondary mt-1 text-xs">
-            {manual.realm} · {mechanism.tag}
+            {isAdvancedManual(manual)
+              ? `高阶功法 · 第${slot}位`
+              : `${manual.realm} · 基础功法`}{' '}
+            · {mechanism.tag}
           </p>
         </div>
         {progress && !active && target ? (
           <InkButton
-            disabled={blocked}
+            disabled={blocked || !activatePreview?.ok}
             onClick={() => onSubmit({ ...target, action: 'activate' })}
             className="min-h-11 shrink-0"
           >
@@ -181,23 +199,39 @@ export function ManualDetail({
           </div>
         ))}
         <div className="border-ink/20 border-l-2 pl-3">
-          <p className="text-ink-secondary mb-1 text-xs leading-relaxed">
-            {mechanism.condition}
-          </p>
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span>{mechanism.label}</span>
-            <span className="font-mono text-base font-semibold">
-              {mechanism.value}
-              {cost ? (
-                <>
-                  <span className="text-ink-secondary mx-2 text-sm font-normal">
-                    →
-                  </span>
-                  <span className="text-crimson">{nextMechanism.value}</span>
-                </>
-              ) : null}
-            </span>
-          </div>
+          {mechanism.fullRule ? (
+            <div className="space-y-2 text-sm leading-relaxed">
+              <p>
+                {manualMechanismDescription(
+                  manual,
+                  level,
+                  cost ? level + 1 : undefined,
+                )}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-ink-secondary mb-1 text-xs leading-relaxed">
+                {mechanism.condition}
+              </p>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span>{mechanism.label}</span>
+                <span className="font-mono text-base font-semibold">
+                  {mechanism.value}
+                  {cost ? (
+                    <>
+                      <span className="text-ink-secondary mx-2 text-sm font-normal">
+                        →
+                      </span>
+                      <span className="text-crimson">
+                        {nextMechanism.value}
+                      </span>
+                    </>
+                  ) : null}
+                </span>
+              </div>
+            </>
+          )}
         </div>
         {cost ? (
           <p className="text-ink-secondary text-right text-xs">
@@ -393,11 +427,24 @@ export function ManualDetail({
           </div>
         </div>
       ) : null}
+      {progress && onForget ? (
+        <div className="border-ink/10 flex justify-end border-t pt-3">
+          <InkButton
+            variant="ghost"
+            disabled={blocked}
+            className="min-h-11"
+            onClick={onForget}
+          >
+            遗忘此法
+          </InkButton>
+        </div>
+      ) : null}
       <details className="border-ink/10 text-ink-secondary border-t pt-3 text-xs">
-        <summary className="cursor-pointer py-1">功法释义与作用范围</summary>
+        <summary className="cursor-pointer py-1">
+          {complete ? '功法释义' : '功法释义与圆满效果'}
+        </summary>
         <div className="mt-3 space-y-3 leading-relaxed">
           <p>{manual.description}</p>
-          <p>{mechanism.description}</p>
           {!complete ? (
             <div>
               <p className="text-ink mb-1">九层圆满</p>

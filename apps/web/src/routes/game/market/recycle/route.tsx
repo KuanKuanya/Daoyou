@@ -6,6 +6,7 @@ import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkDiscreteRange } from '@app/components/ui/InkDiscreteRange';
 import { InkQuantityInput } from '@app/components/ui/InkQuantityInput';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { apiFetch } from '@app/lib/api/fetch';
 import { inventoryBagResource, useInventoryBag } from '@app/lib/resources/bag';
 import { useInventoryInvalidation } from '@app/lib/resources/inventoryInvalidation';
@@ -246,7 +247,9 @@ function RecyclePage({ owner }: { owner?: string }) {
   const [message, setMessage] = useState(
     '把要出手的材料、灵种、道装、图纸、功法玉简、丹药和灵果挑出来，我给你报个实价。',
   );
-  const [receipts, setReceipts] = useState<string[]>([]);
+  const [receipts, setReceipts] = useState<
+    { quantity: number; total: number }[]
+  >([]);
   const [pending, setPending] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const readError = bagQuery.error;
@@ -611,8 +614,10 @@ function RecyclePage({ owner }: { owner?: string }) {
       } catch {
         /* Storage is optional. */
       }
-      const receipt = `收妥 ${result.quantity} 份，付你 ${result.total} 灵石。`;
-      setReceipts((previous) => [...previous.slice(-4), receipt]);
+      setReceipts((previous) => [
+        ...previous.slice(-4),
+        { quantity: result.quantity, total: result.total },
+      ]);
       setMessage('银货两清。还有要出手的，尽管拿来。');
       setSelection([]);
       setQuote(undefined);
@@ -699,8 +704,9 @@ function RecyclePage({ owner }: { owner?: string }) {
                                 ×{item.quantity}
                               </span>
                             </span>
-                            <span className="shrink-0 font-mono">
-                              {item.unitPrice} 灵石/份
+                            <span className="shrink-0">
+                              <SpiritStones amount={item.unitPrice} />
+                              /份
                             </span>
                           </div>
                           {crossPage ? (
@@ -741,8 +747,8 @@ function RecyclePage({ owner }: { owner?: string }) {
                   </details>
                   <p className="hidden justify-between text-sm lg:flex">
                     <span>合计</span>
-                    <strong className="font-mono">
-                      {currentQuote.total} 灵石
+                    <strong>
+                      <SpiritStones amount={currentQuote.total} />
                     </strong>
                   </p>
                 </>
@@ -803,7 +809,10 @@ function RecyclePage({ owner }: { owner?: string }) {
               <summary className="cursor-pointer">本次成交记录</summary>
               <div className="mt-2 max-h-28 space-y-2 overflow-y-auto">
                 {receipts.map((receipt, index) => (
-                  <p key={index}>{receipt}</p>
+                  <p key={index}>
+                    收妥 {receipt.quantity} 份，付你{' '}
+                    <SpiritStones amount={receipt.total} />。
+                  </p>
                 ))}
               </div>
             </details>
@@ -973,8 +982,7 @@ function RecyclePage({ owner }: { owner?: string }) {
           <span className="text-sm">
             {currentQuote ? (
               <>
-                合计 <span className="font-mono">{currentQuote.total}</span>{' '}
-                灵石
+                合计 <SpiritStones amount={currentQuote.total} />
               </>
             ) : (
               '等待重新报价'

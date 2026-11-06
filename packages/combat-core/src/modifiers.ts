@@ -12,7 +12,9 @@ export function combatModifiers(ctx: BattleContext, source: Unit, scope: Omit<Wh
     if (owner.side !== source.side) continue;
     for (const passive of [...passiveSkills(ctx.skills, owner), ...owner.skills.flatMap(id => { const skill = skillOf(ctx.skills, owner, id); return skill ? [skill] : []; })]) {
       for (const modifier of passive.modifiers ?? []) {
-        if (owner.id !== source.id && !modifier.teamAura) continue;
+        if (modifier.ownedPetAura) {
+          if (source.kind !== 'pet' || source.ownerId !== owner.id || !isStanding(owner)) continue;
+        } else if (owner.id !== source.id && !modifier.teamAura) continue;
         if (modifier.teamAura && (!isStanding(owner) || auraGroups.has(modifier.teamAura))) continue;
         if (!matchesWhen(ctx, modifier.when, { ...scope, source })) continue;
         if (modifier.teamAura) auraGroups.add(modifier.teamAura);
@@ -31,7 +33,7 @@ export function modifierValue(modifiers: CombatModifier[], key: keyof CombatModi
   return modifiers.reduce((sum, modifier) => {
     const value = modifier[key];
     return sum + (typeof value === 'number' || typeof value === 'string'
-      ? evalExpr(value, { allyPetSkillUnused: ctx?.currentAction?.sourceId === source.id ? ctx.currentAction.allyPetSkillUnused : false, state: ctx?.state, source, target, skillLevel: skill ? source.skillLevels[skill.id] ?? source.level : source.level, targets: 1 }) : 0);
+      ? evalExpr(value, { actionTargetIds: ctx?.currentAction?.targetIds, skills: ctx?.skills, statusDefs: ctx?.statusDefs, allyPetSkillUnused: ctx?.currentAction?.sourceId === source.id ? ctx.currentAction.allyPetSkillUnused : false, state: ctx?.state, source, target, skillLevel: skill ? source.skillLevels[skill.id] ?? source.level : source.level, targets: 1 }) : 0);
   }, 0);
 }
 

@@ -3,6 +3,8 @@ import { DatabaseModule } from '@server/database/database.module.js';
 import { AccountsController } from './accounts.controller.js';
 import { AccountsService } from './accounts.service.js';
 import { AdminController } from './admin.controller.js';
+import { AdminDungeonScenariosController } from './dungeon-scenarios.controller.js';
+import { AdminDungeonScenariosService } from './dungeon-scenarios.service.js';
 import { AdminFeedbackService } from './feedback.service.js';
 import { AdminOperationsController } from './admin-operations.controller.js';
 import { AdminOperationsService } from './admin-operations.service.js';
@@ -39,6 +41,7 @@ import { AdminTowerService } from './tower.service.js';
     AdminRewardItemsController,
     AdminTowerController,
     AdminOperationsController,
+    AdminDungeonScenariosController,
   ],
   providers: [
     AdminSystemMailsService,
@@ -54,6 +57,7 @@ import { AdminTowerService } from './tower.service.js';
     AdminRewardItemsService,
     AdminTowerService,
     AdminOperationsService,
+    AdminDungeonScenariosService,
   ],
 })
 export class AdminModule {}

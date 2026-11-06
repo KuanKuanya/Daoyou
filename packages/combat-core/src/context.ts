@@ -27,10 +27,15 @@ export type BattleContext = {
   checkEnd: (reason?: BattleResult["reason"]) => void
   /** >0 时命中不再触发 afterHit/onBeHit，避免连击/反击/反震互爆 */
   suppressHooks: number
+  retaliationDepth?: number
   invokeAttackSkills: (source: Unit, skill: SkillDef, targets: Unit[]) => void
+  invokeSkill?: (source: Unit, skillId: SkillId, targets: Unit[]) => void
   invokingAttackSkills?: boolean
+  /** One root command, including invoked child skills and native spell repeats. */
+  hostileAction?: { sourceId: UnitId; interceptedTargetIds: UnitId[] }
   /** 当前这次出手；OnHitCalc / when.skillIds 读这里。 */
   currentAction?: {
+    interceptedTargetIds?: UnitId[]
     allyPetSkillUnused?: boolean
     triggeredTargets?: string[]
     normalTargetIds?: UnitId[]
@@ -48,7 +53,12 @@ export type BattleContext = {
     resourceGains: Record<string, number>
     /** 独立气血恢复的行动内累计量；行动结束即销毁。 */
     hpRestoreGains: Record<string, number>
+    /** Valid direct healing effects, including healing an already full target. */
+    healedTargetIds?: UnitId[]
     impactDamageByTarget: Record<UnitId, number>
+    /** 本次主目标非比例、非派生直接伤害的实际扣血。 */
+    primaryHpDamage?: number
+    incomingAttackTargetIds?: UnitId[]
     hasPhysicalOrSpellImpact?: boolean
     initialStatusIdsByTarget: Record<UnitId, string[]>
     initialStatusKindsByTarget: Record<UnitId, string[]>

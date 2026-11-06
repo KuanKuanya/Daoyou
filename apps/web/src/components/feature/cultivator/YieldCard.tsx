@@ -4,6 +4,7 @@ import { useInkUI } from '@app/components/providers/InkUIProvider';
 import { GameIcon } from '@app/components/ui/GameIcon';
 import { InkBadge } from '@app/components/ui/InkBadge';
 import { InkButton } from '@app/components/ui/InkButton';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import { postEvents } from '@app/lib/api/postEvents';
 import {
   hasPendingCommandRequest,
@@ -201,8 +202,8 @@ export function YieldCard({
           <span className="text-ink-secondary">
             获得{spiritStonesInfo.label}：
           </span>
-          <span className="text-gold flex items-center gap-1 text-2xl font-bold">
-            <GameIcon value={spiritStonesInfo.icon} /> {yieldResult?.amount}
+          <span className="flex items-center gap-1 text-2xl font-bold">
+            {yieldResult && <SpiritStones amount={yieldResult.amount} />}
           </span>
         </div>
 

@@ -192,7 +192,7 @@ describe('system mail delivery window', () => {
     expect(accepts('reputation', 9999)).toBe(true);
     expect(accepts('reputation', 10000)).toBe(false);
     expect(accepts('reputation', 1_000_000)).toBe(false);
-    expect(accepts('spirit_stones', 10_000_000)).toBe(true);
-    expect(accepts('spirit_stones', 10_000_001)).toBe(false);
+    expect(accepts('spirit_stones', 99_990_000)).toBe(true);
+    expect(accepts('spirit_stones', 99_990_001)).toBe(false);
   });
 });

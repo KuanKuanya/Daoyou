@@ -24,6 +24,11 @@ export const adminRoutes = (
       handle={title('账号管理')}
     />
     <Route
+      path="transfers"
+      lazy={lazyRoute(() => import('@app/routes/admin/transfers/route'))}
+      handle={title('跨服转入审核')}
+    />
+    <Route
       path="broadcast/game-mail"
       lazy={lazyRoute(
         () => import('@app/routes/admin/broadcast/game-mail/route'),
@@ -86,6 +91,13 @@ export const adminRoutes = (
       path="tower-enemy-sets"
       lazy={lazyRoute(() => import('@app/routes/admin/tower-enemy-sets/route'))}
       handle={title('蜃楼敌人')}
+    />
+    <Route
+      path="dungeon-scenarios"
+      lazy={lazyRoute(
+        () => import('@app/routes/admin/dungeon-scenarios/route'),
+      )}
+      handle={title('云游剧本管理')}
     />
     <Route
       path="community-group"

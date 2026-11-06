@@ -1,7 +1,7 @@
 {
   "$schema": "./tianyan-foundation.schema.json",
   "formatVersion": 1,
-  "contentRevision": 4,
+  "contentRevision": 8,
   "elements": [
     {
       "element": "wood",
@@ -34,6 +34,7 @@
       "id": "tianyan.status.mark.wood",
       "kind": "tianyan.status.mark",
       "name": "木行法印",
+      "description": "自身的木行法印。只保留最后一道，倒地后仍在，直到战斗结束。",
       "school": "tianyan",
       "category": "buff",
       "untilBattleEnd": true,
@@ -45,6 +46,7 @@
       "id": "tianyan.status.mark.fire",
       "kind": "tianyan.status.mark",
       "name": "火行法印",
+      "description": "自身的火行法印。只保留最后一道，倒地后仍在，直到战斗结束。",
       "school": "tianyan",
       "category": "buff",
       "untilBattleEnd": true,
@@ -56,6 +58,7 @@
       "id": "tianyan.status.mark.earth",
       "kind": "tianyan.status.mark",
       "name": "土行法印",
+      "description": "自身的土行法印。只保留最后一道，倒地后仍在，直到战斗结束。",
       "school": "tianyan",
       "category": "buff",
       "untilBattleEnd": true,
@@ -67,6 +70,7 @@
       "id": "tianyan.status.mark.metal",
       "kind": "tianyan.status.mark",
       "name": "金行法印",
+      "description": "自身的金行法印。只保留最后一道，倒地后仍在，直到战斗结束。",
       "school": "tianyan",
       "category": "buff",
       "untilBattleEnd": true,
@@ -78,6 +82,7 @@
       "id": "tianyan.status.mark.water",
       "kind": "tianyan.status.mark",
       "name": "水行法印",
+      "description": "自身的水行法印。只保留最后一道，倒地后仍在，直到战斗结束。",
       "school": "tianyan",
       "category": "buff",
       "untilBattleEnd": true,
@@ -89,26 +94,32 @@
       "id": "tianyan.status.bind",
       "kind": "tianyan.status.bind",
       "name": "森罗缚",
+      "description": "速度降低10%。",
       "school": "tianyan",
       "category": "debuff",
+      "priority": "10+15*known.tianyan.passive.roots",
       "speedMod": "-target.speed*(0.10+0.15*known.tianyan.passive.roots)"
     },
     {
       "id": "tianyan.status.weaken",
       "kind": "tianyan.status.next_damage",
       "name": "山河压身",
+      "description": "下一次造成物理伤害或法术伤害时，伤害降低15%，然后此状态消失。",
       "school": "tianyan",
       "category": "debuff",
+      "priority": 15,
       "damageDealtPhysical": 0.85,
       "damageDealtSpell": 0.85,
       "consumeAfterDamagingAction": true
     },
     {
       "id": "tianyan.status.weaken_deep",
+      "description": "下一次造成物理伤害或法术伤害时，伤害降低25%，该次伤害行动后消耗。",
       "kind": "tianyan.status.next_damage",
       "name": "镇岳",
       "school": "tianyan",
       "category": "debuff",
+      "priority": 25,
       "damageDealtPhysical": 0.75,
       "damageDealtSpell": 0.75,
       "consumeAfterDamagingAction": true
@@ -117,18 +128,22 @@
       "id": "tianyan.status.truce",
       "kind": "tianyan.status.next_damage",
       "name": "止戈",
+      "description": "下一次造成物理伤害或法术伤害时，伤害降低35%，然后此状态消失。",
       "school": "tianyan",
       "category": "debuff",
-      "damageDealtPhysical": 0.75,
-      "damageDealtSpell": 0.75,
+      "priority": 35,
+      "damageDealtPhysical": 0.65,
+      "damageDealtSpell": 0.65,
       "consumeAfterDamagingAction": true
     },
     {
       "id": "tianyan.status.truce_deep",
+      "description": "下一次造成物理伤害或法术伤害时，伤害降低40%，该次伤害行动后消耗。",
       "kind": "tianyan.status.next_damage",
       "name": "镇世",
       "school": "tianyan",
       "category": "debuff",
+      "priority": 40,
       "damageDealtPhysical": 0.6,
       "damageDealtSpell": 0.6,
       "consumeAfterDamagingAction": true
@@ -137,32 +152,40 @@
       "id": "tianyan.status.seal",
       "kind": "tianyan.status.seal",
       "name": "截流",
+      "description": "无法使用法术。",
       "school": "tianyan",
       "category": "control",
+      "isSeal": true,
       "blocksSpell": true
     },
     {
       "id": "tianyan.status.spell_dull",
+      "description": "造成的法术伤害降低25%。",
       "kind": "tianyan.status.spell_dull",
       "name": "留隙",
       "school": "tianyan",
       "category": "debuff",
+      "priority": 25,
       "damageDealtSpell": 0.75
     },
     {
       "id": "tianyan.status.spell_dull_deep",
+      "description": "造成的法术伤害降低35%。",
       "kind": "tianyan.status.spell_dull",
       "name": "禁流",
       "school": "tianyan",
       "category": "debuff",
+      "priority": 35,
       "damageDealtSpell": 0.65
     },
     {
       "id": "tianyan.status.foundation_break",
       "kind": "tianyan.status.foundation_break",
       "name": "裂土",
+      "description": "法术防御降低15%。",
       "school": "tianyan",
       "category": "debuff",
+      "priority": "15+10*known.tianyan.passive.corrode",
       "attrMods": {
         "magicDef": "-target.magicDef*(0.15+0.10*known.tianyan.passive.corrode)"
       }
@@ -171,8 +194,10 @@
       "id": "tianyan.status.melt",
       "kind": "tianyan.status.melt",
       "name": "熔锋",
+      "description": "物理攻击和法术攻击各降低10%。",
       "school": "tianyan",
       "category": "debuff",
+      "priority": "10+10*known.tianyan.passive.blunt",
       "attrMods": {
         "physicalAtk": "-target.physicalAtk*(0.10+0.10*known.tianyan.passive.blunt)",
         "magicAtk": "-target.magicAtk*(0.10+0.10*known.tianyan.passive.blunt)"
@@ -182,6 +207,7 @@
       "id": "tianyan.status.ward",
       "kind": "tianyan.status.ward",
       "name": "玄元守一",
+      "description": "受到的物理伤害和法术伤害降低20%。",
       "school": "tianyan",
       "category": "buff",
       "damageTakenPhysical": 0.8,
@@ -189,6 +215,7 @@
     },
     {
       "id": "tianyan.status.ward_deep",
+      "description": "受到的物理伤害和法术伤害降低30%。",
       "kind": "tianyan.status.ward",
       "name": "守拙",
       "school": "tianyan",
@@ -198,6 +225,7 @@
     },
     {
       "id": "tianyan.status.adapt",
+      "description": "法术防御提高10%。",
       "kind": "tianyan.status.adapt",
       "name": "御变",
       "school": "tianyan",
@@ -208,6 +236,7 @@
     },
     {
       "id": "tianyan.status.ember",
+      "description": "每回合末损失最大气血的2%，单次损失上限为施放心法等级×0.8加施法者法攻×0.2。",
       "kind": "tianyan.status.ember",
       "name": "余火",
       "school": "tianyan",
@@ -223,10 +252,21 @@
       "id": "tianyan.status.regrowth",
       "kind": "tianyan.status.regrowth",
       "name": "滋荣",
+      "description": "接下来两个回合结束时恢复气血。",
       "school": "tianyan",
       "category": "buff",
       "ticks": "roundEnd",
-      "healingPerRound": "(skillLevel*0.7+effective.magicAtk*0.12)*(1-0.3*known.tianyan.passive.rain)*(1-0.2*known.tianyan.passive.spring)*(1+0.25*known.tianyan.passive.harmony)"
+      "healingPerRound": "(skillLevel*1.0+effective.magicAtk*0.18)*(1-0.3*known.tianyan.passive.rain)*(1-0.2*known.tianyan.passive.spring)*(1+0.25*known.tianyan.passive.harmony)"
+    },
+    {
+      "id": "tianyan.status.regrowth_single",
+      "kind": "tianyan.status.regrowth",
+      "name": "滋荣",
+      "description": "施放时仅一名可恢复伤员，按完整单人份额持续恢复气血。",
+      "school": "tianyan",
+      "category": "buff",
+      "ticks": "roundEnd",
+      "healingPerRound": "(skillLevel*1.0+effective.magicAtk*0.18)*(1-0.2*known.tianyan.passive.spring)*(1+0.25*known.tianyan.passive.harmony)"
     }
   ],
   "reactions": [
@@ -242,8 +282,18 @@
           "statusId": "tianyan.status.ember",
           "duration": 2,
           "when": {
-            "expression": "known.tianyan.passive.ember",
+            "expression": "known.tianyan.passive.ember*(actionTargetIndex>=1)*(actionTargetIndex<=2+known.tianyan.passive.wild)",
             "targetSlot": "secondary"
+          }
+        }
+      ],
+      "modifiers": [
+        {
+          "damageBonus": "0.15*min(1+known.tianyan.passive.wild,max(0,4+known.tianyan.passive.wild-actionTargetCount))",
+          "when": {
+            "damageOrigins": [
+              "action-direct"
+            ]
           }
         }
       ]
@@ -260,7 +310,7 @@
           "id": "tianyan.barrier.ember",
           "kind": "tianyan.barrier.ember",
           "name": "烬垒",
-          "power": "(skillLevel*1.2+effective.magicAtk*0.25)*(1+0.25*known.tianyan.passive.harmony)",
+          "power": "(skillLevel*1.6+effective.magicAtk*0.35)*(1+0.25*known.tianyan.passive.harmony)",
           "duration": 2,
           "targeting": {
             "side": "self"
@@ -289,13 +339,52 @@
       "newElement": "water",
       "effects": [
         {
+          "type": "modifyFact",
+          "key": "tianyan_injured_allies",
+          "value": "injuredAllyCount",
+          "when": {
+            "expression": "known.tianyan.passive.rain"
+          }
+        },
+        {
           "type": "heal",
-          "power": "(skillLevel*1.2+effective.magicAtk*0.20)*(1-0.3*known.tianyan.passive.rain)*(1+0.35*known.tianyan.passive.dew)*(1+0.25*known.tianyan.passive.harmony)",
+          "power": "(skillLevel*1.8+effective.magicAtk*0.30)*(1-0.3*known.tianyan.passive.rain)*(1+0.35*known.tianyan.passive.dew)*(1+0.25*known.tianyan.passive.harmony)",
           "includeHealPower": false,
           "targeting": {
             "side": "ally",
             "mode": "lowestHp",
             "count": "1+known.tianyan.passive.rain"
+          },
+          "when": {
+            "expression": "1-known.tianyan.passive.rain"
+          }
+        },
+        {
+          "type": "heal",
+          "power": "(skillLevel*1.8+effective.magicAtk*0.30)*(1+0.35*known.tianyan.passive.dew)*(1+0.25*known.tianyan.passive.harmony)",
+          "includeHealPower": false,
+          "targeting": {
+            "side": "ally",
+            "mode": "lowestHp",
+            "count": 1,
+            "preferInjured": true
+          },
+          "when": {
+            "expression": "known.tianyan.passive.rain*(fact.tianyan_injured_allies==1)"
+          }
+        },
+        {
+          "type": "heal",
+          "power": "(skillLevel*1.8+effective.magicAtk*0.30)*(1-0.3*known.tianyan.passive.rain)*(1+0.35*known.tianyan.passive.dew)*(1+0.25*known.tianyan.passive.harmony)",
+          "includeHealPower": false,
+          "targeting": {
+            "side": "ally",
+            "mode": "lowestHp",
+            "count": 2,
+            "preferInjured": true
+          },
+          "when": {
+            "expression": "known.tianyan.passive.rain*(1-(fact.tianyan_injured_allies==1))"
           }
         }
       ]
@@ -308,6 +397,14 @@
       "newElement": "wood",
       "effects": [
         {
+          "type": "modifyFact",
+          "key": "tianyan_injured_allies",
+          "value": "injuredAllyCount",
+          "when": {
+            "expression": "known.tianyan.passive.rain"
+          }
+        },
+        {
           "type": "applyStatus",
           "statusId": "tianyan.status.regrowth",
           "duration": "2+known.tianyan.passive.spring",
@@ -315,6 +412,37 @@
             "side": "ally",
             "mode": "lowestHp",
             "count": "1+known.tianyan.passive.rain"
+          },
+          "when": {
+            "expression": "1-known.tianyan.passive.rain"
+          }
+        },
+        {
+          "type": "applyStatus",
+          "statusId": "tianyan.status.regrowth_single",
+          "duration": "2+known.tianyan.passive.spring",
+          "targeting": {
+            "side": "ally",
+            "mode": "lowestHp",
+            "count": 1,
+            "preferInjured": true
+          },
+          "when": {
+            "expression": "known.tianyan.passive.rain*(fact.tianyan_injured_allies==1)"
+          }
+        },
+        {
+          "type": "applyStatus",
+          "statusId": "tianyan.status.regrowth",
+          "duration": "2+known.tianyan.passive.spring",
+          "targeting": {
+            "side": "ally",
+            "mode": "lowestHp",
+            "count": 2,
+            "preferInjured": true
+          },
+          "when": {
+            "expression": "known.tianyan.passive.rain*(1-(fact.tianyan_injured_allies==1))"
           }
         }
       ]
@@ -340,7 +468,7 @@
       ],
       "modifiers": [
         {
-          "damageBonus": 0.2
+          "damageBonus": 0.3
         }
       ]
     },
@@ -388,7 +516,7 @@
         {
           "type": "applyStatus",
           "statusId": "tianyan.status.foundation_break",
-          "duration": "2-known.tianyan.passive.corrode"
+          "duration": 2
         }
       ]
     },

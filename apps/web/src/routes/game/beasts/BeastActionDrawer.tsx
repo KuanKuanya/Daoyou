@@ -1,5 +1,6 @@
 import { InkModal } from '@app/components/layout/InkModal';
 import { InkButton } from '@app/components/ui/InkButton';
+import { SpiritStones } from '@app/components/ui/SpiritStones';
 import type { SummonedBeast } from '@daoyou/game-domain/beasts';
 import { beastRestCost } from '@daoyou/game-rules/beasts/growth';
 
@@ -34,7 +35,10 @@ export function BeastActionDrawer({
           <InkButton
             variant="primary"
             pending={pending}
-            disabled={action === 'rest' && (cost <= 0 || cost > spiritStones)}
+            disabled={
+              (action === 'rest' && (cost <= 0 || cost > spiritStones)) ||
+              (action === 'release' && beast.isLocked)
+            }
             onClick={confirm}
           >
             确认{labels[action]}
@@ -49,10 +53,10 @@ export function BeastActionDrawer({
             <span className="font-mono">
               {beast.maxLifespan - beast.currentLifespan}
             </span>{' '}
-            点寿命，消耗 <span className="font-mono">{cost}</span> 灵石。
+            点寿命，消耗 <SpiritStones amount={cost} />。
           </p>
           <p>
-            现有灵石 <span className="font-mono">{spiritStones}</span>
+            现有灵石 <SpiritStones amount={spiritStones} mode="compact" />
           </p>
         </div>
       ) : (
@@ -60,8 +64,7 @@ export function BeastActionDrawer({
           <p>
             <span className="font-mono">{beast.level}</span> 级 · 成长{' '}
             <span className="font-mono">{beast.growth.toFixed(3)}</span> ·{' '}
-            <span className="font-mono">{beast.skillSlotCapacity}</span>{' '}
-            项技能
+            <span className="font-mono">{beast.skillSlotCapacity}</span> 项技能
           </p>
           <p>放生没有收益，无法找回。该灵兽会同时取消携带。</p>
         </div>

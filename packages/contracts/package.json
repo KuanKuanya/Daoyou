@@ -6,6 +6,7 @@
   "exports": {
     "./account": "./dist/account.js",
     "./admin/accounts": "./dist/adminAccounts.js",
+    "./admin/dungeon-scenarios": "./dist/adminDungeonScenarios.js",
     "./admin/item-generation": "./dist/adminItemGeneration.js",
     "./admin/online-users": "./dist/adminOnlineUsers.js",
     "./admin/tower": "./dist/adminTower.js",
@@ -15,7 +16,6 @@
     "./auction": "./dist/auction.js",
     "./background-commands": "./dist/backgroundCommands.js",
     "./beasts": "./dist/combatV6Beasts.js",
-    "./body-cultivation": "./dist/bodyCultivation.js",
     "./character-generation": "./dist/character-generation.js",
     "./character/attributes": "./dist/characterAttributes.js",
     "./combat": "./dist/combatV6.js",
@@ -24,6 +24,8 @@
     "./combat/auto": "./dist/combatAuto.js",
     "./combat/breakthrough": "./dist/combatV6Breakthrough.js",
     "./combat/dungeon": "./dist/combatV6Dungeon.js",
+    "./dungeon/mystery": "./dist/dungeonMystery.js",
+    "./dungeon/history": "./dist/dungeonHistory.js",
     "./combat/ranking": "./dist/combatV6Ranking.js",
     "./combat/replays": "./dist/combatV6Replay.js",
     "./combat/runtime": "./dist/combatV6Runtime.js",
@@ -51,6 +53,7 @@
     "./manuals": "./dist/combatV6Manuals.js",
     "./market": "./dist/market.js",
     "./player": "./dist/player.js",
+    "./player/card": "./dist/characterCard.js",
     "./player/journal": "./dist/playerJournal.js",
     "./qi": "./dist/qi.js",
     "./rankings": "./dist/rankings.js",
@@ -65,6 +68,8 @@
     "./spirit-field": "./dist/spiritField.js",
     "./sponsorship": "./dist/sponsorship.js",
     "./task": "./dist/task.js",
+    "./transfer": "./dist/transfer.js",
+    "./wanderer": "./dist/wanderer.js",
     "./world-chat": "./dist/public/world-chat.js"
   },
   "files": [
@@ -72,13 +77,13 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --root ../.. packages/contracts/src"
+    "test": "vitest run --root ../.. packages/contracts/src",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@daoyou/combat-core": "workspace:*",
     "@daoyou/constants": "workspace:*",
     "@daoyou/game-domain": "workspace:*",
-    "zod": "^4.6.4",
-    "@daoyou/combat-core": "workspace:*"
+    "zod": "^4.6.7"
   }
 }

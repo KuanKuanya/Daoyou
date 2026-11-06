@@ -6,7 +6,7 @@ import type { BattleContext } from "./context.js"
 import { BattlePhase, CommandType, EventType, HookName, HpZeroOutcome, MatchWinner, ResultReason, Team } from "./enums.js"
 import { BattleError, ErrorCode } from "./errors.js"
 import { HookBus } from "./hooks.js"
-import { clearRoundFlags, invokeAttackSkills, lockCommands } from './action.js';
+import { clearRoundFlags, invokeAttackSkills, invokeSkill, lockCommands } from './action.js';
 import { resolveRoundActions } from './pipeline.js';
 import { commandOptions } from './query.js';
 import { teamFled, teamWiped, unitById } from './unit-query.js';
@@ -76,6 +76,7 @@ export class BattleSession {
       checkEnd: (reason) => this.finishIfNeeded(reason),
       suppressHooks: 0,
       invokeAttackSkills: (source, skill, targets) => invokeAttackSkills(ctx, source, skill, targets),
+      invokeSkill: (source, skillId, targets) => invokeSkill(ctx, source, skillId, targets),
     }
     this.ctx = ctx
     if (restored) rng.state = restored.state.rngState
@@ -98,6 +99,11 @@ export class BattleSession {
           if (initial) (unit.cooldowns ??= {})[id] = this.ctx.state.round + initial
         }
         applyEntryStatuses(this.ctx, unit)
+      }
+      for (const pet of units) {
+        if (pet.kind !== 'pet' || pet.flags.benched) continue
+        const owner = units.find(unit => unit.id === pet.ownerId)
+        if (owner) this.ctx.hooks.emit(HookName.OnPetSummoned, { source: owner, target: pet, petEntryKind: 'initial' })
       }
       this.ctx.emit({ type: EventType.RoundStart, round: 1 })
       this.ctx.hooks.emit(HookName.OnRoundStart)
@@ -261,6 +267,7 @@ export class BattleSession {
 
   private finishIfNeeded(preferred?: BattleResult["reason"]): void {
     if (this.ctx.state.result) return
+    if (this.ctx.state.units.some(unit => unit.pendingRetaliationFatal)) return
     const wiped0 = teamWiped(this.ctx.state, 0)
     const wiped1 = teamWiped(this.ctx.state, 1)
     if (wiped0 && wiped1) {
