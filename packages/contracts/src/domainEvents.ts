@@ -28,10 +28,6 @@ export const DOMAIN_EVENT_DEFINITIONS = {
     version: 1,
     subject: `${DOMAIN_EVENT_SUBJECT_PREFIX}.activity.ranking-challenge-completed.v1`,
   },
-  'tower.floor.cleared': {
-    version: 1,
-    subject: `${DOMAIN_EVENT_SUBJECT_PREFIX}.tower.floor-cleared.v1`,
-  },
   'dungeon.run.settled': {
     version: 1,
     subject: `${DOMAIN_EVENT_SUBJECT_PREFIX}.activity.dungeon-run-settled.v1`,

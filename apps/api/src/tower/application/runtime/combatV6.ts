@@ -53,7 +53,6 @@ import {
   combatV6ReplayExists,
 } from '@server/lib/repositories/combatV6ReplayRepository.js';
 import { claimMessageForConsumer } from '@server/lib/repositories/messageConsumptionRepository.js';
-import { createDomainEvent } from '@server/lib/mq/domainEventWriter.js';
 import { lockCultivatorForStateMutation } from '@server/lib/repositories/playerStateRepository.js';
 import {
   getOrPublishTowerWeek,
@@ -70,6 +69,7 @@ import {
 import { publishResourceEvents } from '@server/realtime/infrastructure/playerStateBroadcaster.js';
 import { ResourceEventCommitter } from '@server/player/application/state/ResourceEventCommitter.js';
 import { queueAchievementRumor } from '@server/social/application/achievementRumor.js';
+import { updateTowerWeeklyRecord } from '@server/tower/application/runtime/leaderboard.js';
 import { hasActiveTower, towerRunKey } from '@server/tower/application/runtime/occupancy.js';
 
 export class TowerV6Error extends Error {}
@@ -83,7 +83,6 @@ type Run = NonNullable<TowerView['state']> & {
     id: string;
     revision: number;
     startedAt: string;
-    finishedAt?: string;
     snapshot: TowerBattleSnapshot;
     settled: boolean;
     admitted?: boolean;
@@ -528,7 +527,6 @@ export async function changeTowerBattle(
         playback.capture(host.state, battle.snapshot.events.length - 1);
     }
     // Persist the terminal snapshot before the cross-store reward step so retries keep the same outcome.
-    if (host.finished) battle.finishedAt ??= new Date().toISOString();
     await save(owner, run, lease);
     if (host.finished) {
       const outcome = host.trace().outcome;
@@ -658,30 +656,12 @@ export async function changeTowerBattle(
               payload: { runId: run.runId, floor: run.floor },
             },
             startedAt: battle.startedAt,
-            finishedAt: battle.finishedAt!,
+            finishedAt: new Date().toISOString(),
             reason: outcome === 'aborted' ? 'fled' : 'battle-ended',
             trace: { ...host.trace(), seed: battle.snapshot.input.seed! },
           }),
           tx,
         );
-        if (outcome === 'victory') {
-          await createDomainEvent(
-            {
-              type: 'tower.floor.cleared',
-              aggregate: { type: 'tower-battle', id },
-              deduplicationKey: `tower-leaderboard:${id}`,
-              data: {
-                cultivatorId: owner,
-                seasonKey: run.season.seasonKey,
-                seasonEndAt: run.season.seasonEndsAt,
-                recordedRealm: run.realm,
-                highestFloor: run.floor,
-                firstReachedAt: battle.finishedAt!,
-              },
-            },
-            tx,
-          );
-        }
         const rumorMessageId =
           outcome === 'victory' && run.floor === TOWER_MAX_FLOOR
             ? await queueAchievementRumor(tx, {
@@ -727,6 +707,20 @@ export async function changeTowerBattle(
               : 'draw';
       }
       await save(owner, run, lease);
+      if (outcome === 'victory') {
+        try {
+          await updateTowerWeeklyRecord({
+            seasonKey: run.season.seasonKey,
+            seasonEndAt: run.season.seasonEndsAt,
+            cultivatorId: owner,
+            recordedRealm: run.realm,
+            highestFloor: run.highestFloor,
+            firstReachedAt: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error('tower leaderboard update failed', error);
+        }
+      }
     }
     return {
       ...battleView(run, after),

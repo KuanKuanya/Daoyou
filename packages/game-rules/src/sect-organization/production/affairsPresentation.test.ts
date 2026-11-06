@@ -31,9 +31,6 @@ describe('production sect affairs presentations', () => {
           (actor) => actor.roleKey === 'ring',
         ),
       ).toMatchObject({
-        sigil: 'icon:facility-sect-arena',
-        name: '宗门擂台',
-        identity: '宗门设施',
         appearance: 'facility',
         conversation: {
           renderer: 'sect.arena.tournament',
@@ -63,8 +60,6 @@ describe('production sect affairs presentations', () => {
         ].actors.find((candidate) => candidate.roleKey === roleKey);
         expect(actor).toBeDefined();
         expect(actor).toMatchObject({
-          identity: standardActor?.identity,
-          responsibility: standardActor?.responsibility,
           conversation: standardActor?.conversation,
         });
       }

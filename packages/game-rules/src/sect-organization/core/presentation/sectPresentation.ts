@@ -42,7 +42,6 @@ export function resolveSectPresentation(
           return {
             ...standardActor,
             id: override?.id ?? standardActor.id,
-            sigil: override?.sigil ?? standardActor.sigil,
             name: override?.name ?? standardActor.name,
             greeting: override?.greeting ?? standardActor.greeting,
           };
