@@ -26,7 +26,8 @@ function cloneSkill(skill: SkillDef): SkillDef {
 }
 
 function allSkillDefs(input: CompileSectCombatV6Input): SectSkillDefV6[] {
-  return [
+  // 多个节点可引用同一份技能；不同定义复用 ID 仍由下方校验拒绝。
+  return [...new Set([
     ...input.definition.skills,
     ...input.definition.paths.flatMap((path) => [
       ...(path.foundationPassives ?? []),
@@ -36,7 +37,7 @@ function allSkillDefs(input: CompileSectCombatV6Input): SectSkillDefV6[] {
         ...(node.grantSkills ?? []),
       ]),
     ]),
-  ]
+  ])]
 }
 
 function validateDefinition(
@@ -262,6 +263,7 @@ function patchConflictKey(patch: SkillPatchV6): string | undefined {
   if (patch.operation === "capRequireHpRatio") return undefined
   if (patch.operation === "setCostHp") return `${patch.skillId}:costHp`
   if (patch.operation === "setTargetCount") return `${patch.skillId}:targeting.count`
+  if (patch.operation === "setTargetingSide") return `${patch.skillId}:targeting.side`
   if (patch.operation === "setPhysicalDefenseIgnore") return `${patch.skillId}:physical.defenseIgnore`
   if (patch.operation === "setPhysicalCannotMiss") return `${patch.skillId}:physical.cannotMiss`
   if (patch.operation === "setSealBase") return `${patch.skillId}:sealBase`
@@ -273,6 +275,7 @@ function patchConflictKey(patch: SkillPatchV6): string | undefined {
 function applyPatch(skill: SkillDef, patch: SkillPatchV6): SkillDef {
   const next = cloneSkill(skill)
   if (patch.operation === "setCooldownRounds") next.cooldownRounds = patch.value
+  if (patch.operation === "setTargetingSide") next.targeting.side = patch.value
   if (patch.operation === "includeDownedTargets") next.targeting.includeDowned = patch.value
   if (patch.operation === "setRequireHpRatio") {
     if (next.requireHpAboveRatio !== undefined) next.requireHpAboveRatio = patch.value

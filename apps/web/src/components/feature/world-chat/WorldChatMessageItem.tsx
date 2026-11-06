@@ -1,11 +1,11 @@
 import { BeastTradeDetails } from '@app/components/feature/beasts/BeastTradePreview';
+import { CharacterCardTrigger } from '@app/components/feature/character-card/CharacterCardTrigger';
 import { notifyHuntTeamChanged } from '@app/components/feature/hunts/huntTeamView';
 import { huntRequest } from '@app/components/feature/hunts/useHunts';
 import { itemPresentation } from '@app/components/feature/items/itemPresentation';
 import { ItemPreview } from '@app/components/feature/items/ItemPreview';
 import { InkModal } from '@app/components/layout';
 import { GameIcon } from '@app/components/ui/GameIcon';
-import type { Tier } from '@app/components/ui/InkBadge';
 import { InkBadge } from '@app/components/ui/InkBadge';
 import { InkButton } from '@app/components/ui/InkButton';
 import { cn } from '@app/lib/cn';
@@ -65,6 +65,7 @@ export const WorldChatMessageItem = memo(function WorldChatMessageItem({
     (message.senderCultivatorId === null &&
       message.senderName === '修仙界传闻');
   const isOwn = message.senderCultivatorId === cultivator?.id;
+  const senderTitle = isOwn ? cultivator?.title : message.senderTitle;
   const packet =
     message.messageType === 'red_packet' && 'packet' in message.payload
       ? message.payload.packet
@@ -134,7 +135,7 @@ export const WorldChatMessageItem = memo(function WorldChatMessageItem({
             </div>
           ) : !isSystemRumor ? (
             <div
-              className="bg-ink/5 text-ink-secondary mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-sm"
+              className="bg-ink/5 text-ink-secondary flex size-7 shrink-0 items-center justify-center rounded-full text-sm"
               aria-hidden="true"
             >
               {Array.from(message.senderName)[0]}
@@ -142,12 +143,7 @@ export const WorldChatMessageItem = memo(function WorldChatMessageItem({
           ) : null}
           <div className="min-w-0 flex-1">
             {!grouped ? (
-              <div
-                className={cn(
-                  'relative mb-0.5 flex min-h-6 items-center text-sm',
-                  !isSystemRumor && onReply ? 'pr-28' : 'pr-12',
-                )}
-              >
+              <div className="mb-0.5 flex h-7 items-center justify-between gap-2 text-sm">
                 <div className="flex min-w-0 items-center gap-1.5">
                   {isSystemRumor ? (
                     <>
@@ -158,19 +154,23 @@ export const WorldChatMessageItem = memo(function WorldChatMessageItem({
                     </>
                   ) : (
                     <>
-                      {message.senderCultivatorId &&
-                      message.senderCultivatorId !== cultivator?.id ? (
-                        <button
-                          type="button"
-                          className="hover:text-crimson min-w-0 cursor-pointer truncate font-semibold underline-offset-2 hover:underline"
-                          onClick={() =>
-                            onSelectFriend?.(message.senderCultivatorId!)
-                          }
-                          aria-label={`查看并收录道友 ${message.senderName}`}
-                          title={`${message.senderName} · ${message.senderRealm}${message.senderRealmStage}`}
+                      {message.senderCultivatorId ? (
+                        <CharacterCardTrigger
+                          id={message.senderCultivatorId}
+                          name={message.senderName}
+                          onSelectFriend={isOwn ? undefined : onSelectFriend}
                         >
-                          {message.senderName}
-                        </button>
+                          <span className="flex min-w-0 items-baseline gap-1.5">
+                            <span className="max-w-full shrink-0 truncate font-semibold">
+                              {message.senderName}
+                            </span>
+                            {senderTitle ? (
+                              <span className="text-ink-secondary min-w-0 truncate text-xs">
+                                「{senderTitle}」
+                              </span>
+                            ) : null}
+                          </span>
+                        </CharacterCardTrigger>
                       ) : (
                         <span
                           className="min-w-0 truncate font-semibold"
@@ -179,22 +179,16 @@ export const WorldChatMessageItem = memo(function WorldChatMessageItem({
                           {message.senderName}
                         </span>
                       )}
-                      <InkBadge
-                        className="hidden shrink-0 whitespace-nowrap md:inline-flex"
-                        tier={message.senderRealm as Tier}
-                      >
-                        {message.senderRealmStage}
-                      </InkBadge>
                       {isOwn ? (
                         <span className="text-teal text-xs">你</span>
                       ) : null}
                     </>
                   )}
                 </div>
-                <div className="absolute top-1/2 right-0 flex -translate-y-1/2 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1">
                   {!isSystemRumor && onReply ? (
                     <InkButton
-                      className="min-h-11 px-1 text-sm md:min-h-7 md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100"
+                      className="-my-2 min-h-11 px-1 text-sm md:my-0 md:min-h-7 md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100"
                       variant="secondary"
                       onClick={() => onReply(message)}
                     >

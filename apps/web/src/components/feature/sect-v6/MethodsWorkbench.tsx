@@ -7,6 +7,7 @@ import {
   sectSkillCatalog,
 } from '@daoyou/game-rules/sects/presentation';
 import { useMemo, useState } from 'react';
+import { SkillDescription } from '../skills/SkillDescription';
 import {
   actionProblem,
   actionReference,
@@ -104,6 +105,11 @@ export function MethodsWorkbench({ view, pending, act }: SectWorkspaceProps) {
             <span className="text-ink-secondary text-xs">主心法</span>
           ) : null}
         </div>
+        {method.description ? (
+          <p className="text-ink-secondary mt-3 text-sm leading-7">
+            {method.description}
+          </p>
+        ) : null}
         <p className="text-ink-secondary mt-2 text-sm leading-7">
           {panel
             ? `研习提升${SECT_PANEL_LABELS[panel.attr] ?? panel.attr}，并精进关联神通。`
@@ -172,8 +178,8 @@ export function MethodsWorkbench({ view, pending, act }: SectWorkspaceProps) {
                   {skill.requirement}
                 </p>
               ) : null}
-              <p className="text-ink-secondary mt-2 leading-7">
-                {skill.description}
+              <p className="text-ink-secondary mt-2 leading-7 whitespace-pre-line">
+                <SkillDescription text={skill.description} />
               </p>
             </section>
           ) : (

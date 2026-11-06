@@ -11,6 +11,7 @@ export {
   type InkDialogState,
 } from './InkDialog';
 export { InkDivider, type InkDividerProps } from './InkDivider';
+export { InkField, type InkFieldProps } from './InkField';
 export { inkFieldVariants, type InkFieldVariantProps } from './inkFieldStyles';
 export {
   InkHorizontalScroll,
@@ -31,6 +32,7 @@ export {
 export { InkLoadingBar, type InkLoadingBarProps } from './InkLoadingBar';
 export { InkNav, type InkNavProps } from './InkNav';
 export { InkNotice, type InkNoticeProps } from './InkNotice';
+export { PaperSurface } from './PaperSurface';
 export {
   InkQuantityInput,
   type InkQuantityInputProps,

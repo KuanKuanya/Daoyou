@@ -15,6 +15,8 @@ import {
   inscriptionStrengthenCost,
   prepareInscriptionDraw,
   prepareInscriptionEquipment,
+  prepareInscriptionRemoval,
+  prepareInscriptionSockets,
   prepareInscriptionStrengthen,
   previewInscriptionDraw,
   rollInscriptionDraw,
@@ -93,9 +95,8 @@ function equipment(
 }
 
 describe('阵纹物品与绘制', () => {
-  it('九种类型各有11级固定物品，同种同级堆叠，拒绝实例伪造', () => {
-    expect(INSCRIPTION_ITEMS).toHaveLength(99);
-    expect(new Set(INSCRIPTION_ITEMS.map((d) => d.id)).size).toBe(99);
+  it('阵纹定义可入背包，拒绝伪造实例数据与越级定义', () => {
+    expect(new Set(INSCRIPTION_ITEMS.map((d) => d.id)).size).toBe(INSCRIPTION_ITEMS.length);
     for (const def of INSCRIPTION_ITEMS) {
       expect(
         InventoryItemSchema.safeParse({ ...glyph(), definitionId: def.id })
@@ -104,15 +105,14 @@ describe('阵纹物品与绘制', () => {
       expect(
         DAO_FORMATION_INSCRIPTIONS_V1.some((p) => p.id === def.patternId),
       ).toBe(true);
-      expect(def.name).toBe(
-        DAO_FORMATION_INSCRIPTIONS_V1.find((p) => p.id === def.patternId)!.name,
-      );
     }
     expect(
       InventoryItemSchema.safeParse({ ...glyph(), instanceData: { level: 11 } })
         .success,
     ).toBe(false);
-    expect(InventoryItemSchema.safeParse(glyph(12)).success).toBe(false);
+    expect(InventoryItemSchema.safeParse(glyph(12)).success).toBe(true);
+    expect(InventoryItemSchema.safeParse(glyph(19)).success).toBe(true);
+    expect(InventoryItemSchema.safeParse(glyph(20)).success).toBe(false);
   });
   it('四类材料保留十分位，拒绝灵草与典籍，不因分堆变化', () => {
     expect(
@@ -121,7 +121,7 @@ describe('阵纹物品与绘制', () => {
           material(type as MaterialFacts['type']).instanceData as MaterialFacts,
         ),
       ),
-    ).toEqual([10, 12, 15, 25]);
+    ).toEqual([100, 120, 150, 250]);
     for (const type of ['herb', 'gongfa_manual', 'skill_manual'] as const)
       expect(() =>
         prepareInscriptionDraw([material(type)], [ref(material(type), 4)]),
@@ -129,113 +129,115 @@ describe('阵纹物品与绘制', () => {
     const a = material('monster', 10);
     const b = material('monster', 5, '凡品', 1);
     expect(prepareInscriptionDraw([a], [ref(a, 10)]).preview.totalTenths).toBe(
-      120,
+      1200,
     );
     expect(
       prepareInscriptionDraw([a, b], [ref(a, 5), ref(b, 5)]).preview
         .totalTenths,
-    ).toBe(120);
+    ).toBe(1200);
   });
   it('每个绘制材料格最多投入30份，格子之间独立计数', () => {
     const a = material('ore', 999);
     const b = material('ore', 999, '凡品', 1);
     expect(prepareInscriptionDraw([a], [ref(a, 30)]).preview.totalTenths).toBe(
-      300,
+      3000,
     );
     expect(() => prepareInscriptionDraw([a], [ref(a, 31)])).toThrow('30');
     expect(
       prepareInscriptionDraw([a, b], [ref(a, 20), ref(b, 20)]).preview
         .totalTenths,
-    ).toBe(400);
+    ).toBe(4000);
   });
   it('按材料总份数贪心分配，保留尾数并按总投入收取灵气', () => {
     expect(previewInscriptionDraw(1120)).toEqual({
       totalTenths: 1120,
       remainderTenths: 0,
       outputs: [
-        { level: 5, quantity: 1 },
         { level: 4, quantity: 1 },
-        { level: 3, quantity: 1 },
+        { level: 1, quantity: 1 },
       ],
-      cost: { qi: 1, spiritStones: 112 },
+      cost: { qi: 1, spiritStones: 11 },
     });
     expect(previewInscriptionDraw(180).outputs).toEqual([
-      { level: 3, quantity: 1 },
+      { level: 2, quantity: 1 },
+      { level: 1, quantity: 1 },
     ]);
     expect(previewInscriptionDraw(180).remainderTenths).toBe(20);
     expect(previewInscriptionDraw(40).cost.qi).toBe(1);
-    expect(previewInscriptionDraw(500000).cost.qi).toBe(98);
-    expect(previewInscriptionDraw(5120).cost.qi).toBe(1);
-    expect(previewInscriptionDraw(5121).cost.qi).toBe(2);
-    expect(previewInscriptionDraw(40960 * 3 + 40).outputs).toEqual([
-      { level: 11, quantity: 3 },
-      { level: 1, quantity: 1 },
-    ]);
+    expect(previewInscriptionDraw(500000).cost.qi).toBe(5);
+    expect(previewInscriptionDraw(40 * 3 ** 7 + 40 * 3 ** 6)).toMatchObject({
+      outputs: [
+        { level: 8, quantity: 1 },
+        { level: 7, quantity: 1 },
+      ],
+      remainderTenths: 0,
+    });
     for (const value of [0, 39, 39.9, NaN, Infinity])
       expect(() => previewInscriptionDraw(value)).toThrow();
   });
-  it('绘制每512份收一点灵气、每份收一灵石，均向上取整且包含余料', () => {
-    expect(previewInscriptionDraw(40).cost).toEqual({ qi: 1, spiritStones: 4 });
+  it('绘制灵气和灵石都按份数开方，余料计入，灵石最少1', () => {
+    expect(previewInscriptionDraw(40).cost).toEqual({ qi: 1, spiritStones: 2 });
+    expect(previewInscriptionDraw(41).cost.spiritStones).toBe(3);
     expect(previewInscriptionDraw(100).cost).toEqual({
       qi: 1,
-      spiritStones: 10,
+      spiritStones: 4,
     });
-    expect(previewInscriptionDraw(101).cost).toEqual({
-      qi: 1,
-      spiritStones: 11,
-    });
-    expect(previewInscriptionDraw(5120).cost).toEqual({
-      qi: 1,
-      spiritStones: 512,
-    });
-    expect(previewInscriptionDraw(5121).cost).toEqual({
-      qi: 2,
-      spiritStones: 513,
-    });
+    expect(previewInscriptionDraw(101).cost.spiritStones).toBe(4);
     const divine = material('tcdb', 1, '神品');
     expect(
       prepareInscriptionDraw([divine], [ref(divine)]).preview.cost,
-    ).toEqual({ qi: 98, spiritStones: 50000 });
+    ).toEqual({ qi: 15, spiritStones: 708 });
   });
-  it('灵气在100点封顶，灵石继续按全部投入计费', () => {
-    expect(previewInscriptionDraw(506880).cost.qi).toBe(99);
-    expect(previewInscriptionDraw(506881).cost.qi).toBe(100);
-    expect(previewInscriptionDraw(512000).cost.qi).toBe(100);
-    expect(previewInscriptionDraw(512001).cost).toEqual({
-      qi: 100,
-      spiritStones: 51201,
+  it('四件神品天材地宝的灵气为30点，再投入时增幅递减且不截断', () => {
+    const reference = previewInscriptionDraw(20_000_000).cost;
+    const next = previewInscriptionDraw(20_000_001).cost.qi;
+    const doubled = previewInscriptionDraw(40_000_000).cost.qi;
+    const tripled = previewInscriptionDraw(60_000_000).cost.qi;
+    expect(reference).toEqual({ qi: 30, spiritStones: 1415 });
+    expect(next).toBe(31);
+    expect(doubled - reference.qi).toBeLessThan(reference.qi);
+    expect(tripled - doubled).toBeLessThan(doubled - reference.qi);
+    const ore = material('ore', 4, '神品');
+    expect(prepareInscriptionDraw([ore], [ref(ore, 4)]).preview.cost).toEqual({
+      qi: 19,
+      spiritStones: 895,
     });
     const divine = material('tcdb', 4, '神品');
     expect(
       prepareInscriptionDraw([divine], [ref(divine, 4)]).preview.cost,
-    ).toEqual({ qi: 100, spiritStones: 200000 });
+    ).toEqual(reference);
+    const stacked = material('tcdb', 30, '神品');
+    expect(
+      prepareInscriptionDraw([stacked], [ref(stacked, 30)]).preview.cost.qi,
+    ).toBeGreaterThan(30);
   });
-  it('最多保留最高三个等级组，余料消散但仍计入灵气消耗', () => {
+  it('只保留主产物和副产物，其余能量溢散但仍计入灵气消耗', () => {
     const preview = previewInscriptionDraw(9490);
     expect(preview.outputs).toEqual([
-      { level: 8, quantity: 1 },
-      { level: 7, quantity: 1 },
-      { level: 6, quantity: 1 },
+      { level: 5, quantity: 2 },
+      { level: 4, quantity: 2 },
     ]);
-    expect(preview.remainderTenths).toBe(530);
-    expect(preview.cost).toEqual({ qi: 2, spiritStones: 949 });
+    expect(preview.remainderTenths).toBe(850);
+    expect(preview.cost).toEqual({ qi: 1, spiritStones: 31 });
     expect(
       rollInscriptionDraw(preview, () => 0).map((grant) => grant.quantity),
-    ).toEqual([1, 1, 1]);
-    expect(previewInscriptionDraw(1200).remainderTenths).toBe(80);
+    ).toEqual([2, 2]);
+    expect(previewInscriptionDraw(1200).remainderTenths).toBe(0);
   });
-  it('三个等级组不限制同级数量，材料价值由产物和消散余料共同守恒', () => {
-    const total = 40960 * 100 + 20480 + 10240 + 5120;
+  it('主副产物不限制同级数量，材料价值由产物和溢散余料共同守恒', () => {
+    const total = 40 * 3 ** 10 + 40 * 3 ** 9 * 2 + 195240;
     const preview = previewInscriptionDraw(total);
     expect(preview.outputs).toEqual([
-      { level: 11, quantity: 100 },
-      { level: 10, quantity: 1 },
-      { level: 9, quantity: 1 },
+      { level: 11, quantity: 1 },
+      { level: 10, quantity: 2 },
     ]);
-    expect(preview.remainderTenths).toBe(5120);
+    expect(preview.remainderTenths).toBe(195240);
+    expect(previewInscriptionDraw(40 * 3 ** 18).outputs).toEqual([
+      { level: 19, quantity: 1 },
+    ]);
     expect(
       preview.outputs.reduce(
-        (sum, output) => sum + output.quantity * 40 * 2 ** (output.level - 1),
+        (sum, output) => sum + output.quantity * 40 * 3 ** (output.level - 1),
         preview.remainderTenths,
       ),
     ).toBe(total);
@@ -267,13 +269,13 @@ describe('阵纹物品与绘制', () => {
   });
   it('随机只分配类型，等级与数量恒定，独立抽取可重复', () => {
     let n = 0;
-    const preview = previewInscriptionDraw(40960 * 9);
+    const preview = previewInscriptionDraw(40 * 3 ** 18 * 9);
     const grants = rollInscriptionDraw(preview, () => (n++ + 0.5) / 9);
     expect(grants.map((g) => g.definitionId)).toEqual(
-      DAO_FORMATION_INSCRIPTIONS_V1.map((p) => inscriptionItemId(p.id, 11)),
+      DAO_FORMATION_INSCRIPTIONS_V1.map((p) => inscriptionItemId(p.id, 19)),
     );
     expect(rollInscriptionDraw(preview, () => 0)).toEqual([
-      { definitionId: inscriptionItemId(xuanfeng, 11), quantity: 9 },
+      { definitionId: inscriptionItemId(xuanfeng, 19), quantity: 9 },
     ]);
   });
   it('满包时仍可绘制，产物允许转入储藏室', () => {
@@ -284,15 +286,17 @@ describe('阵纹物品与绘制', () => {
     ];
     const plan = prepareInscriptionDraw(full, [ref(mat, 1)]);
     expect(plan.preview.outputs.length).toBeGreaterThan(0);
-    // 消耗完整材料堆叠释放一格，四份只产出一枚时足够。
     const small = material();
     expect(
       prepareInscriptionDraw([small, ...full.slice(1)], [ref(small, 4)]).preview
         .outputs,
-    ).toEqual([{ level: 1, quantity: 1 }]);
+    ).toEqual([
+      { level: 3, quantity: 1 },
+      { level: 1, quantity: 1 },
+    ]);
   });
   it('随机产出可按固定定义正常入袋和堆叠', () => {
-    const preview = previewInscriptionDraw(40960 * 100);
+    const preview = previewInscriptionDraw(40 * 3 ** 18 * 100);
     const grants = rollInscriptionDraw(preview, () => 0);
     let next: InventoryItem[] = [];
     let n = 0;
@@ -360,7 +364,20 @@ describe('合成与烙印', () => {
       definitionId: inscriptionItemId(xuanfeng, 4),
       quantity: 1,
     });
-    expect(plan.cost).toEqual({ spiritStones: 40, qi: 0 });
+    expect(plan.cost).toEqual({ spiritStones: 32, qi: 0 });
+    const batch = glyph(3, 8, xuanfeng, 4);
+    const repeated = prepareInscriptionStrengthen([batch], [ref(batch, 8)]);
+    expect(repeated.grant.quantity).toBe(4);
+    expect(repeated.afterMaterials).toEqual([]);
+    expect(repeated.cost).toEqual({ spiritStones: 128, qi: 0 });
+    expect(() =>
+      prepareInscriptionStrengthen([batch], [ref(batch, 3)]),
+    ).toThrow('两枚');
+    expect(() =>
+      prepareInscriptionStrengthen([glyph(3, 40, xuanfeng, 5)], [
+        ref(glyph(3, 40, xuanfeng, 5), 32),
+      ]),
+    ).toThrow('15次');
     const b = glyph(3, 1, xuanfeng, 1);
     expect(
       prepareInscriptionStrengthen([a, b], [ref(a), ref(b)]).afterMaterials[0]
@@ -374,10 +391,17 @@ describe('合成与烙印', () => {
     expect(() =>
       prepareInscriptionStrengthen([a, other], [ref(a), ref(other)]),
     ).toThrow('同种同级');
+    const raised = prepareInscriptionStrengthen(
+      [glyph(11, 2)],
+      [ref(glyph(11, 2), 2)],
+    );
+    expect(raised.grant.definitionId).toBe(inscriptionItemId(xuanfeng, 12));
+    expect(raised.cost.spiritStones).toBe(8_192);
+    expect(inscriptionStrengthenCost(19).spiritStones).toBe(1_048_576);
     expect(() =>
-      prepareInscriptionStrengthen([glyph(11, 2)], [ref(glyph(11, 2), 2)]),
-    ).toThrow();
-    expect(inscriptionStrengthenCost(11).spiritStones).toBe(5120);
+      prepareInscriptionStrengthen([glyph(19, 2)], [ref(glyph(19, 2), 2)]),
+    ).toThrow('1至19');
+    expect(inscriptionStrengthenCost(11).spiritStones).toBe(4096);
   });
   it('合成可混用两处阵纹，满包时产物可入储藏室', () => {
     const full = Array.from({ length: 40 }, (_, i) =>
@@ -397,7 +421,7 @@ describe('合成与烙印', () => {
       plan.afterMaterials.find((item) => item.id === stored.id),
     ).toBeUndefined();
   });
-  it('双孔可同种；覆盖须确认且旧阵纹不返还，输入保持不变', () => {
+  it('双孔可同种；替换须确认并返还旧阵纹，输入保持不变', () => {
     const eq = equipment();
     const g = glyph(2, 2);
     const frozen = JSON.stringify(eq);
@@ -422,7 +446,7 @@ describe('合成与烙印', () => {
         'engrave',
         false,
       ),
-    ).toThrow('确认覆盖');
+    ).toThrow('确认替换');
     const second = prepareInscriptionEquipment(
       first.after,
       ref(changed),
@@ -448,6 +472,96 @@ describe('合成与烙印', () => {
       true,
     );
     expect(replaced.after).toHaveLength(1);
+    expect(replaced.grants).toEqual([
+      { definitionId: inscriptionItemId(xuanfeng, 2), quantity: 1 },
+    ]);
+    expect(
+      InventoryEquipmentSchema.parse(replaced.after[0].instanceData)
+        .formationInscriptions,
+    ).toEqual([{ patternId: xuanfeng, level: 2 }, null]);
+    const lingyao = glyph(1, 1, 'dao_inscription.lingyao', 4);
+    const swapped = prepareInscriptionEquipment(
+      [changed, lingyao],
+      ref(changed),
+      0,
+      ref(lingyao),
+      'engrave',
+      true,
+    );
+    expect(swapped.grants).toEqual([
+      { definitionId: inscriptionItemId(xuanfeng, 2), quantity: 1 },
+    ]);
+    expect(swapped.after.find((item) => item.id === lingyao.id)).toBeUndefined();
+    expect(
+      InventoryEquipmentSchema.parse(
+        swapped.after.find((item) => item.id === eq.id)!.instanceData,
+      ).formationInscriptions,
+    ).toEqual([{ patternId: 'dao_inscription.lingyao', level: 1 }, null]);
+  });
+  it('取下清空孔位并返还阵纹，空孔与重复孔位会被拒绝', () => {
+    const eq = equipment();
+    const frozen = JSON.stringify([eq, glyph(2, 1)]);
+    const first = prepareInscriptionEquipment(
+      [eq, glyph(2, 1)],
+      ref(eq),
+      0,
+      ref(glyph(2, 1)),
+      'engrave',
+      false,
+    );
+    expect(JSON.stringify([eq, glyph(2, 1)])).toBe(frozen);
+    const changed = first.after.find((item) => item.id === eq.id)!;
+    const removed = prepareInscriptionRemoval(first.after, ref(changed), 0);
+    expect(removed.cost).toEqual({ qi: 0, spiritStones: 0 });
+    expect(removed.equipped).toBe(true);
+    expect(removed.grants).toEqual([
+      { definitionId: inscriptionItemId(xuanfeng, 2), quantity: 1 },
+    ]);
+    expect(
+      InventoryEquipmentSchema.parse(removed.after[0].instanceData)
+        .formationInscriptions,
+    ).toEqual([null, null]);
+    expect(removed.after).toHaveLength(1);
+    expect(() => prepareInscriptionRemoval(removed.after, ref(removed.after[0]), 0)).toThrow(
+      '没有阵纹',
+    );
+    const both = prepareInscriptionSockets(
+      [equipment(), glyph(1, 2)],
+      ref(equipment()),
+      [
+        {
+          socket: 0,
+          inscription: ref(glyph(1, 2)),
+          action: 'engrave',
+          replace: false,
+        },
+        {
+          socket: 1,
+          inscription: ref(glyph(1, 2)),
+          action: 'engrave',
+          replace: false,
+        },
+      ],
+    );
+    const engraved = both.after.find((item) => item.id === 'equipment')!;
+    const taken = prepareInscriptionSockets(both.after, ref(engraved), [
+      { socket: 0, action: 'remove' },
+      { socket: 1, action: 'remove' },
+    ]);
+    expect(taken.grants).toEqual([
+      { definitionId: inscriptionItemId(xuanfeng, 1), quantity: 2 },
+    ]);
+    expect(taken.cost).toEqual({ qi: 0, spiritStones: 0 });
+    expect(
+      InventoryEquipmentSchema.parse(taken.after[0].instanceData)
+        .formationInscriptions,
+    ).toEqual([null, null]);
+    expect(() =>
+      prepareInscriptionSockets(both.after, ref(engraved), [
+        { socket: 0, action: 'remove' },
+        { socket: 0, action: 'remove' },
+      ]),
+    ).toThrow('同一孔位');
   });
   it('孔内合成消耗一枚，保留另一孔，检查部位与装备上限', () => {
     const eq = equipment(10);
@@ -470,7 +584,48 @@ describe('合成与烙印', () => {
       'strengthen_socket',
       false,
     );
-    expect(upgraded.cost).toEqual({ qi: 0, spiritStones: 20 });
+    expect(upgraded.cost).toEqual({ qi: 0, spiritStones: 16 });
+    const both = prepareInscriptionSockets(
+      [equipment(), glyph(1, 2)],
+      ref(equipment()),
+      [
+        {
+          socket: 0,
+          inscription: ref(glyph(1, 2)),
+          action: 'engrave',
+          replace: false,
+        },
+        {
+          socket: 1,
+          inscription: ref(glyph(1, 2)),
+          action: 'engrave',
+          replace: false,
+        },
+      ],
+    );
+    expect(
+      InventoryEquipmentSchema.parse(
+        both.after.find((item) => item.id === 'equipment')!.instanceData,
+      ).formationInscriptions.map((slot) => slot?.level),
+    ).toEqual([1, 1]);
+    expect(both.after.find((item) => item.id === 'glyph-0')).toBeUndefined();
+    expect(both.cost).toEqual({ qi: 0, spiritStones: 0 });
+    expect(() =>
+      prepareInscriptionSockets([equipment(), glyph(1, 2)], ref(equipment()), [
+        {
+          socket: 0,
+          inscription: ref(glyph(1, 2)),
+          action: 'engrave',
+          replace: false,
+        },
+        {
+          socket: 0,
+          inscription: ref(glyph(1, 2)),
+          action: 'engrave',
+          replace: false,
+        },
+      ]),
+    ).toThrow('同一孔位');
     expect(
       InventoryEquipmentSchema.parse(upgraded.after[0].instanceData)
         .formationInscriptions,

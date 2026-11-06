@@ -19,11 +19,23 @@ const BodyTrainingPanel = lazy(() =>
     (module) => ({ default: module.BodyCultivationDetailPanel }),
   ),
 );
+const CharacterCardSettings = lazy(() =>
+  import('@app/components/feature/character-card/CharacterCardSettings').then(
+    (module) => ({ default: module.CharacterCardSettings }),
+  ),
+);
+const SectMethodCodex = lazy(() =>
+  import('@app/components/feature/sect-v6/SectMethodCodex').then((module) => ({
+    default: module.SectMethodCodex,
+  })),
+);
 const tabs = [
   { value: 'attributes', label: '人物属性' },
+  { value: 'sect', label: '宗门心法' },
   { value: 'innate', label: '先天设定' },
   { value: 'manuals', label: '所修功法' },
   { value: 'body', label: '肉身修炼' },
+  { value: 'card', label: '名片设置' },
 ] as const;
 
 const desktopQuery = '(min-width: 768px)';
@@ -53,7 +65,7 @@ export function CultivatorOverviewPanel() {
         role="tablist"
         aria-label="角色面板"
         aria-orientation={isDesktop ? 'vertical' : 'horizontal'}
-        className="grid grid-cols-4 gap-1 md:sticky md:top-3 md:flex md:flex-col md:gap-2"
+        className="flex gap-1 overflow-x-auto md:sticky md:top-3 md:flex-col md:gap-2"
       >
         {tabs.map((tab, index) => (
           <button
@@ -84,7 +96,7 @@ export function CultivatorOverviewPanel() {
               select(next);
               buttons.current[next]?.focus();
             }}
-            className={`min-h-11 rounded-sm px-1 py-2 text-sm whitespace-nowrap md:min-h-12 md:px-2 ${index === activeIndex ? 'bg-ink/5 text-crimson font-semibold' : 'text-ink-secondary hover:bg-ink/5 hover:text-ink'}`}
+            className={`min-h-11 shrink-0 rounded-sm px-2 py-2 text-sm whitespace-nowrap md:min-h-12 ${index === activeIndex ? 'bg-ink/5 text-crimson font-semibold' : 'text-ink-secondary hover:bg-ink/5 hover:text-ink'}`}
           >
             {tab.label}
           </button>
@@ -99,12 +111,16 @@ export function CultivatorOverviewPanel() {
         className="min-w-0"
       >
         <Suspense fallback={<GameSceneLoading message="正在翻阅角色资料……" />}>
-          {active.value === 'innate' ? (
+          {active.value === 'sect' ? (
+            <SectMethodCodex />
+          ) : active.value === 'innate' ? (
             <CultivatorBiography />
           ) : active.value === 'manuals' ? (
             <ManualRoom />
           ) : active.value === 'body' ? (
             <BodyTrainingPanel />
+          ) : active.value === 'card' ? (
+            <CharacterCardSettings />
           ) : (
             <CharacterAttributesPanel />
           )}

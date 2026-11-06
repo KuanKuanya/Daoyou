@@ -28,6 +28,7 @@ import { itemDefinition } from '../inventory/index.js';
 import { InventoryEquipmentSchema } from '../inventory/equipment.js';
 
 import {
+  INSCRIPTION_DRAW_MAX_LEVEL,
   INSCRIPTION_MAX_LEVEL,
   inscriptionItemId,
 } from '@daoyou/game-content/items/inscriptions';
@@ -58,8 +59,34 @@ export function inscriptionMaterialProblem(item: InventoryItem): string | null {
 
 export function inscriptionLevelTenths(level: number) {
   if (!Number.isInteger(level) || level < 1 || level > INSCRIPTION_MAX_LEVEL)
-    throw new InventoryRuleError('阵纹等级须为1至11级');
-  return 40 * 2 ** (level - 1);
+    throw new InventoryRuleError(`阵纹等级须为1至${INSCRIPTION_MAX_LEVEL}级`);
+  return 40 * 3 ** (level - 1);
+}
+
+/** 四件神品天材地宝 = 2_000_000 份 = 20_000_000 个十分位，开方后正好 30 点，之后不再截断。 */
+const INSCRIPTION_DRAW_QI_REFERENCE_TENTHS = 20_000_000;
+const INSCRIPTION_DRAW_QI_AT_REFERENCE = 30;
+
+function inscriptionDrawQi(totalTenths: number) {
+  const reference = INSCRIPTION_DRAW_QI_REFERENCE_TENTHS;
+  const at = INSCRIPTION_DRAW_QI_AT_REFERENCE;
+  let qi = Math.ceil(at * Math.sqrt(totalTenths / reference));
+  if (!Number.isFinite(qi) || qi < 1) qi = 1;
+  const scale = at * at;
+  while (qi > 1 && (qi - 1) * (qi - 1) * reference >= totalTenths * scale)
+    qi -= 1;
+  while (qi * qi * reference < totalTenths * scale) qi += 1;
+  return qi;
+}
+
+/** 按份数开方，最少 1。 */
+function inscriptionDrawSpiritStones(totalTenths: number) {
+  let stones = Math.ceil(Math.sqrt(totalTenths / 10));
+  if (!Number.isFinite(stones) || stones < 1) stones = 1;
+  while (stones > 1 && (stones - 1) * (stones - 1) * 10 >= totalTenths)
+    stones -= 1;
+  while (stones * stones * 10 < totalTenths) stones += 1;
+  return stones;
 }
 
 export function previewInscriptionDraw(
@@ -69,20 +96,21 @@ export function previewInscriptionDraw(
     throw new InventoryRuleError('至少需要4份材料');
   let remaining = totalTenths;
   const outputs: { level: number; quantity: number }[] = [];
-  for (let level = INSCRIPTION_MAX_LEVEL; level >= 1; level--) {
+  for (let level = INSCRIPTION_DRAW_MAX_LEVEL; level >= 1; level--) {
     const required = inscriptionLevelTenths(level);
     const quantity = Math.floor(remaining / required);
     if (quantity) outputs.push({ level, quantity });
     remaining %= required;
-    if (outputs.length === 3) break;
+    // 只留主产物和副产物两个等级，其余份数溢散。
+    if (outputs.length === 2) break;
   }
   return {
     totalTenths,
     remainderTenths: remaining,
     outputs,
     cost: {
-      qi: Math.min(100, Math.max(1, Math.ceil(totalTenths / 5120))),
-      spiritStones: Math.ceil(totalTenths / 10),
+      qi: inscriptionDrawQi(totalTenths),
+      spiritStones: inscriptionDrawSpiritStones(totalTenths),
     },
   };
 }
@@ -182,19 +210,29 @@ export function inscriptionStrengthenCost(
 ): InscriptionCost {
   inscriptionLevelTenths(targetLevel);
   if (targetLevel < 2) throw new InventoryRuleError('合成须提升阵纹等级');
-  return { qi: 0, spiritStones: 10 * 2 ** (targetLevel - 2) };
+  return { qi: 0, spiritStones: 8 * 2 ** (targetLevel - 2) };
 }
+
+export const MAX_INSCRIPTION_STRENGTHEN_TIMES = 15;
 
 export function prepareInscriptionStrengthen(
   items: InventoryItem[],
   refs: InscriptionMaterialRef[],
 ) {
+  const total = refs.reduce((sum, ref) => sum + ref.quantity, 0);
+  const times = total / 2;
   if (
     refs.length < 1 ||
     refs.length > 2 ||
-    refs.reduce((sum, r) => sum + r.quantity, 0) !== 2
+    total < 2 ||
+    total % 2 !== 0 ||
+    times > MAX_INSCRIPTION_STRENGTHEN_TIMES
   )
-    throw new InventoryRuleError('需要两枚同种同级阵纹');
+    throw new InventoryRuleError(
+      times > MAX_INSCRIPTION_STRENGTHEN_TIMES
+        ? `单次最多合成${MAX_INSCRIPTION_STRENGTHEN_TIMES}次`
+        : '需要两枚同种同级阵纹',
+    );
   const afterMaterials = consume(items, refs);
   const first = inscriptionOf(resolve(items, refs[0]));
   if (
@@ -207,7 +245,41 @@ export function prepareInscriptionStrengthen(
   const level = first.level + 1;
   const cost = inscriptionStrengthenCost(level);
   const definitionId = inscriptionItemId(first.patternId, level);
-  return { afterMaterials, cost, grant: { definitionId, quantity: 1 } };
+  return {
+    afterMaterials,
+    cost: { qi: 0, spiritStones: cost.spiritStones * times },
+    grant: { definitionId, quantity: times },
+  };
+}
+
+function loadInscriptionEquipment(
+  items: InventoryItem[],
+  equipmentRef: InscriptionRef,
+) {
+  const equipmentItem = resolve(items, equipmentRef);
+  if (
+    equipmentItem.definitionId !== 'equipment.v6' ||
+    !['bag', 'storage', 'equipped'].includes(equipmentItem.location)
+  )
+    throw new InventoryRuleError('请选择随身或已穿戴道装');
+  return {
+    equipmentItem,
+    equipment: InventoryEquipmentSchema.parse(equipmentItem.instanceData),
+  };
+}
+
+function returnedInscription(patternId: string, level: number): ItemGrant {
+  return { definitionId: inscriptionItemId(patternId, level), quantity: 1 };
+}
+
+function mergeGrants(grants: ItemGrant[]) {
+  const merged = new Map<string, ItemGrant>();
+  for (const grant of grants) {
+    const current = merged.get(grant.definitionId);
+    if (current) current.quantity += grant.quantity;
+    else merged.set(grant.definitionId, { ...grant });
+  }
+  return [...merged.values()];
 }
 
 export function prepareInscriptionEquipment(
@@ -220,16 +292,14 @@ export function prepareInscriptionEquipment(
 ) {
   if (socket !== 0 && socket !== 1)
     throw new InventoryRuleError('请选择有效阵纹孔位');
-  const equipmentItem = resolve(items, equipmentRef);
-  if (
-    equipmentItem.definitionId !== 'equipment.v6' ||
-    !['bag', 'storage', 'equipped'].includes(equipmentItem.location)
-  )
-    throw new InventoryRuleError('请选择随身或已穿戴道装');
-  const equipment = InventoryEquipmentSchema.parse(equipmentItem.instanceData);
+  const { equipmentItem, equipment } = loadInscriptionEquipment(
+    items,
+    equipmentRef,
+  );
   const incoming = inscriptionOf(resolve(items, inscriptionRef));
   const old = equipment.formationInscriptions[socket];
   let next = incoming;
+  const grants: ItemGrant[] = [];
   let cost: InscriptionCost = { qi: 0, spiritStones: 0 };
   if (action === 'strengthen_socket') {
     if (
@@ -240,8 +310,10 @@ export function prepareInscriptionEquipment(
       throw new InventoryRuleError('孔内合成需要一枚同种同级阵纹');
     next = { ...old, level: old.level + 1 };
     cost = inscriptionStrengthenCost(next.level);
-  } else if (old && !replace)
-    throw new InventoryRuleError('请确认覆盖，旧阵纹不会返还');
+  } else if (old) {
+    if (!replace) throw new InventoryRuleError('请确认替换，旧阵纹将返还');
+    grants.push(returnedInscription(old.patternId, old.level));
+  }
   if (next.level > daoFormationMaxLevel(equipment.equipmentLevel))
     throw new InventoryRuleError('阵纹等级超过该装备每孔上限');
   const pattern = DAO_FORMATION_INSCRIPTIONS_V1.find(
@@ -260,7 +332,98 @@ export function prepareInscriptionEquipment(
   return {
     after,
     cost,
+    grants,
     equipmentId: equipmentItem.id,
     equipped: equipmentItem.location === 'equipped',
   };
+}
+
+export function prepareInscriptionRemoval(
+  items: InventoryItem[],
+  equipmentRef: InscriptionRef,
+  socket: number,
+) {
+  if (socket !== 0 && socket !== 1)
+    throw new InventoryRuleError('请选择有效阵纹孔位');
+  const { equipmentItem, equipment } = loadInscriptionEquipment(
+    items,
+    equipmentRef,
+  );
+  const old = equipment.formationInscriptions[socket];
+  if (!old) throw new InventoryRuleError('此孔没有阵纹');
+  equipment.formationInscriptions[socket] = null;
+  const validated = InventoryEquipmentSchema.parse(equipment);
+  const after = items.map((item) =>
+    item.id === equipmentItem.id
+      ? { ...item, instanceData: validated, revision: item.revision + 1 }
+      : item,
+  );
+  return {
+    after,
+    cost: { qi: 0, spiritStones: 0 } satisfies InscriptionCost,
+    grants: [returnedInscription(old.patternId, old.level)],
+    equipmentId: equipmentItem.id,
+    equipped: equipmentItem.location === 'equipped',
+  };
+}
+
+export type InscriptionSocketStep =
+  | {
+      socket: 0 | 1;
+      inscription: InscriptionRef;
+      action: 'engrave' | 'strengthen_socket';
+      replace: boolean;
+    }
+  | {
+      socket: 0 | 1;
+      action: 'remove';
+    };
+
+export function prepareInscriptionSockets(
+  items: InventoryItem[],
+  equipmentRef: InscriptionRef,
+  steps: InscriptionSocketStep[],
+) {
+  if (steps.length < 1 || steps.length > 2)
+    throw new InventoryRuleError('请选择一至两个孔位');
+  if (new Set(steps.map((step) => step.socket)).size !== steps.length)
+    throw new InventoryRuleError('同一孔位不能重复操作');
+  resolve(items, equipmentRef);
+  for (const step of steps) {
+    if (step.action !== 'remove') resolve(items, step.inscription);
+  }
+  let current = items;
+  let cost: InscriptionCost = { qi: 0, spiritStones: 0 };
+  let equipped = false;
+  let equipmentId = equipmentRef.id;
+  const grants: ItemGrant[] = [];
+  for (const step of steps) {
+    const equipment = current.find((item) => item.id === equipmentRef.id);
+    if (!equipment) throw new InventoryRuleError('物品已变化，请重新选择');
+    const equipmentRefNow = { id: equipment.id, revision: equipment.revision };
+    let plan;
+    if (step.action === 'remove') {
+      plan = prepareInscriptionRemoval(current, equipmentRefNow, step.socket);
+    } else {
+      const inscription = current.find((item) => item.id === step.inscription.id);
+      if (!inscription) throw new InventoryRuleError('物品已变化，请重新选择');
+      plan = prepareInscriptionEquipment(
+        current,
+        equipmentRefNow,
+        step.socket,
+        { id: inscription.id, revision: inscription.revision },
+        step.action,
+        step.replace,
+      );
+    }
+    current = plan.after;
+    grants.push(...plan.grants);
+    cost = {
+      qi: cost.qi + plan.cost.qi,
+      spiritStones: cost.spiritStones + plan.cost.spiritStones,
+    };
+    equipped = equipped || plan.equipped;
+    equipmentId = plan.equipmentId;
+  }
+  return { after: current, cost, grants: mergeGrants(grants), equipmentId, equipped };
 }

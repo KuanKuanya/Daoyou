@@ -15,6 +15,18 @@ export const cultivationRoutes = [
     )}
   />,
   <Route
+    path="craft/refine/codex"
+    lazy={lazyRoute(() => import('@app/routes/game/craft/refine/codex/route'))}
+    handle={scene(
+      {
+        id: 'equipment-codex',
+        presentation: 'archive',
+        summary: '按境界与部位查阅基础属性范围、器蕴与器诀。',
+      },
+      '装备图鉴',
+    )}
+  />,
+  <Route
     path="enlightenment"
     lazy={lazyRoute(() => import('@app/routes/game/enlightenment/route'))}
     handle={scene(
@@ -24,6 +36,18 @@ export const cultivationRoutes = [
         summary: '静心研读典籍，将所悟功法凝录为玉简。',
       },
       '【悟道室】',
+    )}
+  />,
+  <Route
+    path="enlightenment/codex"
+    lazy={lazyRoute(() => import('@app/routes/game/enlightenment/codex/route'))}
+    handle={scene(
+      {
+        id: 'manual-codex',
+        presentation: 'archive',
+        summary: '遍览诸般功法，查阅各层增益与运转之效。',
+      },
+      '功法图鉴',
     )}
   />,
   <Route

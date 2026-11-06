@@ -1,5 +1,5 @@
 /**
- * 难估价货品的单价上限：灵兽、道装、玉简、传承灵印。
+ * 无品质货品中放开到灵石单次入账上限的单价：灵兽、道装、玉简、传承灵印、道装图纸、阵纹。
  * 取 9999 万，与角色灵石单次入账上限一致。单件成交扣税后卖家到手仍低于该入账上限。
  */
 export const AUCTION_MAX_UNIT_PRICE = 99_990_000;
@@ -11,3 +11,6 @@ export const AUCTION_MAX_TRANSACTION_TOTAL = 1_000_000_000;
 
 /** 每个角色同时占用的未过期在售货单上限，道具与灵兽合计。 */
 export const AUCTION_MAX_ACTIVE_LISTINGS = 10;
+
+/** 每个角色同时占用的未过期收购单上限，与寄售位相互独立。 */
+export const AUCTION_MAX_ACTIVE_BUY_ORDERS = 5;

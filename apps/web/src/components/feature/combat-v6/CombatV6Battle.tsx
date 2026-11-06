@@ -19,6 +19,7 @@ import { CombatV6Details } from './CombatV6Details';
 import { CombatV6Log } from './CombatV6Log';
 import { CombatV6Roster } from './CombatV6Roster';
 import { CombatV6Status } from './CombatV6Status';
+import { combatPortraitValue } from './presentation';
 import type { CombatV6Session, SessionState } from './session';
 
 type Props = {
@@ -373,13 +374,14 @@ export function CombatV6Battle({
                     }}
                   >
                     <GameIcon
-                      value={
-                        session.display?.unitAppearances?.[option.unitId]
-                          ?.icon ??
-                        (index
-                          ? 'icon:map-wild'
-                          : 'icon:cultivator-male-avatar')
-                      }
+                      purpose="artwork"
+                      value={combatPortraitValue(
+                        byId.get(option.unitId) ??
+                          (index
+                            ? { name: '灵兽', kind: 'pet' }
+                            : { name: '人物', kind: 'player' }),
+                        session.display?.unitAppearances?.[option.unitId],
+                      )}
                     />
                     <span>
                       {index ? '灵兽' : '人物'}

@@ -1,13 +1,13 @@
-import {
-  BEAST_COMBO_SKILL_IDS,
-  BEAST_SKILL_CONTENT,
-} from '@daoyou/game-content/beasts';
 import { EffectType, HookName } from '@daoyou/combat-core/enums';
 import type {
   SkillDef,
   SkillEffect,
   StatusDef,
 } from '@daoyou/combat-core/types';
+import {
+  BEAST_COMBO_SKILL_IDS,
+  BEAST_SKILL_CONTENT,
+} from '@daoyou/game-content/beasts';
 import { DAO_EQUIPMENT_ARTS_V1 } from '@daoyou/game-content/equipment/special';
 
 const arts = new Map(DAO_EQUIPMENT_ARTS_V1.map((art) => [art.skill.id, art]));
@@ -131,10 +131,11 @@ function beastComboDescription(skill: SkillDef): string | undefined {
   return `普通攻击命中后，有 ${Math.round(hook.chance * 100)}% 概率向原目标追加一次普攻；自身所有物理伤害降低 ${Math.round((1 - effect.physicalFactor) * 100)}%。目标拥有反震或高级反震时不触发，偷袭不解除此限制。`;
 }
 const effectLabels: Record<SkillEffect['type'], string> = {
+  invokeSkill: '依规则施展指定神通',
   invokeAttackSkills: '依次施展已学主动攻击技能',
-  repeat: "连续触发效果",
-  modifyFact: "心念流转",
-  modifyStatusDuration: "调整状态持续",
+  repeat: '连续触发效果',
+  modifyFact: '心念流转',
+  modifyStatusDuration: '调整状态持续',
   modifyCooldown: '调整冷却',
   loseHp: '损失气血',
   physicalHit: '造成物理伤害',
@@ -173,12 +174,41 @@ export function combatV6SkillDetails(
   options: { includeBeastFlavor?: boolean } = {},
 ) {
   const names = new Map(statuses.map((status) => [status.id, status.name]));
+  const statusTraits = (status: StatusDef | undefined): string[] => {
+    if (!status) return [];
+    const traits: string[] = [];
+    if (status.blocksAction) traits.push('无法行动');
+    if (status.blocksSpell) traits.push('无法使用法术');
+    if (status.blocksDamagingSpells) traits.push('无法使用造成伤害的法术');
+    if (status.blocksPhysical) traits.push('无法使用普通攻击和物理技能');
+    if (status.blocksArts) traits.push('无法使用装备器诀');
+    if (status.blocksRevive) traits.push('无法被复活');
+    if (status.interceptHostileAction)
+      traits.push('每回合抵挡敌方第一次攻击的第一下');
+    if (status.breakOnDamage)
+      traits.push(
+        status.breakOnDamageAbove === undefined
+          ? '受到气血伤害后解除'
+          : `单次气血伤害超过${status.breakOnDamageAbove}点后解除`,
+      );
+    for (const modifier of status.modifiers ?? []) {
+      if (typeof modifier.sealChanceCeilAdd === 'number')
+        traits.push(
+          `封印命中上限提高${Math.round(modifier.sealChanceCeilAdd * 100)}个百分点`,
+        );
+    }
+    return traits;
+  };
   const describe = (effect: SkillEffect): string => {
     let text = effectLabels[effect.type];
     if (effect.type === EffectType.ApplyStatus) {
       text = `${effect.self ? '自身' : ''}施加「${names.get(effect.statusId) ?? '状态'}」`;
       if (typeof effect.duration === 'number')
         text += `，持续 ${effect.duration} 回合`;
+      const traits = statusTraits(
+        statuses.find((status) => status.id === effect.statusId),
+      );
+      if (traits.length) text += `；${traits.join('；')}`;
     } else if (effect.type === EffectType.ApplyBarrier) {
       text = `获得「${effect.name}」护盾`;
     } else if (effect.type === EffectType.RandomBranch) {
@@ -192,19 +222,13 @@ export function combatV6SkillDetails(
     if (!skill.description) return;
     const lines = [skill.description];
     if (skill.requireHpAboveRatio !== undefined)
-      lines.push(`当前气血须高于${Math.round(skill.requireHpAboveRatio * 100)}%。`);
+      lines.push(
+        `当前气血须高于${Math.round(skill.requireHpAboveRatio * 100)}%。`,
+      );
     if (skill.requireHpBelowRatio !== undefined)
-      lines.push(`当前气血须低于${Math.round(skill.requireHpBelowRatio * 100)}%。`);
-    if (typeof skill.targeting.count === 'number' && skill.targeting.count > 1)
-      lines.push(`基础目标数：最多${skill.targeting.count}个。`);
-    for (const effect of skill.effects) {
-      if (effect.type === EffectType.SkipNextAction) lines.push(describe(effect));
-      if (effect.type === EffectType.ApplyStatus) {
-        const status = statuses.find(s => s.id === effect.statusId);
-        if (status?.category === 'buff' && !status.onExpire && !status.commandPolicy)
-          lines.push(describe(effect));
-      }
-    }
+      lines.push(
+        `当前气血须低于${Math.round(skill.requireHpBelowRatio * 100)}%。`,
+      );
     return lines.join('\n');
   };
   return Object.fromEntries(

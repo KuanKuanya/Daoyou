@@ -19,15 +19,17 @@ import type { InscriptionRequest } from '@daoyou/contracts/inscriptions';
 import type { InventoryView } from '@daoyou/contracts/inventory';
 import { daoFormationInscriptionOf } from '@daoyou/game-content/equipment/base';
 import { daoFormationMaxLevel } from '@daoyou/game-rules/equipment/projection';
-import type { DaoFormationInscriptionStateV1 } from '@daoyou/game-domain/equipment';
 import { type InscriptionDrawPreview, type InscriptionMaterialRef, type InscriptionRef } from '@daoyou/game-domain/inscriptions';
-import { inscriptionMaterialProblem, prepareInscriptionDraw, prepareInscriptionEquipment, prepareInscriptionStrengthen } from '@daoyou/game-rules/inscriptions/rules';
+import { inscriptionMaterialProblem, MAX_INSCRIPTION_STRENGTHEN_TIMES, prepareInscriptionDraw, prepareInscriptionSockets, prepareInscriptionStrengthen, type InscriptionSocketStep } from '@daoyou/game-rules/inscriptions/rules';
 import { itemDefinition } from '@daoyou/game-rules/inventory';
-import { EQUIPMENT_ATTRIBUTE_NAMES } from '@daoyou/game-domain/equipment';
 import { InventoryEquipmentSchema } from '@daoyou/game-rules/inventory/equipment';
-import { inscriptionItemId } from '@daoyou/game-content/items/inscriptions';
+import {
+  INSCRIPTION_DRAW_MAX_LEVEL,
+  INSCRIPTION_MAX_LEVEL,
+  inscriptionItemId,
+} from '@daoyou/game-content/items/inscriptions';
 import { cn } from '@app/lib/cn';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CraftInventoryPanel } from '../items/CraftInventoryPanel';
 import { InventoryItems } from '../items/InventoryItems';
 import { ItemSlot } from '../items/ItemSlot';
@@ -35,6 +37,55 @@ import type { DisplayItem } from '../items/presentation/types.js';
 import { useInscriptionSession } from './useInscriptionSession';
 
 type Item = InventoryView['items'][number];
+type ChosenItem = { item: Item; storageKey: string | null };
+
+function storageListKey(filter: InventoryFilter, page: number) {
+  return [
+    filter.kind,
+    filter.minRank ?? '',
+    filter.maxRank ?? '',
+    filter.materialType ?? '',
+    filter.element ?? '',
+    page,
+  ].join(':');
+}
+
+function reconcileChosen(
+  current: Map<string, ChosenItem>,
+  fresh: Map<string, Item>,
+  inventoryLoaded: boolean,
+  loadedKey: string | null,
+) {
+  if (current.size === 0) return current;
+  let changed = false;
+  const next = new Map(current);
+  for (const [id, chosen] of current) {
+    const seen = fresh.get(id);
+    if (seen) {
+      if (
+        seen.quantity !== chosen.item.quantity ||
+        seen.revision !== chosen.item.revision ||
+        seen.location !== chosen.item.location
+      ) {
+        next.set(id, { ...chosen, item: seen });
+        changed = true;
+      }
+      continue;
+    }
+    const consumed =
+      inventoryLoaded &&
+      (chosen.item.location === 'bag' ||
+        chosen.item.location === 'equipped' ||
+        (chosen.item.location === 'storage' &&
+          chosen.storageKey !== null &&
+          loadedKey === chosen.storageKey));
+    if (consumed) {
+      next.delete(id);
+      changed = true;
+    }
+  }
+  return changed ? next : current;
+}
 type Tab = 'draw' | 'strengthen' | 'engrave';
 const modes = [
   { value: 'draw', label: '绘制' },
@@ -57,12 +108,87 @@ const refOf = (item: Item): InscriptionRef => ({
   id: item.id,
   revision: item.revision,
 });
-function formationText(value: DaoFormationInscriptionStateV1 | null) {
-  if (!value) return '空孔';
-  const pattern = daoFormationInscriptionOf(value.patternId)!;
-  return `${pattern.name} · ${value.level}级 · ${EQUIPMENT_ATTRIBUTE_NAMES[pattern.attr]} +${pattern.valuePerLevel * value.level}`;
+type SocketDraft = {
+  inscription?: InscriptionRef;
+  action: 'engrave' | 'strengthen_socket' | 'remove';
+};
+type InscribeStep = Extract<
+  InscriptionRequest,
+  { action: 'inscribe' }
+>['steps'][number];
+const emptySockets = (): [SocketDraft, SocketDraft] => [
+  { action: 'engrave' },
+  { action: 'engrave' },
+];
+
+function inscriptionSlotMark(item?: { definitionId: string }) {
+  if (!item) return undefined;
+  const definition = itemDefinition(item.definitionId);
+  if (definition.kind !== 'inscription' || definition.level == null)
+    return undefined;
+  return `${definition.level}级`;
 }
-function GrantItems({ grants }: { grants: ItemGrant[] }) {
+
+function drawOutputText(preview: InscriptionDrawPreview) {
+  const summary = preview.outputs
+    .map((output) => `${output.level}级 ×${output.quantity}`)
+    .join('、');
+  return `预计产出 ${summary}，类型随机`;
+}
+
+function MaterialDoseForm({
+  name,
+  placed,
+  max,
+  disabled,
+  onSubmit,
+}: {
+  name: string;
+  placed?: number;
+  max: number;
+  disabled: boolean;
+  onSubmit: (quantity: number) => void;
+}) {
+  const [quantity, setQuantity] = useState(String(placed ?? 1));
+  const amount = Number(quantity);
+  const valid =
+    quantity !== '' &&
+    Number.isInteger(amount) &&
+    amount >= 1 &&
+    amount <= max;
+  return (
+    <form
+      className="space-y-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!valid || disabled) return;
+        onSubmit(amount);
+      }}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span>投入份量</span>
+        <InkQuantityInput
+          label={`${name}投入份量`}
+          value={quantity}
+          onChange={setQuantity}
+          max={max}
+          disabled={disabled}
+        />
+      </div>
+      <InkButton type="submit" disabled={disabled || !valid}>
+        {placed ? '调整份量' : '投入绘阵'}
+      </InkButton>
+    </form>
+  );
+}
+
+function GrantItems({
+  grants,
+  quantityLabel = '产出',
+}: {
+  grants: ItemGrant[];
+  quantityLabel?: '产出' | '返还';
+}) {
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
       {grants.map((grant) => (
@@ -73,7 +199,8 @@ function GrantItems({ grants }: { grants: ItemGrant[] }) {
             name: itemDefinition(grant.definitionId).name,
             instanceData: null,
           }}
-          quantityLabel="产出"
+          quantityLabel={quantityLabel}
+          slotMark={inscriptionSlotMark(grant)}
         />
       ))}
     </div>
@@ -85,13 +212,10 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
   const [tab, setTab] = useState<Tab>('draw');
   const [materials, setMaterials] = useState(emptyMaterials);
   const [pair, setPair] = useState<(InscriptionRef | null)[]>([null, null]);
+  const [strengthenTimes, setStrengthenTimes] = useState(1);
   const [activeSlot, setActiveSlot] = useState(0);
   const [equipmentRef, setEquipmentRef] = useState<InscriptionRef>();
-  const [socket, setSocket] = useState<0 | 1>(0);
-  const [inscriptionRef, setInscriptionRef] = useState<InscriptionRef>();
-  const [socketAction, setSocketAction] = useState<
-    'engrave' | 'strengthen_socket'
-  >('engrave');
+  const [sockets, setSockets] = useState(emptySockets);
   const [picker, setPicker] = useState<'equipment' | 'inscription'>(
     'equipment',
   );
@@ -99,14 +223,39 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
   const [source, setSource] = useState<'bag' | 'storage'>('bag');
   const [filter, setFilter] = useState<InventoryFilter>({ kind: 'material' });
   const storage = useCraftStorage(filter, source === 'storage');
-  const [chosenItems, setChosenItems] = useState<Map<string, Item>>(new Map());
+  const [chosenItems, setChosenItems] = useState<Map<string, ChosenItem>>(
+    new Map(),
+  );
   const [selectionError, setSelectionError] = useState('');
   const [confirmation, setConfirmation] = useState<{
     input: InscriptionRequest;
     lines: string[];
     warning?: string;
+    plannedEquipment: Item | null;
   }>();
+  const [plannedEquipment, setPlannedEquipment] = useState<Item | null>(null);
   const inventory = session.bag.data;
+  const reloadStorage = storage.reload;
+  useEffect(() => {
+    if (session.result) reloadStorage();
+  }, [session.result, reloadStorage]);
+  const [handledResult, setHandledResult] = useState(session.result);
+  if (session.result && session.result !== handledResult) {
+    setHandledResult(session.result);
+    if (session.result.action === 'inscribe') {
+      setSockets(emptySockets());
+      if (plannedEquipment) {
+        setChosenItems((current) => {
+          const chosen = current.get(plannedEquipment.id);
+          if (!chosen || chosen.item.revision === plannedEquipment.revision)
+            return current;
+          const next = new Map(current);
+          next.set(plannedEquipment.id, { ...chosen, item: plannedEquipment });
+          return next;
+        });
+      }
+    }
+  }
   const pickerView = source === 'bag' ? inventory : storage.view;
   const pickerError = source === 'bag' ? session.bag.error : storage.error;
   const pickerLocked =
@@ -114,26 +263,82 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
     !pickerView ||
     (source === 'storage' && storage.loading) ||
     !!pickerError;
-  const items = [
-    ...chosenItems.values(),
+  const freshItems = [
     ...(inventory?.items ?? []),
     ...(inventory?.equippedItems ?? []),
     ...(storage.view?.items ?? []),
   ];
+  const freshById = new Map(freshItems.map((item) => [item.id, item]));
+  const loadedStorageKey = storage.view
+    ? storageListKey(filter, storage.page)
+    : null;
+  const items = [
+    ...[...chosenItems.values()].flatMap((chosen) => {
+      const fresh = freshById.get(chosen.item.id);
+      if (fresh) return [];
+      if (!inventory) return [chosen.item];
+      if (
+        chosen.item.location === 'bag' ||
+        chosen.item.location === 'equipped'
+      )
+        return [];
+      // 储藏室按页加载。不在当前页不等于已消耗，沿用放入时记下的那一份。
+      if (
+        chosen.item.location === 'storage' &&
+        chosen.storageKey !== null &&
+        loadedStorageKey === chosen.storageKey
+      )
+        return [];
+      return [chosen.item];
+    }),
+    ...freshItems,
+  ];
+  const reconciledChosen = reconcileChosen(
+    chosenItems,
+    freshById,
+    !!inventory,
+    loadedStorageKey,
+  );
+  if (reconciledChosen !== chosenItems) setChosenItems(reconciledChosen);
   const byId = new Map(items.map((item) => [item.id, item]));
   const equipmentItem = equipmentRef ? byId.get(equipmentRef.id) : undefined;
   const equipment = equipmentItem
     ? InventoryEquipmentSchema.parse(equipmentItem.instanceData)
     : undefined;
-  const selectedInscription = inscriptionRef
-    ? byId.get(inscriptionRef.id)
-    : undefined;
+  const live = (ref: InscriptionRef | null | undefined) =>
+    ref ? byId.get(ref.id) : undefined;
   let draw: InscriptionDrawPreview | undefined;
+  let strengthenGrant: { name: string; level: number; quantity: number } | undefined;
+  const socketLines: string[] = [];
+  let nextEquipment: Item | null = null;
   let input: InscriptionRequest | undefined;
   let problem: string | null = session.view?.blockedReason ?? null;
+  const maxTimes = (() => {
+    const first = live(pair[0]);
+    const second = live(pair[1]);
+    if (!first || !second || first.definitionId !== second.definitionId)
+      return 0;
+    const available =
+      first.id === second.id
+        ? Math.floor(first.quantity / 2)
+        : Math.min(first.quantity, second.quantity);
+    return Math.min(MAX_INSCRIPTION_STRENGTHEN_TIMES, available);
+  })();
+  const times = Math.min(Math.max(1, strengthenTimes), Math.max(1, maxTimes));
   try {
     if (tab === 'draw') {
-      const refs = materials.filter((m): m is InscriptionMaterialRef => !!m);
+      const refs = materials.flatMap((ref) => {
+        const item = live(ref);
+        if (!ref || !item) return [];
+        const quantity = Math.min(
+          ref.quantity,
+          item.quantity,
+          MAX_CRAFT_MATERIAL_QUANTITY,
+        );
+        return quantity >= 1
+          ? [{ id: item.id, revision: item.revision, quantity }]
+          : [];
+      });
       if (!refs.length) problem ??= '放入材料，开始绘阵';
       else {
         draw = prepareInscriptionDraw(items, refs).preview;
@@ -146,13 +351,25 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
         };
       }
     } else if (tab === 'strengthen') {
-      if (!pair[0] || !pair[1]) problem ??= '放入两枚同种同级阵纹';
+      const first = live(pair[0]);
+      const second = live(pair[1]);
+      if (!first || !second) problem ??= '放入两枚同种同级阵纹';
+      else if (maxTimes < 1) problem ??= '同种同级阵纹不足两枚';
       else {
         const refs: InscriptionMaterialRef[] =
-          pair[0].id === pair[1].id
-            ? [{ ...pair[0], quantity: 2 }]
-            : pair.map((ref) => ({ ...ref!, quantity: 1 }));
+          first.id === second.id
+            ? [{ id: first.id, revision: first.revision, quantity: times * 2 }]
+            : [
+                { id: first.id, revision: first.revision, quantity: times },
+                { id: second.id, revision: second.revision, quantity: times },
+              ];
         const plan = prepareInscriptionStrengthen(items, refs);
+        const definition = itemDefinition(plan.grant.definitionId);
+        strengthenGrant = {
+          name: definition.name,
+          level: definition.kind === 'inscription' ? definition.level! : times,
+          quantity: plan.grant.quantity,
+        };
         input = {
           action: 'strengthen',
           requestId: '',
@@ -160,32 +377,97 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
           expectedCost: plan.cost,
         };
       }
-    } else if (!equipmentRef || !inscriptionRef)
-      problem ??= '选择道装、孔位和阵纹';
+    } else if (!equipment || !equipmentItem)
+      problem ??= '选择道装，再把阵纹放入孔位';
     else {
-      const plan = prepareInscriptionEquipment(
-        items,
-        equipmentRef,
-        socket,
-        inscriptionRef,
-        socketAction,
-        true,
-      );
-      const base = {
-        requestId: '',
-        equipment: equipmentRef,
-        socket,
-        inscription: inscriptionRef,
-        expectedCost: plan.cost,
-      };
-      input =
-        socketAction === 'engrave'
+      const steps = ([0, 1] as const).flatMap((index): InscribeStep[] => {
+        const draft = sockets[index];
+        const old = equipment.formationInscriptions[index];
+        if (draft.action === 'remove') {
+          if (!old) return [];
+          const pattern = daoFormationInscriptionOf(old.patternId)!;
+          socketLines.push(
+            `第${index + 1}孔取下 ${pattern.name} · ${old.level}级`,
+          );
+          return [{ socket: index, mode: 'remove' as const }];
+        }
+        const inscription = live(draft.inscription);
+        if (!inscription) return [];
+        const definition = itemDefinition(inscription.definitionId);
+        const level =
+          definition.kind === 'inscription' ? definition.level! : 0;
+        const inscriptionRef = {
+          id: inscription.id,
+          revision: inscription.revision,
+        };
+        if (draft.action === 'strengthen_socket') {
+          socketLines.push(
+            old
+              ? `第${index + 1}孔合成至 ${old.level + 1}级`
+              : `第${index + 1}孔合成`,
+          );
+          return [
+            {
+              socket: index,
+              inscription: inscriptionRef,
+              mode: 'strengthen_socket' as const,
+              replace: false,
+            },
+          ];
+        }
+        socketLines.push(
+          old
+            ? `第${index + 1}孔替换为 ${definition.name} · ${level}级`
+            : `第${index + 1}孔烙印 ${definition.name} · ${level}级`,
+        );
+        return [
+          {
+            socket: index,
+            inscription: inscriptionRef,
+            mode: 'engrave' as const,
+            replace: !!old,
+          },
+        ];
+      });
+      if (!steps.length)
+        problem ??= equipment.formationInscriptions.some(Boolean)
+          ? '放入阵纹，或取下已有阵纹'
+          : '两个孔可以一次烙印';
+      else {
+        const ruleSteps: InscriptionSocketStep[] = steps.map((step) =>
+          step.mode === 'remove'
+            ? { socket: step.socket, action: 'remove' }
+            : {
+                socket: step.socket,
+                inscription: step.inscription,
+                action: step.mode,
+                replace: step.replace,
+              },
+        );
+        const plan = prepareInscriptionSockets(
+          items,
+          { id: equipmentItem.id, revision: equipmentItem.revision },
+          ruleSteps,
+        );
+        const updated = plan.after.find((item) => item.id === equipmentItem.id);
+        nextEquipment = updated
           ? {
-              ...base,
-              action: 'engrave',
-              replace: !!equipment?.formationInscriptions[socket],
+              ...equipmentItem,
+              instanceData: updated.instanceData,
+              revision: updated.revision,
+              quantity: updated.quantity,
+              location: updated.location,
+              slotIndex: updated.slotIndex,
             }
-          : { ...base, action: 'strengthen_socket' };
+          : null;
+        input = {
+          action: 'inscribe',
+          requestId: '',
+          equipment: { id: equipmentItem.id, revision: equipmentItem.revision },
+          steps,
+          expectedCost: plan.cost,
+        };
+      }
     }
   } catch (error) {
     problem ??= error instanceof Error ? error.message : '请重新选择物品';
@@ -210,9 +492,9 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
       return def.kind === 'equipment' ? null : '请选择道装';
     if (def.kind !== 'inscription') return '请选择阵纹';
     if (tab === 'strengthen') {
-      if (def.level === 11) return '已达最高等级';
-      const firstRef = pair.find((ref) => ref !== null);
-      const first = firstRef ? byId.get(firstRef.id) : undefined;
+      if (def.level === INSCRIPTION_MAX_LEVEL) return '已达最高等级';
+      const firstRef = pair.find((ref) => ref !== null && live(ref));
+      const first = firstRef ? live(firstRef) : undefined;
       if (first && first.definitionId !== item.definitionId)
         return '需同种同级阵纹';
       if (pair.filter((ref) => ref?.id === item.id).length >= item.quantity)
@@ -225,8 +507,14 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
         return '不适用于此部位';
       if (def.level! > daoFormationMaxLevel(equipment.equipmentLevel))
         return '超过每孔等级上限';
-      if (socketAction === 'strengthen_socket') {
-        const old = equipment.formationInscriptions[socket];
+      const draft = sockets[activeSlot as 0 | 1] ?? sockets[0];
+      const used = sockets.filter(
+        (slot, index) =>
+          index !== activeSlot && slot.inscription?.id === item.id,
+      ).length;
+      if (used >= item.quantity) return '可用数量不足';
+      if (draft.action === 'strengthen_socket') {
+        const old = equipment.formationInscriptions[activeSlot as 0 | 1];
         if (!old || old.patternId !== def.patternId || old.level !== def.level)
           return '需与孔内阵纹同种同级';
         if (old.level >= daoFormationMaxLevel(equipment.equipmentLevel))
@@ -235,50 +523,97 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
     }
     return null;
   }
-  function choose(item: Item) {
+  function remember(item: Item) {
+    setChosenItems((current) => {
+      const next = new Map(current);
+      next.set(item.id, {
+        item,
+        storageKey:
+          item.location === 'storage'
+            ? storageListKey(filter, storage.page)
+            : null,
+      });
+      return next;
+    });
+  }
+  function placeMaterial(item: Item, quantity: number, closeDrawer: boolean) {
     if (pickerLocked) return;
     const reason = itemProblem(item);
     if (reason) {
       setSelectionError(reason);
       return;
     }
+    const max = Math.min(item.quantity, MAX_CRAFT_MATERIAL_QUANTITY);
+    const amount = Math.min(max, Math.floor(quantity));
+    if (!Number.isInteger(amount) || amount < 1) {
+      setSelectionError(`每个材料格最多投入 ${MAX_CRAFT_MATERIAL_QUANTITY} 份`);
+      return;
+    }
+    const occupied = (ref: InscriptionMaterialRef | null) => {
+      const item = live(ref);
+      return !!ref && !!item && ref.quantity >= 1 && item.quantity >= 1;
+    };
+    const existing = materials.findIndex(
+      (ref) => ref?.id === item.id && occupied(ref),
+    );
+    const index =
+      existing >= 0
+        ? existing
+        : !occupied(materials[activeSlot])
+          ? activeSlot
+          : materials.findIndex((ref) => !occupied(ref));
+    if (index < 0) {
+      setSelectionError('四个材料格已满，请先移出材料');
+      return;
+    }
     setSelectionError('');
+    setMaterials((old) =>
+      old.map((ref, i) => (i === index ? { ...refOf(item), quantity: amount } : ref)),
+    );
+    remember(item);
+    if (closeDrawer) setBagOpen(false);
+  }
+  function choose(item: Item) {
+    if (pickerLocked) return;
     if (tab === 'draw') {
-      const existing = materials.findIndex((ref) => ref?.id === item.id);
-      const index =
-        existing >= 0
-          ? existing
-          : !materials[activeSlot]
-            ? activeSlot
-            : materials.indexOf(null);
-      if (index < 0) {
-        setSelectionError('四个材料格已满，请先移出材料');
-        return;
-      }
-      const quantity = (materials[index]?.quantity ?? 0) + 1;
-      if (quantity > Math.min(item.quantity, MAX_CRAFT_MATERIAL_QUANTITY)) {
-        setSelectionError(`每个材料格最多投入 ${MAX_CRAFT_MATERIAL_QUANTITY} 份`);
-        return;
-      }
-      setMaterials((old) =>
-        old.map((ref, i) => (i === index ? { ...refOf(item), quantity } : ref)),
-      );
-    } else if (tab === 'strengthen') {
-      const index = !pair[activeSlot] ? activeSlot : pair.indexOf(null);
+      const placed =
+        materials.find((ref) => ref?.id === item.id && live(ref))?.quantity ??
+        0;
+      placeMaterial(item, placed + 1, false);
+      return;
+    }
+    const reason = itemProblem(item);
+    if (reason) {
+      setSelectionError(reason);
+      return;
+    }
+    setSelectionError('');
+    if (tab === 'strengthen') {
+      const occupied = (ref: InscriptionRef | null) => !!live(ref);
+      const index = !occupied(pair[activeSlot])
+        ? activeSlot
+        : pair.findIndex((ref) => !occupied(ref));
       if (index < 0) {
         setSelectionError('请先移出一枚阵纹');
         return;
       }
+      setStrengthenTimes(1);
       setPair((old) => old.map((ref, i) => (i === index ? refOf(item) : ref)));
     } else if (picker === 'equipment') {
       setEquipmentRef(refOf(item));
-      setInscriptionRef(undefined);
-      setSocket(0);
-      setSocketAction('engrave');
+      setSockets(emptySockets());
+      setActiveSlot(0);
       setPicker('inscription');
       setFilter({ kind: 'inscription' });
-    } else setInscriptionRef(refOf(item));
-    setChosenItems((current) => new Map(current).set(item.id, item));
+    } else {
+      const index = activeSlot === 1 ? 1 : 0;
+      setSockets((old) =>
+        old.map((slot, i) =>
+          i === index ? { ...slot, inscription: refOf(item) } : slot,
+        ) as [SocketDraft, SocketDraft],
+      );
+    }
+    remember(item);
     setBagOpen(false);
   }
   function confirm() {
@@ -295,36 +630,53 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
     };
     if (input.action === 'draw') {
       lines.push(...input.materials.map((ref) => describe(ref, ref.quantity)));
-      if (draw!.remainderTenths)
+      if (draw) lines.push(drawOutputText(draw));
+      if (draw?.remainderTenths)
         warning = '本次投入含有无法成纹的余料，将一并消耗。';
     } else if (input.action === 'strengthen') {
       lines.push(
         ...input.inscriptions.map((ref) => describe(ref, ref.quantity)),
       );
+      if (strengthenGrant)
+        lines.push(
+          `得到 ${strengthenGrant.name} · ${strengthenGrant.level}级 ×${strengthenGrant.quantity}`,
+        );
+    } else if (input.action === 'inscribe') {
+      lines.push(
+        `${equipmentItem!.location === 'storage' ? '储藏室' : equipmentItem!.location === 'equipped' ? '已穿戴' : '储物袋'} · ${equipmentItem!.name}`,
+        ...socketLines,
+        ...input.steps.flatMap((step) =>
+          step.mode === 'remove'
+            ? []
+            : [`消耗：${describe(step.inscription, 1)}`],
+        ),
+      );
+      const returned = input.steps.flatMap((step) => {
+        const old = equipment?.formationInscriptions[step.socket];
+        if (
+          !old ||
+          !(step.mode === 'remove' || (step.mode === 'engrave' && step.replace))
+        )
+          return [];
+        const pattern = daoFormationInscriptionOf(old.patternId)!;
+        return [`返还 ${pattern.name} · ${old.level}级`];
+      });
+      lines.push(...returned);
+      if (returned.length)
+        lines.push('返还的阵纹优先入袋，满时存入储藏室。');
     } else {
       lines.push(
-        `${equipmentItem!.location === 'storage' ? '储藏室' : equipmentItem!.location === 'equipped' ? '已穿戴' : '储物袋'} · ${equipmentItem!.name} · 第${socket + 1}孔`,
-        `原阵纹：${formationText(equipment!.formationInscriptions[socket])}`,
-        `消耗：${describe(input.inscription, 1)}`,
+        `${equipmentItem!.location === 'storage' ? '储藏室' : equipmentItem!.location === 'equipped' ? '已穿戴' : '储物袋'} · ${equipmentItem!.name}`,
       );
-      if (input.action === 'engrave' && input.replace)
-        warning = '覆盖后旧阵纹消失，不会返还。';
     }
     setConfirmation({
       input: { ...input, requestId: crypto.randomUUID() },
       lines,
       warning,
+      plannedEquipment: nextEquipment,
     });
   }
-  function clear() {
-    setMaterials(emptyMaterials());
-    setPair([null, null]);
-    setActiveSlot(0);
-    setEquipmentRef(undefined);
-    setInscriptionRef(undefined);
-    setPicker('equipment');
-    setChosenItems(new Map());
-    storage.reload();
+  function dismissResult() {
     setSelectionError('');
     session.continueWork();
   }
@@ -349,9 +701,17 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
         else storage.reload();
       }}
     >
+      {tab === 'draw' && draw && (
+        <p className="text-xs">
+          {drawOutputText(draw)}
+          {draw.remainderTenths > 0 ? '。余料会一并消耗' : ''}
+        </p>
+      )}
       {tab === 'engrave' && (
         <p className="text-ink-secondary text-xs">
-          {picker === 'equipment' ? '选择道装' : `选择第${socket + 1}孔的阵纹`}
+          {picker === 'equipment'
+            ? '选择道装'
+            : `选择第${activeSlot + 1}孔的阵纹。两个孔可以一次烙印。`}
         </p>
       )}
       {tab === 'engrave' &&
@@ -397,24 +757,51 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
         quickTouchHint
         slotProps={(item) => {
           const reason = item ? itemProblem(item) : null;
+          const placed =
+            tab === 'draw' && item
+              ? materials.find((ref) => ref?.id === item.id && live(ref))
+                  ?.quantity
+              : undefined;
           return {
             disabled: pickerLocked || !!reason,
             quickOnTouch: true,
-            badge: item && !reason ? '可选' : undefined,
+            slotMark: inscriptionSlotMark(item),
+            badge: placed
+              ? `已投${placed}`
+              : item && !reason
+                ? '可选'
+                : undefined,
             onQuickAction: item ? () => choose(item) : undefined,
             children: item
               ? (close) => (
                   <>
                     {reason && <p className="text-ink-secondary">{reason}</p>}
-                    <InkButton
-                      disabled={pickerLocked || !!reason}
-                      onClick={() => {
-                        choose(item);
-                        close();
-                      }}
-                    >
-                      选择
-                    </InkButton>
+                    {tab === 'draw' && !reason ? (
+                      <MaterialDoseForm
+                        key={placed ?? 0}
+                        name={item.name}
+                        placed={placed}
+                        max={Math.min(
+                          item.quantity,
+                          MAX_CRAFT_MATERIAL_QUANTITY,
+                        )}
+                        disabled={pickerLocked}
+                        onSubmit={(quantity) => {
+                          placeMaterial(item, quantity, true);
+                          close();
+                        }}
+                      />
+                    ) : (
+                      <InkButton
+                        disabled={pickerLocked || !!reason}
+                        onClick={() => {
+                          choose(item);
+                          close();
+                        }}
+                      >
+                        选择
+                      </InkButton>
+                    )}
                   </>
                 )
               : undefined,
@@ -423,14 +810,26 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
       />
     </CraftInventoryPanel>
   );
-  const operationLabel =
-    tab === 'draw'
-      ? '绘制阵纹'
-      : tab === 'strengthen' || socketAction === 'strengthen_socket'
-        ? '合成阵纹'
-        : equipment?.formationInscriptions[socket]
-          ? '覆盖烙印'
-          : '烙印阵纹';
+  const operationLabel = (() => {
+    if (tab === 'draw') return '绘制阵纹';
+    if (
+      tab === 'strengthen' ||
+      sockets.some(
+        (slot) => slot.action === 'strengthen_socket' && slot.inscription,
+      )
+    )
+      return '合成阵纹';
+    if (input?.action !== 'inscribe') return '烙印阵纹';
+    const removes = input.steps.filter((step) => step.mode === 'remove').length;
+    const replaces = input.steps.filter(
+      (step) => step.mode === 'engrave' && step.replace,
+    ).length;
+    if (removes === input.steps.length) return '取下阵纹';
+    if (replaces && removes) return '替换并取下';
+    if (replaces) return '替换烙印';
+    if (input.steps.length === 2) return '烙印两孔';
+    return '烙印阵纹';
+  })();
   type BoardSlot = {
     label: string;
     position: string;
@@ -441,22 +840,32 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
     actionLabel?: string;
     choose: () => void;
     merge?: () => void;
+    detach?: () => void;
   };
   function selectSocket(index: 0 | 1, action: 'engrave' | 'strengthen_socket') {
-    setSocket(index);
-    setSocketAction(action);
-    setInscriptionRef(undefined);
+    setActiveSlot(index);
+    setSockets((old) =>
+      old.map((slot, i) =>
+        i === index
+          ? slot.action === action
+            ? slot
+            : { action, inscription: undefined }
+          : slot,
+      ) as [SocketDraft, SocketDraft],
+    );
     setSelectionError('');
     openBag('inscription');
   }
   const boardSlots: BoardSlot[] =
     tab === 'draw'
       ? materials.map((ref, index) => {
-          const item = ref ? byId.get(ref.id) : undefined;
+          const item = live(ref);
+          const quantity =
+            ref && item ? Math.min(ref.quantity, item.quantity) : 0;
           return {
             label: '放入材料',
             position: positions[index],
-            item: item ? { ...item, quantity: ref!.quantity } : undefined,
+            item: item && quantity > 0 ? { ...item, quantity } : undefined,
             choose: () => {
               setActiveSlot(index);
               if (item)
@@ -496,8 +905,8 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
             },
             ...([0, 1] as const).map((index): BoardSlot => {
               const old = equipment?.formationInscriptions[index];
-              const incoming =
-                socket === index ? selectedInscription : undefined;
+              const draft = sockets[index];
+              const incoming = live(draft.inscription);
               const definitionId = old
                 ? inscriptionItemId(old.patternId, old.level)
                 : undefined;
@@ -517,19 +926,57 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                     : undefined,
                 disabled: !equipment,
                 selected:
-                  !!equipment && picker === 'inscription' && socket === index,
-                badge: incoming
-                  ? socketAction === 'strengthen_socket'
-                    ? '待合成'
-                    : '待烙印'
-                  : undefined,
-                actionLabel: incoming ? '移出待用阵纹' : '放入阵纹',
-                choose: () => selectSocket(index, 'engrave'),
+                  !!equipment &&
+                  picker === 'inscription' &&
+                  activeSlot === index &&
+                  draft.action !== 'remove',
+                badge:
+                  draft.action === 'remove'
+                    ? '待取下'
+                    : incoming
+                      ? draft.action === 'strengthen_socket'
+                        ? '待合成'
+                        : old
+                          ? '待替换'
+                          : '待烙印'
+                      : undefined,
+                actionLabel:
+                  draft.action === 'remove'
+                    ? '取消取下'
+                    : incoming
+                      ? '移出待用阵纹'
+                      : '放入阵纹',
+                choose: () => {
+                  if (draft.action === 'remove' || incoming) {
+                    setSockets((current) =>
+                      current.map((slot, i) =>
+                        i === index
+                          ? { action: 'engrave', inscription: undefined }
+                          : slot,
+                      ) as [SocketDraft, SocketDraft],
+                    );
+                    return;
+                  }
+                  selectSocket(index, 'engrave');
+                },
                 merge:
                   old &&
+                  draft.action !== 'remove' &&
                   !incoming &&
                   old.level < daoFormationMaxLevel(equipment!.equipmentLevel)
                     ? () => selectSocket(index, 'strengthen_socket')
+                    : undefined,
+                detach:
+                  old && draft.action !== 'remove' && !incoming
+                    ? () => {
+                        setActiveSlot(index);
+                        setSelectionError('');
+                        setSockets((current) =>
+                          current.map((slot, i) =>
+                            i === index ? { action: 'remove' } : slot,
+                          ) as [SocketDraft, SocketDraft],
+                        );
+                      }
                     : undefined,
               };
             }),
@@ -564,19 +1011,24 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
         )}
         <div className="grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
           <section className="min-w-0 space-y-4">
-            {session.result ? (
-              <div className="space-y-4" aria-live="polite">
+            {session.result && (
+              <div className="space-y-3" aria-live="polite">
                 <p className="text-teal">
                   {session.result.action === 'draw'
                     ? '阵纹已成，优先收入储物袋，满时存入储藏室。'
                     : session.result.action === 'strengthen'
-                      ? '合成完成，产物优先入袋，满时存入储藏室。'
-                      : session.result.action === 'engrave'
-                        ? '烙印完成。'
-                        : '合成完成。'}
+                      ? '合成完成，产物优先入袋，满时存入储藏室。可以继续合成。'
+                      : session.result.grants.length
+                        ? '孔位已更新。取下或换下的阵纹优先收入储物袋，满时存入储藏室。'
+                        : '孔位已更新，可以继续烙印。'}
                 </p>
                 {!!session.result.grants.length && (
-                  <GrantItems grants={session.result.grants} />
+                  <GrantItems
+                    grants={session.result.grants}
+                    quantityLabel={
+                      session.result.action === 'inscribe' ? '返还' : '产出'
+                    }
+                  />
                 )}
                 <p className="text-ink-secondary text-xs">
                   本次消耗{' '}
@@ -584,12 +1036,10 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                   天地灵气 ·{' '}
                   <SpiritStones amount={session.result.cost.spiritStones} />
                 </p>
-                <InkButton variant="primary" onClick={clear}>
-                  继续
-                </InkButton>
+                <InkButton onClick={dismissResult}>知道了</InkButton>
               </div>
-            ) : (
-              <>
+            )}
+            <>
                 <fieldset
                   className="mx-auto flex w-fit gap-1"
                   aria-label="阵纹操作方式"
@@ -654,6 +1104,7 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                         emptyIcon="＋"
                         selected={slot.selected}
                         badge={slot.badge}
+                        slotMark={inscriptionSlotMark(slot.item)}
                         disabled={session.locked || slot.disabled}
                         onQuickAction={slot.choose}
                         quickOnTouch
@@ -674,6 +1125,8 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                                       disabled={session.locked}
                                       onChange={(value) => {
                                         const quantity = Number(value);
+                                        if (!Number.isInteger(quantity) || quantity < 1)
+                                          return;
                                         setMaterials((old) =>
                                           old.map((ref, i) =>
                                             i === index && ref
@@ -705,6 +1158,17 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                                     孔内合成
                                   </InkButton>
                                 )}
+                                {slot.detach && (
+                                  <InkButton
+                                    disabled={session.locked}
+                                    onClick={() => {
+                                      slot.detach!();
+                                      close();
+                                    }}
+                                  >
+                                    取下
+                                  </InkButton>
+                                )}
                               </div>
                             )
                           : undefined}
@@ -727,6 +1191,37 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                 </div>
                 <footer className="border-ink/10 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                   <div className="space-y-1 text-xs">
+                    {draw && (
+                      <p>
+                        {drawOutputText(draw)}
+                        {draw.remainderTenths > 0 ? '。余料会一并消耗' : ''}
+                      </p>
+                    )}
+                    {strengthenGrant && (
+                      <p>
+                        合成后得到 {strengthenGrant.name} · {strengthenGrant.level}
+                        级 ×
+                        <span className="font-mono">
+                          {strengthenGrant.quantity}
+                        </span>
+                      </p>
+                    )}
+                    {tab === 'strengthen' && maxTimes > 1 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>合成次数</span>
+                        <InkQuantityInput
+                          label="合成次数"
+                          max={maxTimes}
+                          value={times}
+                          disabled={session.locked}
+                          onChange={(value) => {
+                            const next = Number(value);
+                            if (Number.isInteger(next)) setStrengthenTimes(next);
+                          }}
+                        />
+                      </div>
+                    )}
+                    {!!socketLines.length && <p>{socketLines.join('；')}</p>}
                     {input && (
                       <p>
                         <span className="font-mono">
@@ -762,8 +1257,7 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                     </InkButton>
                   </div>
                 </footer>
-              </>
-            )}
+            </>
           </section>
           <aside
             id="inscription-materials"
@@ -779,13 +1273,13 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
           </summary>
           <div className="text-ink-secondary mt-3 space-y-2">
             <p>
-              矿石、妖兽材料、辅助材料、天材地宝均可入墨。每4份绘成一级阵纹，高一级所需份数翻倍，优先绘成高等级阵纹，最高11级。每512份消耗1点天地灵气，最少1点、最多100点；每1份消耗1灵石，均向上取整，余料也计入费用；最多产出三个等级组，其余材料随绘制消耗。
+              矿石、妖兽材料、辅助材料、天材地宝均可入墨。每4份绘成一级阵纹，高一级所需份数变为三倍，优先绘成高等级阵纹，最高{INSCRIPTION_DRAW_MAX_LEVEL}级。天地灵气和灵石都按投入份数开方计，最少1点。四件神品天材地宝正好30点灵气，再投入时增加变少。余料也计入费用。只产出主产物和副产物两个等级，其余材料溢散。
             </p>
             <p>
-              九种阵纹等概率独立生成。同种同级可两两合成，绘制与合成均必定成功。阵纹适用部位及等级须符合道装要求。
+              九种阵纹等概率独立生成。同种同级按两枚一组合成，单次最多{MAX_INSCRIPTION_STRENGTHEN_TIMES}次，绘制与合成均必定成功，最高{INSCRIPTION_MAX_LEVEL}级，合成费用仍逐级翻倍。两个孔可以一次烙印。阵纹适用部位及等级须符合道装孔上限。
             </p>
             <p>
-              已烙印阵纹可消耗储物袋或储藏室中同种同级阵纹进行孔内合成。阵纹不能拆卸，覆盖时旧阵纹不返还。产出优先入袋，满时存入储藏室。
+              已烙印阵纹可以无损取下。孔位已有阵纹时再次烙印为替换，旧阵纹返还储物袋，满时存入储藏室。孔内合成仍消耗一枚同种同级阵纹。产出优先入袋，满时存入储藏室。
             </p>
           </div>
         </details>
@@ -810,6 +1304,7 @@ export function InscriptionRoom({ ownerId }: { ownerId: string }) {
                 disabled={session.locked}
                 onClick={() => {
                   if (confirmation) {
+                    setPlannedEquipment(confirmation.plannedEquipment);
                     void session.submit(confirmation.input);
                     setConfirmation(undefined);
                   }

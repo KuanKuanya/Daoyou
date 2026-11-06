@@ -90,6 +90,11 @@
         "name": {
           "type": "string"
         },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
         "kind": {
           "$ref": "#/$defs/__schema2"
         },
@@ -101,6 +106,9 @@
             "control",
             "dot"
           ]
+        },
+        "isSeal": {
+          "type": "boolean"
         },
         "school": {
           "type": "string",
@@ -126,6 +134,9 @@
         },
         "expireSameRound": {
           "type": "boolean"
+        },
+        "priority": {
+          "$ref": "#/$defs/__schema4"
         },
         "attrMods": {
           "type": "object",
@@ -251,6 +262,34 @@
           "type": "array",
           "items": {
             "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "when": {
+                    "$ref": "#/$defs/__schema6"
+                  },
+                  "targeting": {
+                    "$ref": "#/$defs/__schema8"
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "modifyFact"
+                  },
+                  "key": {
+                    "type": "string",
+                    "pattern": "^tianyan_[a-z0-9_]+$"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/__schema4"
+                  }
+                },
+                "required": [
+                  "type",
+                  "key",
+                  "value"
+                ],
+                "additionalProperties": false
+              },
               {
                 "type": "object",
                 "properties": {
@@ -436,6 +475,7 @@
                     "items": {
                       "type": "string",
                       "enum": [
+                        "blocksDamagingSpells",
                         "blocksAction",
                         "blocksSpell",
                         "blocksPhysical",
@@ -622,6 +662,9 @@
         },
         "count": {
           "$ref": "#/$defs/__schema4"
+        },
+        "preferInjured": {
+          "type": "boolean"
         }
       },
       "required": [

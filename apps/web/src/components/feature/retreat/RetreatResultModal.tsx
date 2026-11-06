@@ -94,7 +94,7 @@ export function RetreatResultModal({
       >
         <div className="space-y-5">
           {showStoryPanel ? (
-            <div className="border-ink/10 bg-bgpaper/70 border border-dashed p-4 text-sm leading-7 whitespace-pre-line">
+            <div className="border-ink/10 bg-paper-2 border border-dashed p-4 text-sm leading-7 whitespace-pre-line">
               {getStoryText(retreatResult, isStreaming)}
             </div>
           ) : null}
@@ -208,7 +208,7 @@ function BreakthroughResultContent({
         {summary.success ? '突破成功！' : '冲关失败'}
       </p>
 
-      <div className="border-teal/25 bg-bgpaper/60 space-y-3 border border-dashed p-3">
+      <div className="border-teal/25 bg-paper-2 space-y-3 border border-dashed p-3">
         <p className="text-teal font-medium">【本次成功率推演】</p>
         <BreakthroughChanceDetails presentation={chancePresentation} />
       </div>

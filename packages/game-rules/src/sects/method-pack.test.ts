@@ -12,7 +12,7 @@ import { createEmptySectCombatProgressV6, createFreshCombatV6MethodLevels } from
 
 describe('宗门心法配置', () => {
   it('编辑器 Schema 与运行时结构一致', () => {
-    expect(z.toJSONSchema(SectMethodsPackShape)).toEqual(schema);
+    expect(z.toJSONSchema(SectMethodsPackShape, { reused: 'ref' })).toEqual(schema);
   });
   it('拒绝重复槽位、外宗 ID 和多个主心法', () => {
     for (const change of [
@@ -24,6 +24,16 @@ describe('宗门心法配置', () => {
       change(data);
       expect(() => loadSectMethodsPack(data)).toThrow('content/data/methods.json: sects.lingxiao');
     }
+  });
+  it('心法简介可选但不能是空白或超长文案', () => {
+    for (const description of ['', '   ', '字'.repeat(501)]) {
+      const data = structuredClone(raw);
+      data.sects.wanqiao[0].description = description;
+      expect(() => loadSectMethodsPack(data)).toThrow('description');
+    }
+    const old = structuredClone(raw);
+    Reflect.deleteProperty(old.sects.wanqiao[0], 'description');
+    expect(() => loadSectMethodsPack(old)).not.toThrow();
   });
   it('修改心法面板系数后实际编译采用新值', () => {
     const data = structuredClone(raw);

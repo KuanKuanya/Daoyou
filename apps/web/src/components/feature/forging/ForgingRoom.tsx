@@ -22,7 +22,7 @@ import {
 import { getLevelRealmStage } from '@daoyou/game-domain/progression';
 import { daoEquipmentBaseRange } from '@daoyou/game-rules/equipment/forging';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { useBeforeUnload, useBlocker } from 'react-router';
+import { useBeforeUnload, useBlocker, useNavigate } from 'react-router';
 import { ForgingFurnace } from './ForgingFurnace';
 import { ForgingInventory, type ForgeFilter } from './ForgingInventory';
 import { useForgingSession, type ForgeItem } from './useForgingSession';
@@ -61,6 +61,14 @@ const facilities: RoomActorView[] = [
     responsibility: '辨灵材之性，知铸器之理',
     appearance: 'facility',
   },
+  {
+    id: 'codex',
+    sigil: '📖',
+    name: '装备图鉴',
+    identity: '器谱',
+    responsibility: '查阅各境各部位的基础属性、器蕴与器诀',
+    appearance: 'facility',
+  },
 ];
 const compactQuery = '(max-width: 767px)';
 function subscribeCompact(callback: () => void) {
@@ -72,6 +80,7 @@ const readCompact = () => window.matchMedia(compactQuery).matches;
 const readServerCompact = () => false;
 
 export function ForgingRoom() {
+  const navigate = useNavigate();
   const [facility, setFacility] = useState('');
   const [filter, setFilter] = useState<InventoryFilter>(defaultInventoryFilter);
   const session = useForgingSession(
@@ -143,9 +152,12 @@ export function ForgingRoom() {
         ) : null}
         {!facility ? (
           <RoomView
-            description="地火映壁，炉中尚有余温。图卷与铸器碑分列两侧，择一处走近。"
+            description="地火映壁，炉中尚有余温。图卷、器谱与铸器碑列于炉侧，择一处走近。"
             actors={facilities}
-            onSelect={setFacility}
+            onSelect={(id) => {
+              if (id === 'codex') navigate('/game/craft/refine/codex');
+              else setFacility(id);
+            }}
             prompt="选择一处设施"
           />
         ) : (
@@ -347,7 +359,7 @@ export function ForgingRoom() {
                 <section>
                   <h3 className="mb-2 font-medium">依图定形</h3>
                   <p className="text-ink-secondary">
-                    图纸决定道装的境界与槽位，不可铸造高于人物境界的图纸。法兵可在炉前选择器形，物攻与法攻各有偏重，治疗不变。目前开放炼气至化神道装。每炉需要一卷图纸与规定数量、品质的材料。
+                    图纸决定道装的境界与槽位，不可铸造高于人物境界的图纸。法兵可在炉前选择器形，物攻与法攻各有偏重，治疗不变。目前开放炼气至渡劫道装。每炉需要一卷图纸与规定数量、品质的材料。
                   </p>
                 </section>
                 <section>

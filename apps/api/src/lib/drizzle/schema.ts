@@ -1,4 +1,5 @@
 import type { PlayerJournalEvent } from '@daoyou/contracts/player/journal';
+import type { CultivatorManualStateV1 } from '@daoyou/game-domain/manuals';
 import type { StoryStatus, StoryTrack } from '@daoyou/game-domain/story';
 import type {
   SystemMailConditions,
@@ -11,8 +12,12 @@ import type { TowerClaims } from '@daoyou/game-rules/tower';
 import type { DivinationDice, DivinationDirection } from '@daoyou/game-domain/divination';
 import type { WildEncounter } from '@daoyou/game-domain/wild';
 import type { WildRuntime } from '@daoyou/contracts/combat/wild';
-import type { AutoStrategy } from '@daoyou/game-domain/combat/auto';
+import type {
+  AutoStrategy,
+  AutoStrategyBook,
+} from '@daoyou/game-domain/combat/auto';
 import type { CombatV6ReplayV1 } from '@daoyou/game-domain/combat/replay';
+import type { MysteryCaseFile } from '@daoyou/game-domain/dungeon/mystery';
 import type {
   ResourceChangeOperation,
   ResourceScopeKind,
@@ -180,7 +185,9 @@ export const cultivatorAutoStrategies = pgTable(
       .notNull()
       .references(() => cultivators.id, { onDelete: 'cascade' }),
     pathId: varchar('path_id', { length: 160 }).notNull(),
-    strategy: jsonb('strategy').$type<AutoStrategy>().notNull(),
+    strategy: jsonb('strategy')
+      .$type<AutoStrategyBook | AutoStrategy>()
+      .notNull(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.cultivatorId, table.pathId] })],
@@ -695,9 +702,7 @@ export const cultivatorManualStates = pgTable(
       .references(() => cultivators.id, { onDelete: 'cascade' }),
     revision: integer('revision').notNull().default(0),
     learned: jsonb('learned')
-      .$type<
-        Array<{ manualId: string; level: number; unlockedLevel: number }>
-      >()
+      .$type<CultivatorManualStateV1['learned']>()
       .notNull()
       .default([]),
     updatedAt: timestamp('updated_at')
@@ -725,7 +730,6 @@ export const cultivatorManualSlots = pgTable(
       table.cultivatorId,
       table.manualId,
     ),
-    check('cultivator_manual_slot_valid', sql`${table.slot} BETWEEN 1 AND 4`),
   ],
 );
 
@@ -2008,6 +2012,103 @@ export const dungeonRuns = pgTable(
   ],
 );
 
+// 解谜副本全服剧本库：开局只从这里选本，案卷含真相，仅服务端读取。
+export const dungeonScenarios = pgTable(
+  'wanjiedaoyou_dungeon_scenarios',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mapNodeId: varchar('map_node_id', { length: 100 }).notNull(),
+    templateId: varchar('template_id', { length: 60 }).notNull(),
+    title: varchar('title', { length: 60 }).notNull(),
+    caseFile: jsonb('case_file').$type<MysteryCaseFile>().notNull(),
+    source: varchar('source', { length: 20 })
+      .$type<'generated' | 'seed'>()
+      .notNull(),
+    generatorVersion: integer('generator_version').notNull(),
+    status: varchar('status', { length: 20 })
+      .$type<'active' | 'retired'>()
+      .notNull()
+      .default('active'),
+    reviewIssueCount: integer('review_issue_count').notNull().default(0),
+    generation: jsonb('generation').$type<Record<string, unknown>>(),
+    playCount: integer('play_count').notNull().default(0),
+    completionCount: integer('completion_count').notNull().default(0),
+    scoreSum: integer('score_sum').notNull().default(0),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    retiredAt: timestamp('retired_at'),
+  },
+  (table) => [
+    index('dungeon_scenarios_slot_status_idx').on(
+      table.mapNodeId,
+      table.templateId,
+      table.status,
+    ),
+  ],
+);
+
+// 角色玩过哪些剧本；开局即写入，结案时更新是否看过真相与最好成绩。
+export const dungeonScenarioPlays = pgTable(
+  'wanjiedaoyou_dungeon_scenario_plays',
+  {
+    cultivatorId: uuid('cultivator_id')
+      .references(() => cultivators.id, { onDelete: 'cascade' })
+      .notNull(),
+    scenarioId: uuid('scenario_id')
+      .references(() => dungeonScenarios.id, { onDelete: 'cascade' })
+      .notNull(),
+    mapNodeId: varchar('map_node_id', { length: 100 }).notNull(),
+    templateId: varchar('template_id', { length: 60 }).notNull(),
+    playCount: integer('play_count').notNull().default(1),
+    completed: boolean('completed').notNull().default(false),
+    bestTotal: integer('best_total'),
+    firstPlayedAt: timestamp('first_played_at').defaultNow().notNull(),
+    lastPlayedAt: timestamp('last_played_at').defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.cultivatorId, table.scenarioId] }),
+    index('dungeon_scenario_plays_cultivator_node_idx').on(
+      table.cultivatorId,
+      table.mapNodeId,
+    ),
+  ],
+);
+
+// 剧本生成任务，表即队列；同一槽同时只允许一个待生成任务。
+export const dungeonScenarioJobs = pgTable(
+  'wanjiedaoyou_dungeon_scenario_jobs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mapNodeId: varchar('map_node_id', { length: 100 }).notNull(),
+    templateId: varchar('template_id', { length: 60 }).notNull(),
+    status: varchar('status', { length: 20 })
+      .$type<'queued' | 'running' | 'succeeded' | 'failed'>()
+      .notNull()
+      .default('queued'),
+    reason: varchar('reason', { length: 20 })
+      .$type<'exhausted' | 'low_stock' | 'cold_start' | 'warmup' | 'admin'>()
+      .notNull(),
+    requestedBy: uuid('requested_by'),
+    attempts: integer('attempts').notNull().default(0),
+    error: text('error'),
+    scenarioId: uuid('scenario_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    startedAt: timestamp('started_at'),
+    finishedAt: timestamp('finished_at'),
+  },
+  (table) => [
+    index('dungeon_scenario_jobs_status_created_idx').on(
+      table.status,
+      table.createdAt,
+    ),
+    index('dungeon_scenario_jobs_slot_finished_idx').on(
+      table.mapNodeId,
+      table.templateId,
+      table.status,
+      table.finishedAt,
+    ),
+  ],
+);
+
 /** @deprecated 旧 AI 蜃楼敌人表，V6 使用 towerWeeks；仅保留历史结构与数据。 */
 export const towerEnemyFloors = pgTable(
   'wanjiedaoyou_tower_enemy_floors',
@@ -2144,6 +2245,74 @@ export const auctionListings = pgTable(
     index('auction_visibility_target_status_idx').on(
       table.visibility,
       table.targetCultivatorId,
+      table.status,
+    ),
+  ],
+);
+
+// 拍卖行收购单表：买家冻结灵石，卖家从背包交付同款物品
+export const auctionBuyOrders = pgTable(
+  'wanjiedaoyou_auction_buy_orders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    buyerId: uuid('buyer_id')
+      .references(() => cultivators.id, { onDelete: 'cascade' })
+      .notNull(),
+    buyerName: varchar('buyer_name', { length: 100 }).notNull(),
+
+    // 收购目标：精确堆叠，或材料品质／类型／五行条件
+    targetMode: varchar('target_mode', { length: 20 })
+      .notNull()
+      .default('exact'), // exact | condition
+    itemType: varchar('item_type', { length: 20 }).notNull(),
+    itemName: varchar('item_name', { length: 200 }).notNull().default(''),
+    itemQuality: varchar('item_quality', { length: 20 }).notNull().default(''),
+    itemCategory: varchar('item_category', { length: 50 })
+      .notNull()
+      .default(''),
+    targetDefinitionId: varchar('target_definition_id', {
+      length: 160,
+    }).notNull(),
+    targetStackKey: varchar('target_stack_key', { length: 200 }),
+    targetSnapshot: jsonb('target_snapshot'),
+    targetConditions: jsonb('target_conditions'),
+
+    // 价格与数量；冻结额可由剩余数量 × 单价推导
+    price: integer('price').notNull(),
+    initialQuantity: integer('initial_quantity').notNull(),
+    remainingQuantity: integer('remaining_quantity').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('active'), // active | filled | expired | cancelled
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    filledAt: timestamp('filled_at'),
+  },
+  (table) => [
+    index('auction_buy_order_status_expires_price_idx').on(
+      table.status,
+      table.expiresAt,
+      table.price,
+    ),
+    index('auction_buy_order_status_expires_created_idx').on(
+      table.status,
+      table.expiresAt,
+      table.createdAt,
+    ),
+    index('auction_buy_order_status_type_expires_created_idx').on(
+      table.status,
+      table.itemType,
+      table.expiresAt,
+      table.createdAt,
+    ),
+    index('auction_buy_order_status_name_expires_created_idx').on(
+      table.status,
+      table.itemName,
+      table.expiresAt,
+      table.createdAt,
+    ),
+    index('auction_buy_order_buyer_status_idx').on(
+      table.buyerId,
       table.status,
     ),
   ],

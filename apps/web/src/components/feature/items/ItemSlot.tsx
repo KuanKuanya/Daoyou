@@ -39,6 +39,8 @@ type SlotProps = {
   selected?: boolean;
   disabled?: boolean;
   badge?: string;
+  /** 左上角标记，例如阵纹室的等级。不改图标、名称和预览。 */
+  slotMark?: string;
   emptyLabel?: string;
   emptyIcon?: ReactNode;
   className?: string;
@@ -57,7 +59,7 @@ export function ItemSlot({
 }: SlotProps & {
   item?: DisplayItem;
   children?: (close: () => void) => ReactNode;
-  quantityLabel?: '持有' | '库存' | '奖励' | '投入' | '产出';
+  quantityLabel?: '持有' | '库存' | '奖励' | '投入' | '产出' | '返还';
   previewOptions?: PreviewOptions;
   renderItemPreview?: (close: () => void) => ReactNode;
 }) {
@@ -88,6 +90,7 @@ export function PreviewSlot({
   selected,
   disabled,
   badge,
+  slotMark,
   emptyLabel = '空格',
   emptyIcon = '·',
   className,
@@ -109,6 +112,7 @@ export function PreviewSlot({
   const touchMoved = useRef(false);
   const pointer = useRef('');
   const slotName = item?.name ?? emptyLabel;
+  const mark = item ? slotMark : undefined;
   const quantityText = item
     ? item.quantity > 9999
       ? `${(item.quantity / 10000).toFixed(2)}万`
@@ -187,7 +191,7 @@ export function PreviewSlot({
         type="button"
         aria-label={
           item
-            ? `${item.name}${item.tier ? `，${item.tier}` : ''}，${item.quantity}件`
+            ? `${item.name}${mark ? `，${mark}` : ''}${item.tier ? `，${item.tier}` : ''}，${item.quantity}件`
             : emptyLabel || '空格'
         }
         aria-expanded={item ? open : undefined}
@@ -323,7 +327,27 @@ export function PreviewSlot({
             <span className="line-clamp-2 w-full">{slotName}</span>
           </span>
         ) : null}
-        {item && item.quantity > 1 ? (
+        {mark ? (
+          <span
+            className="text-ink absolute top-1 left-1 font-mono text-[clamp(0.75rem,20cqw,1rem)] leading-none font-semibold tracking-tight whitespace-nowrap [text-shadow:0_1px_2px_var(--color-paper)]"
+            style={
+              item && item.quantity > 1
+                ? {
+                    fontSize: `min(1rem, 20cqw, calc((100cqw - 1.25rem) / ${mark.length + quantityText.length + 1}))`,
+                  }
+                : undefined
+            }
+          >
+            {mark}
+            {item && item.quantity > 1 ? (
+              <span className="ml-0.5">
+                <span className="text-[0.75em]">×</span>
+                {quantityText}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
+        {item && item.quantity > 1 && !mark ? (
           <span
             className="text-ink absolute top-1 left-1 font-mono text-[clamp(0.75rem,20cqw,1rem)] leading-none font-semibold tracking-tight whitespace-nowrap [text-shadow:0_1px_2px_var(--color-paper)]"
             style={
@@ -342,7 +366,7 @@ export function PreviewSlot({
         {badge || item?.equipped ? (
           <span
             className={cn(
-              'text-crimson bg-paper/90 absolute right-1 text-[10px]',
+              'text-crimson bg-paper absolute right-1 text-[10px]',
               item?.tier ? 'top-[22%]' : 'top-0',
             )}
           >

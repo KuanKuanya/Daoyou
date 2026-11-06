@@ -1,8 +1,11 @@
 import type { SectDefinition } from '@daoyou/game-domain/sects';
+import { BAILU_DEFINITION } from './bailu/definition.js';
 import { JIUJIE_DEFINITION } from './jiujie/definition.js';
 import { LINGXIAO_DEFINITION } from './lingxiao/definition.js';
 import { TIANYAN_DEFINITION } from './tianyan/definition.js';
 import { WUXIANG_DEFINITION } from './wuxiang/definition.js';
+import { WANQIAO_DEFINITION } from './wanqiao/definition.js';
+import { XIAOYUE_DEFINITION } from './xiaoyue/definition.js';
 import { YOUDU_DEFINITION } from './youdu/definition.js';
 
 /** Identity and version lookup without instantiating gameplay modules. */
@@ -16,6 +19,9 @@ export const SECT_ORGANIZATION_DEFINITIONS: Readonly<
       TIANYAN_DEFINITION,
       YOUDU_DEFINITION,
       JIUJIE_DEFINITION,
+      BAILU_DEFINITION,
+      WANQIAO_DEFINITION,
+      XIAOYUE_DEFINITION,
     ].map((definition) => [definition.id, definition]),
   ),
 );

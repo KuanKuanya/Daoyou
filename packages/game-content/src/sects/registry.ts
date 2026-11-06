@@ -1,12 +1,30 @@
 import type { SectDefinitionV6 } from '@daoyou/game-domain/combat';
+import { BAILU_V6_DEFINITION } from './bailu.js';
 import { JIUJIE_V6_DEFINITION, validateJiujieContentV1 } from './jiujie.js';
 import { LINGXIAO_V6_DEFINITION } from './lingxiao.js';
 import { validateSectSkillLearningContent } from './skill-learning.js';
 import { TIANYAN_V6_DEFINITION } from './tianyan.js';
 import { WUXIANG_V6_DEFINITION } from './wuxiang.js';
+import { WANQIAO_V6_DEFINITION } from './wanqiao.js';
+import { XIAOYUE_V6_DEFINITION } from './xiaoyue.js';
 import { YOUDU_V6_DEFINITION } from './youdu.js';
 
-/** 当前五宗门内容目录。 */
+/** 技能说明里 [[状态ID]] 对应的名称与详细说明。 */
+export function sectStatusDetails() {
+  const details: Record<string, { name: string; description: string }> = {};
+  for (const definition of Object.values(COMBAT_V6_SECT_DEFINITIONS)) {
+    for (const status of definition.statuses) {
+      if (status.description)
+        details[status.id] = {
+          name: status.name,
+          description: status.description,
+        };
+    }
+  }
+  return details;
+}
+
+/** 当前宗门内容目录。 */
 export const COMBAT_V6_SECT_DEFINITIONS: Record<
   import('@daoyou/game-domain/combat').CombatV6SectId,
   SectDefinitionV6
@@ -16,6 +34,9 @@ export const COMBAT_V6_SECT_DEFINITIONS: Record<
   wuxiang: WUXIANG_V6_DEFINITION,
   tianyan: TIANYAN_V6_DEFINITION,
   jiujie: JIUJIE_V6_DEFINITION,
+  bailu: BAILU_V6_DEFINITION,
+  wanqiao: WANQIAO_V6_DEFINITION,
+  xiaoyue: XIAOYUE_V6_DEFINITION,
 });
 
 function definitionIds(definition: SectDefinitionV6): string[] {

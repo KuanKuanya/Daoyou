@@ -1,0 +1,1065 @@
+{
+  "$schema": "./bailu-combat.schema.json",
+  "formatVersion": 1,
+  "contentRevision": 3,
+  "baseSkillIds": [
+    "bailu.skill.poxie",
+    "bailu.skill.zhuxie",
+    "bailu.skill.rumeng",
+    "bailu.skill.jinfa",
+    "bailu.skill.shihun",
+    "bailu.skill.dingshen",
+    "bailu.skill.luanshen",
+    "bailu.skill.shicuo",
+    "bailu.skill.babing",
+    "bailu.skill.jinqi",
+    "bailu.skill.fuyuan",
+    "bailu.skill.juqi",
+    "bailu.skill.ningshen",
+    "bailu.skill.hushen",
+    "bailu.passive.righteousness"
+  ],
+  "skills": [
+    {
+      "id": "bailu.skill.poxie",
+      "name": "破邪！",
+      "school": "bailu",
+      "description": "浩然正气凝于笔端。\n对一名敌人造成法术伤害。若修成浩气文章，会再攻击一人，并优先选择带有[[bailu.status.mark]]的目标。",
+      "tags": [
+        "spell"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1,
+        "secondaryOwnedStatusKind": "bailu.mark"
+      },
+      "effects": [
+        {
+          "type": "spellHit",
+          "coeff": 1,
+          "power": 0
+        }
+      ],
+      "costMp": 30,
+      "formula": "spell",
+      "schoolTerm": {
+        "quad": 0.008333333333333333,
+        "linear": 1.5,
+        "intercept": 30
+      }
+    },
+    {
+      "id": "bailu.skill.zhuxie",
+      "name": "诛邪！",
+      "school": "bailu",
+      "description": "言辞化作枪剑，专诛邪祟。\n对最多三名敌人造成法术伤害，每个实际目标消耗30法力。优先补选鬼魂和速度高的目标。只能在没有敌方人物的战斗中施放。",
+      "tags": [
+        "spell"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": "min(3,floor(skillLevel/30)+1)",
+        "maxSelected": 1,
+        "fillPriority": "delayedRevivalThenSpeed",
+        "reserveExtraCost": true,
+        "extraCount": "2*known.bailu.passive.zhenbi",
+        "extraChance": "0.3*known.bailu.passive.zhenbi*(skillLevel>=150)",
+        "fillPriorityPassives": [
+          [
+            "beast.advanced-ghost"
+          ],
+          [
+            "beast.ghost"
+          ]
+        ]
+      },
+      "effects": [
+        {
+          "type": "spellHit",
+          "coeff": 1,
+          "power": 0
+        }
+      ],
+      "costMp": "30*targets",
+      "formula": "spell",
+      "schoolTerm": {
+        "linear": 1.3333333333333333,
+        "intercept": 35
+      },
+      "splash": {
+        "perTarget": 0.1,
+        "floor": 0.1
+      },
+      "requirement": "enemyPlayerCount==0"
+    },
+    {
+      "id": "bailu.skill.rumeng",
+      "name": "入梦！",
+      "school": "bailu",
+      "description": "一声入梦，心神沉寂。\n使目标陷入[[bailu.status.sleep]]，无法行动。持续回合随心法等级提高。若修成余音，则改为[[bailu.status.sleep_deep]]。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.sleep",
+          "duration": "min(1+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125),if(enemyPlayerCount>0,4,5))",
+          "hit": "seal",
+          "when": {
+            "expression": "known.bailu.passive.yuyin==0"
+          }
+        },
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.sleep_deep",
+          "duration": "min(1+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125),if(enemyPlayerCount>0,4,5))",
+          "hit": "seal",
+          "when": {
+            "expression": "known.bailu.passive.yuyin"
+          }
+        }
+      ],
+      "costMp": 45,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.jinfa",
+      "name": "禁法！",
+      "school": "bailu",
+      "description": "一言封喉，法术难出。\n使目标陷入[[bailu.status.law]]，无法使用法术，法术防御降低10%。持续回合随心法等级提高。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.law",
+          "duration": "1+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal"
+        }
+      ],
+      "costMp": 60,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.shihun",
+      "name": "失魂！",
+      "school": "bailu",
+      "description": "神魂一滞，攻术散乱。\n使目标陷入[[bailu.status.soul]]，无法使用造成伤害的法术，物理防御降低10%。持续回合随心法等级提高。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.soul",
+          "duration": "1+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal"
+        }
+      ],
+      "costMp": 60,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.dingshen",
+      "name": "定身！",
+      "school": "bailu",
+      "description": "正气定身，兵刃难举。\n使目标陷入[[bailu.status.still]]，无法使用普通攻击和物理技能，物理防御和法术防御各降低5%。持续回合随心法等级提高。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.still",
+          "duration": "2+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal"
+        }
+      ],
+      "costMp": 60,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.luanshen",
+      "name": "乱神！",
+      "school": "bailu",
+      "description": "诘问乱神，攻向无定。\n使目标陷入[[bailu.status.confusion]]，无法使用法术，普通攻击会随机选择目标。持续回合随心法等级提高。辩锋生效时改为[[bailu.status.confusion_full]]。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.confusion",
+          "duration": "1+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal",
+          "when": {
+            "expression": "1-known.bailu.passive.bianfeng*(1-guardUsedThisRound)*(statusRounds.bailu.guard>0)"
+          }
+        },
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.confusion_full",
+          "duration": "1+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal",
+          "when": {
+            "expression": "known.bailu.passive.bianfeng*(1-guardUsedThisRound)*(statusRounds.bailu.guard>0)"
+          }
+        }
+      ],
+      "costMp": 40,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.shicuo",
+      "name": "失措！",
+      "school": "bailu",
+      "description": "正名失措，身法散乱。\n使目标陷入[[bailu.status.disarray]]，无法使用法术，躲避降低10%。持续回合随心法等级提高。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.disarray",
+          "duration": "1+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal"
+        }
+      ],
+      "costMp": 50,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.babing",
+      "name": "罢兵！",
+      "school": "bailu",
+      "description": "罢兵止戈，锋芒收敛。\n使目标陷入[[bailu.status.peace]]，无法使用普通攻击和物理技能，物理防御降低10%。持续回合随心法等级提高。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.peace",
+          "duration": "2+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal"
+        }
+      ],
+      "costMp": 55,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.jinqi",
+      "name": "禁器！",
+      "school": "bailu",
+      "description": "缄诀封器，器灵哑然。\n使目标陷入[[bailu.status.device]]，无法使用装备器诀。持续回合随心法等级提高。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.device",
+          "duration": "2+(skillLevel>=25)+(skillLevel>=45)+(skillLevel>=75)+(skillLevel>=100)+(skillLevel>=125)",
+          "hit": "seal"
+        }
+      ],
+      "costMp": 50,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9
+    },
+    {
+      "id": "bailu.skill.fuyuan",
+      "name": "复元！",
+      "school": "bailu",
+      "description": "一文复元，气血回生。\n消耗20法力，恢复心法等级+10点气血。",
+      "tags": [
+        "spell",
+        "support"
+      ],
+      "targeting": {
+        "side": "self"
+      },
+      "effects": [
+        {
+          "type": "heal",
+          "power": "skillLevel+10",
+          "fixedBase": true,
+          "includeHealPower": false
+        }
+      ],
+      "costMp": 20
+    },
+    {
+      "id": "bailu.skill.juqi",
+      "name": "聚气！",
+      "school": "bailu",
+      "description": "以血换气，神意复聚。\n消耗20气血，恢复心法等级+10点法力。",
+      "tags": [
+        "spell",
+        "support"
+      ],
+      "targeting": {
+        "side": "self"
+      },
+      "effects": [
+        {
+          "type": "restoreMp",
+          "power": "skillLevel+10"
+        }
+      ],
+      "costHp": 20
+    },
+    {
+      "id": "bailu.skill.ningshen",
+      "name": "凝神！",
+      "school": "bailu",
+      "description": "凝神明志，言出必中。\n自身获得[[bailu.status.focus]]，持续10回合。封印命中和封印命中上限各提高10个百分点。",
+      "tags": [
+        "spell",
+        "support"
+      ],
+      "targeting": {
+        "side": "self"
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.focus",
+          "duration": 10
+        }
+      ],
+      "costMp": 50
+    },
+    {
+      "id": "bailu.skill.hushen",
+      "name": "护身！",
+      "school": "bailu",
+      "description": "贤影护身，先机不侵。\n自身获得[[bailu.status.guard]]，持续4回合。",
+      "tags": [
+        "spell",
+        "support"
+      ],
+      "targeting": {
+        "side": "self"
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.guard",
+          "duration": 4
+        }
+      ],
+      "costMp": 80
+    },
+    {
+      "id": "bailu.skill.pojia",
+      "name": "破甲！",
+      "school": "bailu",
+      "description": "笔削落下，防备见骨。\n使最多三名敌人陷入[[bailu.status.armor]]，物理防御和法术防御各降低5%，持续4回合。每个目标消耗50法力。若修成笔削，首回合改为[[bailu.status.armor_strong]]。",
+      "tags": [
+        "spell",
+        "support"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 3,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.armor",
+          "duration": 4,
+          "when": {
+            "expression": "known.bailu.passive.bixue==0"
+          }
+        },
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.armor_strong",
+          "duration": 1,
+          "when": {
+            "expression": "known.bailu.passive.bixue"
+          }
+        }
+      ],
+      "costMp": "50*targets"
+    },
+    {
+      "id": "bailu.skill.dianming",
+      "name": "点名！",
+      "school": "bailu",
+      "description": "点名留批，正气锁定一人。\n对主目标造成法术伤害，并留下[[bailu.status.mark]]。再次点名会把印记移到新目标。消耗30法力，冷却8回合。",
+      "tags": [
+        "spell"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "removeStatus",
+          "kinds": [
+            "bailu.mark"
+          ],
+          "ownedOnly": true,
+          "targeting": {
+            "side": "enemy",
+            "mode": "all",
+            "includeDowned": true,
+            "includeDead": true
+          }
+        },
+        {
+          "type": "spellHit",
+          "coeff": 1,
+          "power": 0
+        },
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.mark",
+          "duration": 99
+        }
+      ],
+      "costMp": 30,
+      "cooldownRounds": 8,
+      "formula": "spell",
+      "schoolTerm": {
+        "quad": 0.008333333333333333,
+        "linear": 1.5,
+        "intercept": 30
+      }
+    },
+    {
+      "id": "bailu.skill.jinsheng",
+      "name": "噤声！",
+      "school": "bailu",
+      "description": "战意化言，一语封喉。\n消耗70战意，必定使目标陷入[[bailu.status.law]]，持续2回合。自身无法使用法术时不能施放。冷却6回合。",
+      "tags": [
+        "spell",
+        "seal"
+      ],
+      "targeting": {
+        "side": "enemy",
+        "mode": "fill",
+        "count": 1,
+        "maxSelected": 1
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.law",
+          "duration": 2,
+          "hit": "seal"
+        }
+      ],
+      "resourceCosts": [
+        {
+          "resourceId": "combat.resource.rage",
+          "amount": 70
+        }
+      ],
+      "cooldownRounds": 6,
+      "sealBase": 70,
+      "sealChanceCeil": 0.9,
+      "modifiers": [
+        {
+          "sealAlwaysHit": true,
+          "bypassNegativeSpellResistance": true,
+          "when": {
+            "skillIds": [
+              "bailu.skill.jinsheng"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bailu.skill.shesheng",
+      "name": "舍生！",
+      "school": "bailu",
+      "description": "舍身立言，正气尽出。\n气血至少一半才能施放。消耗80法力，将自身气血降到1点，获得[[bailu.status.sacrifice]]，持续5回合。冷却8回合，开战冷却4回合。",
+      "tags": [
+        "spell",
+        "support"
+      ],
+      "targeting": {
+        "side": "self"
+      },
+      "effects": [
+        {
+          "type": "applyStatus",
+          "statusId": "bailu.status.sacrifice",
+          "duration": 5
+        }
+      ],
+      "costMp": 80,
+      "requireHpRatio": 0.5,
+      "cooldownRounds": 8,
+      "initialCooldownRounds": 4,
+      "hooks": [
+        {
+          "on": "onRoundEnd",
+          "effects": [
+            {
+              "type": "modifyStatusDuration",
+              "kinds": [
+                "youdu.soul_seal"
+              ],
+              "amount": -1
+            }
+          ],
+          "aim": "self",
+          "when": {
+            "requireStatusIds": [
+              "bailu.status.sacrifice"
+            ]
+          }
+        }
+      ],
+      "costHp": "hp-1"
+    },
+    {
+      "id": "bailu.passive.righteousness",
+      "name": "浩然正气",
+      "school": "bailu",
+      "description": "浩然正气，邪不胜正。\n对幽都目标造成的伤害提高10%。对鬼魂目标造成的物理伤害和法术伤害翻倍。两种条件同时满足时，两段加成相乘。",
+      "tags": [
+        "passive"
+      ],
+      "targeting": {
+        "side": "self"
+      },
+      "effects": [],
+      "modifiers": [
+        {
+          "when": {
+            "foeTags": [
+              "sect.youdu"
+            ]
+          },
+          "damageBonus": 0.1
+        },
+        {
+          "when": {
+            "requireKind": "physical",
+            "expression": "targetDelayedRevival"
+          },
+          "damageResultFactor": 2
+        },
+        {
+          "when": {
+            "requireKind": "spell",
+            "expression": "targetDelayedRevival"
+          },
+          "damageResultFactor": 2
+        }
+      ]
+    }
+  ],
+  "statuses": [
+    {
+      "id": "bailu.status.sleep",
+      "name": "入梦",
+      "description": "无法行动。受到气血伤害后醒来。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "blocksAction": true,
+      "breakOnDamage": true
+    },
+    {
+      "id": "bailu.status.sleep_deep",
+      "name": "入梦",
+      "description": "无法行动。单次受到的气血伤害超过30点后醒来。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "blocksAction": true,
+      "breakOnDamage": true,
+      "breakOnDamageAbove": 30
+    },
+    {
+      "id": "bailu.status.law",
+      "name": "禁言",
+      "description": "无法使用法术。法术防御降低10%。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksSpell": true,
+      "attrMods": {
+        "magicDef": "-target.magicDef*0.1"
+      },
+      "snapshotModifiers": true,
+      "modifiers": [
+        {
+          "when": {
+            "requireKind": "spell"
+          },
+          "damageTakenBonus": "0.03*known.bailu.passive.qiongjie"
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.soul",
+      "name": "折辩",
+      "description": "无法使用造成伤害的法术。物理防御降低10%。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksDamagingSpells": true,
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.1"
+      },
+      "snapshotModifiers": true,
+      "modifiers": [
+        {
+          "when": {
+            "requireKind": "physical"
+          },
+          "damageTakenBonus": "0.03*known.bailu.passive.qiongjie"
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.still",
+      "name": "肃立",
+      "description": "无法使用普通攻击和物理技能。物理防御和法术防御各降低5%。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksPhysical": true,
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.05",
+        "magicDef": "-target.magicDef*0.05"
+      }
+    },
+    {
+      "id": "bailu.status.confusion",
+      "name": "诘问",
+      "description": "无法使用法术。普通攻击会随机选择目标。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "blocksSpell": true,
+      "commandPolicy": "randomNormalAttackTarget"
+    },
+    {
+      "id": "bailu.status.confusion_full",
+      "name": "诘问",
+      "description": "无法使用法术。普通攻击会随机选择目标。物理防御和法术防御各降低10%。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "blocksSpell": true,
+      "commandPolicy": "randomNormalAttackTarget",
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.1",
+        "magicDef": "-target.magicDef*0.1"
+      },
+      "snapshotModifiers": true,
+      "modifiers": [
+        {
+          "when": {
+            "requireKind": "physical"
+          },
+          "damageTakenBonus": "0.03*known.bailu.passive.qiongjie"
+        },
+        {
+          "when": {
+            "requireKind": "spell"
+          },
+          "damageTakenBonus": "0.03*known.bailu.passive.qiongjie"
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.disarray",
+      "name": "正名",
+      "description": "无法使用法术。躲避降低10%。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksSpell": true,
+      "attrMods": {
+        "dodge": "-target.dodge*0.1"
+      }
+    },
+    {
+      "id": "bailu.status.peace",
+      "name": "罢兵",
+      "description": "无法使用普通攻击和物理技能。物理防御降低10%。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksPhysical": true,
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.1"
+      }
+    },
+    {
+      "id": "bailu.status.device",
+      "name": "缄诀",
+      "description": "无法使用装备器诀。",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksArts": true
+    },
+    {
+      "id": "bailu.status.restrain",
+      "description": "无法使用普通攻击和物理技能。",
+      "name": "敛锋",
+      "kind": "bailu.seal",
+      "school": "bailu",
+      "category": "control",
+      "isSeal": true,
+      "blocksPhysical": true
+    },
+    {
+      "id": "bailu.status.stern",
+      "description": "本回合受到的物理伤害和法术伤害提高15%。",
+      "name": "严辞",
+      "kind": "bailu.stern",
+      "school": "bailu",
+      "category": "debuff",
+      "expireSameRound": true,
+      "modifiers": [
+        {
+          "when": {
+            "requireKind": "physical"
+          },
+          "damageTakenBonus": 0.15
+        },
+        {
+          "when": {
+            "requireKind": "spell"
+          },
+          "damageTakenBonus": 0.15
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.focus",
+      "name": "明志",
+      "description": "封印命中提高10个百分点，封印命中上限也提高10个百分点。",
+      "kind": "bailu.focus",
+      "school": "bailu",
+      "category": "buff",
+      "modifiers": [
+        {
+          "sealChanceAdd": 0.1,
+          "sealChanceCeilAdd": 0.1
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.guard",
+      "name": "贤影",
+      "description": "每回合抵挡敌方第一次攻击的第一下。同一次攻击若还有后续伤害，那些伤害仍会命中。",
+      "kind": "bailu.guard",
+      "school": "bailu",
+      "category": "buff",
+      "interceptHostileAction": true,
+      "extendable": false,
+      "modifiers": [
+        {
+          "allDamageTakenBonus": "-0.2*known.bailu.passive.wenping-0.15*known.bailu.passive.wenshi"
+        },
+        {
+          "when": {
+            "requireKind": "spell"
+          },
+          "damageBonus": "0.2*known.bailu.passive.wenshi"
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.armor",
+      "name": "笔削",
+      "description": "物理防御和法术防御各降低5%。",
+      "kind": "bailu.armor",
+      "school": "bailu",
+      "category": "debuff",
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.05",
+        "magicDef": "-target.magicDef*0.05"
+      }
+    },
+    {
+      "id": "bailu.status.armor_strong",
+      "name": "笔削",
+      "description": "物理防御和法术防御先降低10%，降低幅度随后每回合依次变为9%、8%、7%，再解除。",
+      "kind": "bailu.armor",
+      "school": "bailu",
+      "category": "debuff",
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.1",
+        "magicDef": "-target.magicDef*0.1"
+      },
+      "onExpire": {
+        "statusId": "bailu.status.armor_90",
+        "duration": 1
+      },
+      "expireSameRound": true
+    },
+    {
+      "id": "bailu.status.mark",
+      "name": "朱批",
+      "description": "点名留下的印记，持续整场。破邪的额外一击会优先打向带有此印的目标。再次点名会把印记移走。",
+      "kind": "bailu.mark",
+      "school": "bailu",
+      "category": "debuff",
+      "sourceBound": true,
+      "untilBattleEnd": true
+    },
+    {
+      "id": "bailu.status.cage",
+      "description": "戒辞留下的倒地记录，倒地后保留。后续回合开始时，若施加者站立且目标未被言令封印，会随机尝试附加1回合禁言或折辩，仍须经过封印判定。",
+      "name": "戒辞",
+      "kind": "bailu.cage",
+      "school": "bailu",
+      "category": "debuff",
+      "sourceBound": true,
+      "persistWhenDowned": true,
+      "dispellable": false
+    },
+    {
+      "id": "bailu.status.verdict",
+      "description": "定论留下的本场记录。每名带有本人定论的敌方人物，使本人对未标记敌方人物的法术伤害提高7%；所有敌方人物均有本人定论时，破邪额外攻击三人。",
+      "name": "定论",
+      "kind": "bailu.verdict",
+      "school": "bailu",
+      "category": "debuff",
+      "sourceBound": true,
+      "persistWhenDowned": true,
+      "untilBattleEnd": true,
+      "dispellable": false
+    },
+    {
+      "id": "bailu.status.echo",
+      "description": "余论留下的追击记录。每回合目标首次可被攻击时，受到施加者一次法术追击；倒地后仍保留记录。",
+      "name": "余论",
+      "kind": "bailu.echo",
+      "school": "bailu",
+      "category": "debuff",
+      "sourceBound": true,
+      "persistWhenDowned": true,
+      "dispellable": false
+    },
+    {
+      "id": "bailu.status.weaken",
+      "description": "物攻、法攻、物防和法防各降低12%，倒地后仍保留。",
+      "name": "气势受挫",
+      "kind": "bailu.weaken",
+      "school": "bailu",
+      "category": "debuff",
+      "persistWhenDowned": true,
+      "attrMods": {
+        "physicalAtk": "-target.physicalAtk*0.12",
+        "magicAtk": "-target.magicAtk*0.12",
+        "physicalDef": "-target.physicalDef*0.12",
+        "magicDef": "-target.magicDef*0.12"
+      }
+    },
+    {
+      "id": "bailu.status.sacrifice",
+      "name": "舍生立言",
+      "description": "破邪造成的法术伤害提高70%。每个回合结束时，自身的拘灵缩短1回合。无法被驱散。",
+      "kind": "bailu.sacrifice",
+      "school": "bailu",
+      "category": "buff",
+      "dispellable": false,
+      "modifiers": [
+        {
+          "when": {
+            "skillIds": [
+              "bailu.skill.poxie"
+            ]
+          },
+          "damageBonus": 0.7
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.charged",
+      "description": "下一次破邪造成的伤害提高25%，该次成功施放后消耗。",
+      "name": "辞锋待发",
+      "kind": "bailu.charged",
+      "school": "bailu",
+      "category": "buff",
+      "modifiers": [
+        {
+          "when": {
+            "skillIds": [
+              "bailu.skill.poxie"
+            ]
+          },
+          "damageBonus": 0.25
+        }
+      ]
+    },
+    {
+      "id": "bailu.status.revive_growth",
+      "description": "不屈通过文脉不绝复起后留下的成长记录，法攻增加本场文脉不绝成功复起次数×40，倒地后保留。",
+      "name": "文脉不绝",
+      "kind": "bailu.revive_growth",
+      "school": "bailu",
+      "category": "buff",
+      "persistWhenDowned": true,
+      "untilBattleEnd": true,
+      "dispellable": false,
+      "attrMods": {
+        "magicAtk": "40*fact.bailu_revives"
+      }
+    },
+    {
+      "id": "bailu.status.pet_history",
+      "description": "记录此灵兽已被施加者的基础破邪攻击。配合余慑经脉，施加者后续破邪对该灵兽的增伤由30%改为45%；本记录自身不直接造成伤害。",
+      "name": "余慑",
+      "kind": "bailu.pet_history",
+      "school": "bailu",
+      "category": "debuff",
+      "sourceBound": true,
+      "untilBattleEnd": true,
+      "dispellable": false
+    },
+    {
+      "id": "bailu.status.armor_90",
+      "description": "物理防御和法术防御各降低9%，本回合结束后转为降低8%的笔削。",
+      "name": "笔削",
+      "kind": "bailu.armor",
+      "school": "bailu",
+      "category": "debuff",
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.09",
+        "magicDef": "-target.magicDef*0.09"
+      },
+      "onExpire": {
+        "statusId": "bailu.status.armor_80",
+        "duration": 1
+      },
+      "expireSameRound": true
+    },
+    {
+      "id": "bailu.status.armor_80",
+      "description": "物理防御和法术防御各降低8%，本回合结束后转为降低7%的笔削。",
+      "name": "笔削",
+      "kind": "bailu.armor",
+      "school": "bailu",
+      "category": "debuff",
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.08",
+        "magicDef": "-target.magicDef*0.08"
+      },
+      "onExpire": {
+        "statusId": "bailu.status.armor_70",
+        "duration": 1
+      },
+      "expireSameRound": true
+    },
+    {
+      "id": "bailu.status.armor_70",
+      "description": "物理防御和法术防御各降低7%，本回合结束后解除。",
+      "name": "笔削",
+      "kind": "bailu.armor",
+      "school": "bailu",
+      "category": "debuff",
+      "attrMods": {
+        "physicalDef": "-target.physicalDef*0.07",
+        "magicDef": "-target.magicDef*0.07"
+      },
+      "expireSameRound": true
+    },
+    {
+      "id": "bailu.status.echo_spent",
+      "description": "记录施加者的余论在本回合已经追击过此目标，避免同一回合重复触发；本回合结束后清除。",
+      "name": "余论已发",
+      "kind": "bailu.echo_spent",
+      "school": "bailu",
+      "category": "debuff",
+      "sourceBound": true,
+      "persistWhenDowned": true,
+      "expireSameRound": true,
+      "dispellable": false
+    }
+  ]
+}
