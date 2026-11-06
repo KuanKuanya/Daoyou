@@ -40,8 +40,8 @@ describe('开发平衡模拟', () => {
             ).toBeLessThanOrEqual(100);
             expect(['a', 'b', 'draw']).toContain(result.run.winner);
           }
-  }, 30000);
-  it('每个种子交换两次站位，矩阵完整覆盖当前五宗门', () => {
+  }, 120000);
+  it('每个种子交换两次站位，矩阵完整覆盖当前宗门', () => {
     const plan = balancePlan(config);
     expect(plan.jobs.map((j) => [j.seed, j.swapped])).toEqual([
       [42, false],

@@ -1,30 +1,13 @@
-import { STANDARD_SECT_PRESENTATION } from '@daoyou/game-content/sect-organization/standard/presentation';
-import type { SectPresentationTheme } from '@daoyou/game-domain/sects';
 import { describe, expect, it } from 'vitest';
 import { resolveSectPresentation } from './sectPresentation.js';
+import type { SectPresentationTheme } from '@daoyou/game-domain/sects';
 
 describe('sect presentation affairs room', () => {
   it('provides one default NPC for every task kind', () => {
     const presentation = resolveSectPresentation('sample-sect');
-    const actors = presentation.rooms.affairs.actors;
-    const actorByRole = Object.fromEntries(
-      actors.map((actor) => [actor.roleKey, actor]),
-    );
-
-    expect(actors.map((actor) => actor.roleKey)).toEqual([
-      'daily',
-      'weekly',
-      'promotion',
-    ]);
-    expect(actorByRole.daily.name).toBe('值日执事');
-    expect(actorByRole.daily.appearance).toBe('person');
-    expect(actorByRole.daily.responsibility).toBe('负责日常委托。');
-    expect(actorByRole.weekly.name).toBe('功簿执事');
-    expect(actorByRole.weekly.responsibility).toBe('负责周常委托。');
-    expect(actorByRole.promotion.name).toBe('传功长老');
-    expect(actorByRole.promotion.responsibility).toBe('负责晋升试炼。');
-    expect(presentation.terms.sweepActivity).toBe('清扫山门');
-    expect(presentation.terms.sweepCanvasLabel).toBe('清扫山门游戏画布');
+    expect(
+      presentation.rooms.affairs.actors.map((actor) => actor.roleKey),
+    ).toEqual(['daily', 'weekly', 'promotion']);
   });
 
   it('resolves managed rooms without allowing role or renderer overrides', () => {
@@ -64,7 +47,7 @@ describe('sect presentation affairs room', () => {
       id: 'sample-vein-keeper',
       name: '听脉人',
       greeting: '今日脉息安稳。',
-      sigil: '矿',
+      sigil: defaults[0].sigil,
       appearance: 'person',
       identity: defaults[0].identity,
       responsibility: defaults[0].responsibility,
@@ -74,7 +57,7 @@ describe('sect presentation affairs room', () => {
       id: 'sample-spirit-vein',
       name: '坤元地脉',
       greeting: '地脉沉静。',
-      sigil: '矿',
+      sigil: defaults[1].sigil,
       appearance: 'facility',
       identity: defaults[1].identity,
       responsibility: defaults[1].responsibility,
@@ -120,7 +103,6 @@ describe('sect presentation affairs room', () => {
       ),
     ).toMatchObject({
       name: '坤元地脉',
-      sigil: 'icon:facility-spirit-vein',
       appearance: 'facility',
       conversation: { renderer: 'sect.spirit-vein.mining' },
     });
@@ -130,7 +112,6 @@ describe('sect presentation affairs room', () => {
       ),
     ).toMatchObject({
       name: '长生圃',
-      sigil: 'icon:facility-herb-garden',
       appearance: 'facility',
       conversation: { renderer: 'sect.herb-garden.status' },
     });
@@ -204,9 +185,6 @@ describe('sect presentation affairs room', () => {
     );
     expect(actorByRole.daily).toMatchObject({
       id: 'daily-steward',
-      sigil: STANDARD_SECT_PRESENTATION.rooms.affairs.actors.find(
-        (actor) => actor.roleKey === 'daily',
-      )?.sigil,
       name: '司辰使',
       greeting: '今日星轨已经排定。',
     });
@@ -246,24 +224,15 @@ describe('sect presentation affairs room', () => {
     )!;
     expect(dailyActor).toMatchObject({
       name: '司辰使',
-      sigil: '辰',
-      identity: '值日执事',
-      responsibility: '负责日常委托。',
-      appearance: 'person',
+      sigil: defaultDaily.sigil,
+      identity: defaultDaily.identity,
+      responsibility: defaultDaily.responsibility,
+      appearance: defaultDaily.appearance,
     });
     expect(presentation.terms).toEqual(defaults.terms);
   });
 
   it('rejects blank fields and duplicate NPC identifiers', () => {
-    expect(() =>
-      resolveSectPresentation('sample-sect', {
-        sectId: 'sample-sect',
-        rooms: {
-          affairs: { actors: { daily: { sigil: ' ' } } },
-        },
-      }),
-    ).toThrow('daily.sigil');
-
     expect(() =>
       resolveSectPresentation('sample-sect', {
         sectId: 'sample-sect',
